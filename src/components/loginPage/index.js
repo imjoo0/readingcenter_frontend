@@ -41,9 +41,10 @@ export default function LoginPage() {
           password: password,
         },
       });
-
-      const accessToken = response.data.accessToken;
+      
+      const accessToken = response.data.login.accessToken;
       const refreshToken = response.data.login.refreshToken;
+      
       // 로그인 성공 시, 받아온 액세스 토큰을 Recoil state에 저장
       setAccessToken(accessToken);
       setRefreshToken(refreshToken);
