@@ -3,31 +3,25 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import * as S from "./loginPage.style";
 import { useMutation, gql } from "@apollo/client";
-
-const BACKEND_URL = 'http://127.0.0.1:8000/user/graphql/'
+import { useSetRecoilState } from 'recoil';
+import { accessTokenState, refreshTokenState } from "src/commons/stores";  // accessTokenState import
 
 const LOGIN_MUTATION = gql`
   mutation Login($username: String!, $password: String!) {
     login(username: $username, password: $password) {
       accessToken
+      refreshToken
     }
   }
 `;
+
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
+  const setAccessToken = useSetRecoilState(accessTokenState);
+  const setRefreshToken = useSetRecoilState(refreshTokenState);
   const [loginMutation] = useMutation(LOGIN_MUTATION);
-
-  useEffect(() => {
-    // Check if the user is already logged in
-    const accessToken = localStorage.getItem("accessToken");
-    if (accessToken) {
-      setIsLoggedIn(true);
-    }
-  }, []);
-
 
   const onChangeId = (e) => {
     const inputValue = e.target.value;
@@ -49,11 +43,11 @@ export default function LoginPage() {
       });
 
       const accessToken = response.data.accessToken;
+      const refreshToken = response.data.login.refreshToken;
+      // 로그인 성공 시, 받아온 액세스 토큰을 Recoil state에 저장
+      setAccessToken(accessToken);
+      setRefreshToken(refreshToken);
 
-      // 로그인 성공 시, 받아온 액세스 토큰을 로컬 스토리지에 저장
-      localStorage.setItem("accessToken", accessToken);
-      setIsLoggedIn(true);
-      // 여기서 로직 추가: 로그인 성공 후, 다른 페이지로 이동 또는 UI 업데이트 등
       router.push("/academy");
     } catch (error) {
       console.error("로그인 오류:", error);
@@ -66,6 +60,7 @@ export default function LoginPage() {
       login();
     }
   };
+  
   return (
     <S.Wrapper>
       <S.LoginBox>

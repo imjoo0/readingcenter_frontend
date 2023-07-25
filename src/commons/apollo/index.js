@@ -5,12 +5,13 @@ import {
   InMemoryCache,
   fromPromise,
 } from "@apollo/client";
-import { useRecoilState, useRecoilValueLoadable } from "recoil";
-import { accessTokenState, refreshTokenState } from "../stores";
-import { useEffect } from "react";
 import { createUploadLink } from "apollo-upload-client";
+import { useEffect } from "react";
 import { onError } from "@apollo/client/link/error";
 import { refreshToken } from "../library/refreshToken";
+import { useRecoilState, useRecoilValueLoadable } from "recoil"; // useRecoilState를 추가로 임포트
+
+import { accessTokenState, refreshTokenState } from "../stores";
 
 const GLOBAL_STATE = new InMemoryCache();
 
@@ -47,13 +48,13 @@ export default function ApolloSetting(props) {
   });
 
   const uploadLink = createUploadLink({
-    uri: "https://countries.trevorblades.com",
+    uri: "http://127.0.0.1:8000/graphql/",
     headers: { Authorization: `Bearer ${accessToken}` },
     credentials: "include",
   });
 
   const client = new ApolloClient({
-    link: ApolloLink.from([uploadLink]),
+    link: ApolloLink.from([errorLink, uploadLink]),
     cache: GLOBAL_STATE,
   });
 

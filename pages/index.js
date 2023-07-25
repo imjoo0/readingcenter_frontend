@@ -1,15 +1,10 @@
-import { useEffect, useState } from "react";
+import { useRecoilValue } from "recoil";
+import { accessTokenState } from "src/commons/stores"; // accessTokenState를 가져오기
+import LoginPage from '@/pages/login';
 
 export default function Home() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
-  useEffect(() => {
-    // Check if the user is already logged in
-    const accessToken = localStorage.getItem("accessToken");
-    if (accessToken) {
-      setIsLoggedIn(true);
-    }
-  }, []);
-
+  const accessToken = useRecoilValue(accessTokenState);
+  const isLoggedIn = Boolean(accessToken); // accessToken이 존재하면 true, 그렇지 않으면 false
 
   return (
     <>
