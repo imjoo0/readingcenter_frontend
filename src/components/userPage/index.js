@@ -7,59 +7,59 @@ import { useEffect, useState } from "react";
 import { useRecoilState } from "recoil";
 import { accessTokenState, refreshTokenState } from "@/src/commons/stores";
 
-const GET_BRANCHES = gql`
+const GET_USER_PROFILE = gql`
   query {
-  me {
-    id
-    username
-    userCategory
-    profile {
-      ... on StudentType {
-        id
-        korName
-        engName
-        registerDate
-        origin
-        pmobileno
-        birthYear
-        academies {
+    me {
+      id
+      username
+      email
+      userCategory
+      profile {
+        ... on StudentType {
           id
-          name
-          location
+          korName
+          engName
+          registerDate
+          origin
+          pmobileno
+          birthYear
+          academies {
+            id
+            name
+            location
+          }
         }
-      }
-      ... on TeacherType {
-        id
-        korName
-        engName
-        registerDate
-        birthYear
-        academy {
+        ... on TeacherType {
           id
-          name
-          location
+          korName
+          engName
+          registerDate
+          birthYear
+          academy {
+            id
+            name
+            location
+          }
         }
-      }
-      ... on ManagerType {
-        id
-        korName
-        engName
-        registerDate
-        birthYear
-        academies {
+        ... on ManagerType {
           id
-          name
-          location
+          korName
+          engName
+          registerDate
+          birthYear
+          academies {
+            id
+            name
+            location
+          }
         }
       }
     }
   }
-}
 `;
 
 export default function AcademyListPage() {
-  const { data } = useQuery(GET_BRANCHES);
-  console.log(data);
+  const { data } = useQuery(GET_USER_PROFILE);
   const router = useRouter();
   const onClickAcademy = (id) => () => {
     router.push(`/${id}/class/`);
@@ -67,24 +67,20 @@ export default function AcademyListPage() {
   const [accessToken] = useRecoilState(accessTokenState);
   console.log(accessToken);
 
+  const academiesOrAcademy =
+    data?.me?.profile?.userCategory === "선생님"
+      ? data?.me?.profile?.academy
+      : data?.me?.profile?.academies;
+
   return (
     <>
       <S.UserContainer>
         <S.UserMain>유저 정보</S.UserMain>
-
-        <S.UserInfo>{`직책 : ${data?.me.userCategory}`}</S.UserInfo>
-        <S.UserInfo>{`e-mail : ${data?.me.email}`}</S.UserInfo>
-        <S.UserInfo>{`ID : ${data?.me.username}`}</S.UserInfo>
+        <S.UserInfo>{`직책 : ${data?.me?.userCategory}`}</S.UserInfo>
+        <S.UserInfo>{`e-mail : ${data?.me?.email}`}</S.UserInfo>
+        <S.UserInfo>{`ID : ${data?.me?.username}`}</S.UserInfo>
         <S.UserInfo>
-          {"이름 : " +
-            (data?.me.studentProfile?.korName ??
-              data?.me.teacherProfile?.korName ??
-              data?.me?.managerProfile?.korName) +
-            "(" +
-            (data?.me.studentProfile?.engName ??
-              data?.me.teacherProfile?.engName ??
-              data?.me?.managerProfile?.engName) +
-            ")"}
+          {"이름 : " + data?.me?.profile?.korName + "(" + data?.me?.profile?.engName + ")"}
         </S.UserInfo>
       </S.UserContainer>
       <S.Table>
@@ -97,14 +93,13 @@ export default function AcademyListPage() {
             상세 관리
           </S.TableHeadRight>
         </S.TableHeaderRound>
-        {data?.me?.managerProfile?.academies?.map((el) => {
+        {academiesOrAcademy?.map((el) => {
           return (
             <S.TableRound key={uuidv4()}>
               <S.TableHeadLeft style={{ width: "50%" }}>
-                {el.branchName}
+                {el.name} 
               </S.TableHeadLeft>
               <S.TableHead style={{ width: "100%" }}>{el.location}</S.TableHead>
-              <S.TableHead style={{ width: "100%" }}>{el.name}</S.TableHead>
               <S.TableHead style={{ width: "30%" }}>
                 <S.LinkButton>+</S.LinkButton>
               </S.TableHead>
