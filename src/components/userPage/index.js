@@ -8,57 +8,53 @@ import { useRecoilState } from "recoil";
 import { accessTokenState, refreshTokenState } from "@/src/commons/stores";
 
 const GET_BRANCHES = gql`
-  query Operations {
-    me {
-      username
-      email
-      userCategory
-      studentProfile {
+  query {
+  me {
+    id
+    username
+    userCategory
+    profile {
+      ... on StudentType {
+        id
         korName
         engName
-        gender
-        mobileno
         registerDate
-        birthYear
         origin
         pmobileno
+        birthYear
         academies {
           id
-          branchName
-          location
           name
+          location
         }
       }
-      teacherProfile {
+      ... on TeacherType {
+        id
         korName
         engName
-        gender
-        mobileno
         registerDate
         birthYear
         academy {
           id
-          branchName
-          location
           name
+          location
         }
       }
-      managerProfile {
+      ... on ManagerType {
+        id
         korName
         engName
-        gender
-        mobileno
         registerDate
         birthYear
         academies {
           id
-          branchName
-          location
           name
+          location
         }
       }
     }
   }
+}
 `;
 
 export default function AcademyListPage() {
