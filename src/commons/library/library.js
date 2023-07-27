@@ -23,6 +23,10 @@ export const dateToString = (date) => {
   }
 };
 
+export const dateChange = (date) => {
+  return date.slice(0, 4) + ". " + date.slice(5, 7) + ". " + date.slice(8, 10);
+};
+
 export const dateToTime = (date) => {
   return `${date.getHours()}시 ${date.getMinutes()}분`;
 };
@@ -43,4 +47,19 @@ export const tileClassName = ({ date, view }) => {
 
 export const dateCalculator = (date1, date2) => {
   return date1.getTime() < date2.getTime();
+};
+
+export const dateToInput = (date) => {
+  let year = String(date.getFullYear());
+  let month = String(date.getMonth() + 1);
+  let day = String(date.getDate());
+
+  if (Number(month) < 10) {
+    month = "0" + month;
+  }
+  if (Number(day) < 10) {
+    day = "0" + day;
+  }
+
+  return year + "-" + month + "-" + day;
 };

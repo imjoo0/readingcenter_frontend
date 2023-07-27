@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 
 export default function Header() {
   const menuList = [
+    ["유저 페이지", "userPage"],
     ["원생 관리", "academy"],
     ["수업 관리", "class"],
     ["도서 관리", "books"],
@@ -11,7 +12,11 @@ export default function Header() {
   const router = useRouter();
 
   const onClickMenu = (address) => () => {
-    router.push("/" + address);
+    if (address === "userPage") {
+      router.push("/userPage");
+    } else {
+      router.push("/" + router.query.branch + "/" + address);
+    }
   };
 
   return (
@@ -21,7 +26,7 @@ export default function Header() {
           <S.HeaderTag
             key={uuidv4()}
             style={
-              router.asPath.includes("/" + el[1])
+              router.asPath === "/" + el[1]
                 ? { backgroundColor: "#efefef", color: "#1e1e1e" }
                 : {}
             }

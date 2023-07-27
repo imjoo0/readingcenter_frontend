@@ -1,32 +1,39 @@
 import { useRouter } from "next/router";
 import * as S from "./academy.style";
 import { SearchOutlined, FormOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-const data = [
-  {
-    id: "P01",
-    name: "철수",
-    birthDayYear: 2013,
-    registerDate: "2023년 5월 3일",
-    status: "재원 중",
-    phone: "010-0000-0000",
-    parentsPhone: "010-0000-0000",
-  },
-  {
-    id: "P02",
-    name: "영희",
-    birthDayYear: 2012,
-    registerDate: "2023년 5월 2일",
-    status: "재원 중",
-    phone: "010-0000-0000",
-    parentsPhone: "010-0000-0000",
-  },
-];
+import { gql, useQuery } from "@apollo/client";
+import { dateChange } from "@/src/commons/library/library";
+
+const GET_STUDENTS = gql`
+  query studentsInAcademy($academyId: Int!) {
+    studentsInAcademy(academyId: $academyId) {
+      korName
+      engName
+      gender
+      mobileno
+      registerDate
+      birthYear
+      origin
+      pmobileno
+      academies {
+        id
+        branchName
+        name
+      }
+    }
+  }
+`;
 
 export default function AcademyPage() {
-  const [array, setArray] = useState(data);
+  const router = useRouter();
+  const { data } = useQuery(GET_STUDENTS, {
+    variables: { academyId: Number(router.query.branch) },
+  });
+  console.log(data, router.query);
+  const [array, setArray] = useState(data?.studentsInAcademy);
   const [searchWord, setSearchWord] = useState("");
 
   const onChangeSearchWord = (event) => {
@@ -34,10 +41,12 @@ export default function AcademyPage() {
   };
 
   const onClickSearch = () => {
-    const newArray = [...data];
+    const newArray = [...data?.studentsInAcademy];
     setArray(
       newArray.filter((el) => {
-        return el.name.includes(searchWord) || el.id.includes(searchWord);
+        return (
+          el.korName.includes(searchWord) || el.origin.includes(searchWord)
+        );
       })
     );
   };
@@ -47,6 +56,10 @@ export default function AcademyPage() {
       onClickSearch();
     }
   };
+
+  useEffect(() => {
+    setArray(data?.studentsInAcademy);
+  }, [data]);
 
   return (
     <>
@@ -66,7 +79,7 @@ export default function AcademyPage() {
           </S.SearchTag>
         </S.SearchBox>
 
-        <S.CountNumber>{"총 " + array.length + "명"}</S.CountNumber>
+        <S.CountNumber>{"총 " + array?.length + "명"}</S.CountNumber>
 
         <S.Table>
           <S.TableHeaderRound>
@@ -75,33 +88,38 @@ export default function AcademyPage() {
             <S.TableHead style={{ width: "40%" }}>연령</S.TableHead>
             <S.TableHead style={{ width: "50%" }}>등록일</S.TableHead>
             <S.TableHead style={{ width: "100%" }}>연락처</S.TableHead>
-            <S.TableHead style={{ width: "30%" }}>재원 여부</S.TableHead>
+            <S.TableHead style={{ width: "30%" }}>성별</S.TableHead>
             <S.TableHeadRight style={{ width: "50%" }}>
               상세 보기
             </S.TableHeadRight>
           </S.TableHeaderRound>
-          {array.map((el) => {
+          {array?.map((el) => {
             return (
               <S.TableRound key={uuidv4()}>
                 <S.TableHeadLeft style={{ width: "40%" }}>
-                  {el.id}
+                  {el.origin}
                 </S.TableHeadLeft>
-                <S.TableHead style={{ width: "40%" }}>{el.name}</S.TableHead>
+                <S.TableHead style={{ width: "40%" }}>{el.korName}</S.TableHead>
                 <S.TableHead style={{ width: "40%" }}>
-                  {el.birthDayYear + "년"}
+                  {el.birthYear + "년"}
                 </S.TableHead>
                 <S.TableHead style={{ width: "50%" }}>
-                  {el.registerDate}
+                  {dateChange(el.registerDate)}
                 </S.TableHead>
                 <S.TableHead style={{ width: "100%" }}>
-                  <span>{"학생 : " + el.phone}</span>
-                  <span>{"학부모 : " + el.parentsPhone}</span>
+                  <span>{"학생 : " + el.mobileno}</span>
+                  <span>{"학부모 : " + el.pmobileno}</span>
                 </S.TableHead>
-                <S.TableHead style={{ width: "30%" }}>{el.status}</S.TableHead>
+                <S.TableHead style={{ width: "30%" }}>
+                  {el.gender === "M" ? "남" : "여"}
+                </S.TableHead>
                 <S.TableHeadRight style={{ width: "50%" }}>
                   <SearchOutlined
                     onClick={() => {
-                      window.open("/academy/" + el.id, "_blank");
+                      window.open(
+                        "/" + router.query.branch + "/academy/" + el.origin,
+                        "_blank"
+                      );
                     }}
                   ></SearchOutlined>
                 </S.TableHeadRight>

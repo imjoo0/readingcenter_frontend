@@ -120,6 +120,14 @@ export default function AcademyDetailPage() {
     setRoutineCount(Number(onlyNumber));
     console.log(routineCount);
   };
+
+  const onClickAddClass = () => {
+    console.log(
+      "id : " + router.query.id,
+      routineCount + "주",
+      "선택요일 : " + selectDates
+    );
+  };
   return (
     <S.AcademyDetailWrapper>
       <S.AcademyDetailTitle>원생 정보 상세보기</S.AcademyDetailTitle>
@@ -158,7 +166,7 @@ export default function AcademyDetailPage() {
             <S.InputInput defaultValue={childrenData.phone}></S.InputInput>
           </S.InputTag>
           <S.InputTag>
-            <S.InputName>재원 여부</S.InputName>
+            <S.InputName>성별</S.InputName>
             <S.InputInput defaultValue={childrenData.status}></S.InputInput>
             <S.InputName>주소</S.InputName>
             <S.InputInput defaultValue={childrenData.address}></S.InputInput>
@@ -180,8 +188,8 @@ export default function AcademyDetailPage() {
           <S.TableHeadLeft style={{ width: "70%" }}>수업 날짜</S.TableHeadLeft>
           <S.TableHead style={{ width: "70%" }}>수업 시간</S.TableHead>
           <S.TableHead style={{ width: "30%" }}>출결</S.TableHead>
-          <S.TableHead>메모</S.TableHead>
-          <S.TableHead style={{ width: "30%" }}>메모 수정</S.TableHead>
+          <S.TableHead>강의 정보</S.TableHead>
+          <S.TableHead style={{ width: "30%" }}>정보 수정</S.TableHead>
           <S.TableHead style={{ width: "30%" }}>보강 학습 추가</S.TableHead>
         </S.TableHeaderRound>
 

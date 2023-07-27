@@ -6,7 +6,7 @@ export default function Layout(props) {
   const HIDDEN_HEADERS = ["/login"];
   return (
     <>
-      {!HIDDEN_HEADERS.includes(router.asPath) ? <Header></Header> : <></>}
+      {router.query.branch ? <Header></Header> : <></>}
       <div>{props.children}</div>
     </>
   );

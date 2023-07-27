@@ -1,10 +1,10 @@
-import { useEffect } from "react"; 
+import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import * as S from "./loginPage.style";
 import { useMutation, gql } from "@apollo/client";
-import { useSetRecoilState } from 'recoil';
-import { accessTokenState, refreshTokenState } from "src/commons/stores";  // accessTokenState import
+import { useRecoilState, useSetRecoilState } from "recoil";
+import { accessTokenState, refreshTokenState } from "src/commons/stores"; // accessTokenState import
 
 const LOGIN_MUTATION = gql`
   mutation Login($username: String!, $password: String!) {
@@ -15,12 +15,12 @@ const LOGIN_MUTATION = gql`
   }
 `;
 
-export default function LoginPage() {
+export default function LoginPageComponent() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const setAccessToken = useSetRecoilState(accessTokenState);
-  const setRefreshToken = useSetRecoilState(refreshTokenState);
+  const [refreshToken, setRefreshToken] = useRecoilState(refreshTokenState);
   const [loginMutation] = useMutation(LOGIN_MUTATION);
 
   const onChangeId = (e) => {
@@ -41,27 +41,27 @@ export default function LoginPage() {
           password: password,
         },
       });
-      
       const accessToken = response.data.login.accessToken;
       const refreshToken = response.data.login.refreshToken;
-      
+      const user = response.data.login.user;
+
       // 로그인 성공 시, 받아온 액세스 토큰을 Recoil state에 저장
       setAccessToken(accessToken);
-      setRefreshToken(refreshToken);
-
-      router.push("/academy");
+      // setRefreshToken(refreshToken);
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+      router.push("/userPage");
     } catch (error) {
       console.error("로그인 오류:", error);
+      alert("로그인에 실패했습니다.");
     }
   };
 
   const onClickLogin = () => {
     // Check if running on the client side (not during SSR)
-    if (typeof window !== "undefined") {
-      login();
-    }
+    login();
   };
-  
+
   return (
     <S.Wrapper>
       <S.LoginBox>

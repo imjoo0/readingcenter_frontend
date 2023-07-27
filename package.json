@@ -27,6 +27,7 @@
     "react-calendar": "^4.4.0",
     "react-dom": "18.2.0",
     "recoil": "^0.7.7",
+    "recoil-persist": "^5.1.0",
     "uuidv4": "^6.2.13",
     "yarn": "^1.22.19"
   }

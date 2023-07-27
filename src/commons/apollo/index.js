@@ -22,15 +22,18 @@ export default function ApolloSetting(props) {
   useEffect(() => {
     // const result = localStorage.getItem("accessToken")
     // setAccessToken(result ?? "")
-    getRecoilToken.toPromise().then((newAccessToken) => {
-      setAccessToken(newAccessToken ?? "");
-    });
+    // getRecoilToken.toPromise().then((newAccessToken) => {
+    //   setAccessToken(newAccessToken ?? "");
+    // });
+    if (localStorage.getItem("accessToken")) {
+      setAccessToken(localStorage.getItem("accessToken") || "");
+    }
   }, []);
 
   const errorLink = onError(({ graphQLErrors, operation, forward }) => {
     if (typeof graphQLErrors !== "undefined") {
       for (const err of graphQLErrors) {
-        if (err.extensions.code === "UNAUTHENTICATED") {
+        if (err?.extensions?.code === "UNAUTHENTICATED") {
           return fromPromise(
             refreshToken().then((newAccessToken) => {
               setAccessToken(newAccessToken ?? "");
@@ -48,7 +51,7 @@ export default function ApolloSetting(props) {
   });
 
   const uploadLink = createUploadLink({
-    uri: "http://127.0.0.1:8000/graphql/",
+    uri: "http://readingcenter.purpleacademy.co.kr:8000/graphql/",
     headers: { Authorization: `Bearer ${accessToken}` },
     credentials: "include",
   });
