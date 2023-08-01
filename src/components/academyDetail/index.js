@@ -5,6 +5,8 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import { Modal, TimePicker } from "antd";
 import { v4 as uuidv4 } from "uuid";
+import { useQuery } from "@apollo/client";
+import { GET_STUDENT } from "./academyDetail.query";
 
 const childrenData = {
   id: "P01",
@@ -45,6 +47,9 @@ const week = ["일", "월", "화", "수", "목", "금", "토"];
 
 export default function AcademyDetailPage() {
   const router = useRouter();
+  const { data } = useQuery(GET_STUDENT, {
+    variables: { userId: Number(router.query.id) },
+  });
   const [classToggle, setClassToggle] = useState(false);
   const [imageURL, setImageURL] = useState("");
   const [imageFile, setImageFile] = useState("");
@@ -128,6 +133,9 @@ export default function AcademyDetailPage() {
       "선택요일 : " + selectDates
     );
   };
+
+  console.log(data);
+
   return (
     <S.AcademyDetailWrapper>
       <S.AcademyDetailTitle>원생 정보 상세보기</S.AcademyDetailTitle>
@@ -145,31 +153,48 @@ export default function AcademyDetailPage() {
         <S.InputBox>
           <S.InputTag>
             <S.InputName>이름</S.InputName>
-            <S.InputInput defaultValue={childrenData.name}></S.InputInput>
-            <S.InputName>아이디</S.InputName>
-            <S.InputInput defaultValue={childrenData.id}></S.InputInput>
+            <S.InputInput
+              defaultValue={data?.userDetails?.profile.korName}
+            ></S.InputInput>
+            <S.InputName>원번</S.InputName>
+            <S.InputInput
+              defaultValue={data?.userDetails?.profile?.origin}
+            ></S.InputInput>
           </S.InputTag>
           <S.InputTag>
-            <S.InputName>생년월일</S.InputName>
-            <S.InputInput defaultValue={childrenData.birthYear}></S.InputInput>
+            <S.InputName>출생년도</S.InputName>
+            <S.InputInput
+              defaultValue={data?.userDetails?.profile.birthDate + "년"}
+            ></S.InputInput>
             <S.InputName>등록일</S.InputName>
             <S.InputInput
-              defaultValue={childrenData.registerDate}
+              defaultValue={data?.userDetails?.profile.registerDate.slice(
+                0,
+                10
+              )}
             ></S.InputInput>
           </S.InputTag>
           <S.InputTag>
             <S.InputName>학부모 전화번호</S.InputName>
             <S.InputInput
-              defaultValue={childrenData.parentsPhone}
+              defaultValue={data?.userDetails?.profile.pmobileno}
             ></S.InputInput>
             <S.InputName>학생 전화번호</S.InputName>
-            <S.InputInput defaultValue={childrenData.phone}></S.InputInput>
+            <S.InputInput
+              defaultValue={data?.userDetails?.profile.mobileno}
+            ></S.InputInput>
           </S.InputTag>
           <S.InputTag>
             <S.InputName>성별</S.InputName>
-            <S.InputInput defaultValue={childrenData.status}></S.InputInput>
-            <S.InputName>주소</S.InputName>
-            <S.InputInput defaultValue={childrenData.address}></S.InputInput>
+            <S.InputInput
+              defaultValue={
+                data?.userDetails?.profile.gender === "M" ? "남" : "여"
+              }
+            ></S.InputInput>
+            <S.InputName>이메일</S.InputName>
+            <S.InputInput
+              defaultValue={data?.userDetails?.email}
+            ></S.InputInput>
           </S.InputTag>
           <S.ButtonBox>
             <S.RouteButton onClick={onClickRouter("academy")}>
@@ -187,28 +212,30 @@ export default function AcademyDetailPage() {
         <S.TableHeaderRound>
           <S.TableHeadLeft style={{ width: "70%" }}>수업 날짜</S.TableHeadLeft>
           <S.TableHead style={{ width: "70%" }}>수업 시간</S.TableHead>
-          <S.TableHead style={{ width: "30%" }}>출결</S.TableHead>
+          <S.TableHead style={{ width: "40%" }}>담당</S.TableHead>
           <S.TableHead>강의 정보</S.TableHead>
-          <S.TableHead style={{ width: "30%" }}>정보 수정</S.TableHead>
+          {/* <S.TableHead style={{ width: "30%" }}>정보 수정</S.TableHead> */}
           <S.TableHead style={{ width: "30%" }}>보강 학습 추가</S.TableHead>
         </S.TableHeaderRound>
 
-        {classArray.map((el, index) => {
+        {data?.userDetails?.lectures?.map((el, index) => {
           return (
             <S.TableRound key={uuidv4()}>
               <S.TableHeadLeft style={{ width: "70%" }}>
                 {el.date}
               </S.TableHeadLeft>
               <S.TableHead style={{ width: "70%" }}>
-                {el.timeStart + "~" + el.timeEnd}
+                {el.startTime.slice(0, 5) + "~" + el.endTime.slice(0, 5)}
               </S.TableHead>
-              <S.TableHead style={{ width: "30%" }}>{el.status}</S.TableHead>
+              <S.TableHead style={{ width: "40%" }}>
+                {el.teacher.engName}
+              </S.TableHead>
               <S.TableHead>
                 {isMemo[index] ? (
                   <div style={{ display: "flex" }}>
                     <S.ClassTableInput
                       type="text"
-                      defaultValue={el.memo}
+                      defaultValue={el.lectureInfo}
                     ></S.ClassTableInput>
                     <S.ClassTableButton>수정</S.ClassTableButton>
                     <S.ClassTableButtonCancel onClick={onClickMemoClose(index)}>
@@ -216,12 +243,12 @@ export default function AcademyDetailPage() {
                     </S.ClassTableButtonCancel>
                   </div>
                 ) : (
-                  <div>{el.memo}</div>
+                  <div>{el.lectureInfo}</div>
                 )}
               </S.TableHead>
-              <S.TableHead style={{ width: "30%" }}>
+              {/* <S.TableHead style={{ width: "30%" }}>
                 <FormOutlined onClick={onClickMemo(index)}></FormOutlined>
-              </S.TableHead>
+              </S.TableHead> */}
               <S.TableHead style={{ width: "30%" }}>
                 {el.status === "결석" ? (
                   <FormOutlined onClick={onClickClassToggle} />

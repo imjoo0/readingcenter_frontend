@@ -237,6 +237,7 @@ export const ModalCancelButton = styled.button`
   font-size: 16px;
   border-radius: 10px;
   font-weight: 600;
+  margin-left: 20px;
   :hover {
     cursor: pointer;
   }
@@ -292,4 +293,76 @@ export const AlarmDiv = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+`;
+
+export const ModalTable = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 100%;
+  margin-bottom: 15px;
+`;
+
+export const ModalTag = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+`;
+
+export const ModalHeadLeft = styled.div`
+  display: flex;
+  justify-content: center;
+  height: 25px;
+  font-size: 17px;
+  font-weight: 600;
+  border: 0.5px solid #1e1e1e;
+`;
+export const ModalHeadMiddle = styled.div`
+  display: flex;
+  justify-content: center;
+  height: 25px;
+  font-size: 17px;
+  font-weight: 600;
+  border-bottom: 0.5px solid #1e1e1e;
+  border-top: 0.5px solid #1e1e1e;
+`;
+
+export const ModalHeadRight = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 25px;
+  font-size: 17px;
+  font-weight: 600;
+  border: 0.5px solid #1e1e1e;
+`;
+
+export const ModalAddButton = styled.button`
+  width: 100px;
+  height: 30px;
+  background-color: green;
+  border: none;
+  color: #eeeeee;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 5px;
+  :hover {
+    cursor: pointer;
+  }
+`;
+
+export const BookTable = styled.div`
+  display: flex;
+  width: 80%;
+  font-size: 24px;
+`;
+
+export const BookHead = styled.div`
+  border: 1px solid #eeeeee;
+`;
+
+export const ModalIcon = styled.button`
+  .hover {
+    cursor: pointer;
+  }
 `;

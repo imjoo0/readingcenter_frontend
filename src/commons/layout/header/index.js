@@ -4,10 +4,11 @@ import { v4 as uuidv4 } from "uuid";
 
 export default function Header() {
   const menuList = [
-    ["유저 페이지", "userPage"],
+    // ["유저 페이지", "userPage"],
     ["원생 관리", "academy"],
     ["수업 관리", "class"],
     ["도서 관리", "books"],
+    ["수업 목록", "classList"],
   ];
   const router = useRouter();
 

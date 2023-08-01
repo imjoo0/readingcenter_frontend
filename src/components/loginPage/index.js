@@ -50,16 +50,21 @@ export default function LoginPageComponent() {
       // setRefreshToken(refreshToken);
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
-      router.push("/userPage");
+      router.push("/2/class");
     } catch (error) {
       console.error("로그인 오류:", error);
       alert("로그인에 실패했습니다.");
     }
   };
 
-  const onClickLogin = () => {
-    // Check if running on the client side (not during SSR)
-    login();
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      login();
+    }
+  };
+
+  const onClickLogin = async () => {
+    await login();
   };
 
   return (
@@ -72,11 +77,19 @@ export default function LoginPageComponent() {
           <S.LoginLine></S.LoginLine>
           <S.InputTag>
             <S.LoginInputTitle>ID</S.LoginInputTitle>
-            <S.LoginInput type="text" onChange={onChangeId} />
+            <S.LoginInput
+              type="text"
+              onChange={onChangeId}
+              onKeyPress={handleKeyPress}
+            />
           </S.InputTag>
           <S.InputTag>
             <S.LoginInputTitle>PW</S.LoginInputTitle>
-            <S.LoginInput type="password" onChange={onChangePassword} />
+            <S.LoginInput
+              type="password"
+              onChange={onChangePassword}
+              onKeyPress={handleKeyPress}
+            />
           </S.InputTag>
           <S.LoginButton onClick={onClickLogin}>Sign in</S.LoginButton>
         </S.LoginBoxRight>

@@ -122,3 +122,91 @@ export const LinkButton = styled.div`
     cursor: pointer;
   }
 `;
+
+export const ModalCloseButton = styled.button`
+  width: 8vw;
+  height: 5vh;
+  background-color: tomato;
+  border: none;
+  color: #eeeeee;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 10px;
+  margin-left: 20px;
+  :hover {
+    cursor: pointer;
+  }
+`;
+
+export const ModalTable = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 100%;
+  margin-bottom: 15px;
+`;
+
+export const ModalTag = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+`;
+
+export const ModalHeadLeft = styled.div`
+  display: flex;
+  justify-content: center;
+  height: 25px;
+  font-size: 17px;
+  font-weight: 600;
+  border-top: 1px solid #1e1e1e;
+  border-left: 1px solid #1e1e1e;
+  border-bottom: 1px solid #1e1e1e;
+`;
+export const ModalHeadMiddle = styled.div`
+  display: flex;
+  justify-content: center;
+  height: 25px;
+  font-size: 17px;
+  font-weight: 600;
+  border: 1px solid #1e1e1e;
+`;
+
+export const ModalHeadRight = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 25px;
+  font-size: 17px;
+  font-weight: 600;
+  border-top: 1px solid #1e1e1e;
+  border-right: 1px solid #1e1e1e;
+  border-bottom: 1px solid #1e1e1e;
+`;
+
+export const ModalAddButton = styled.button`
+  width: 60px;
+  height: 20px;
+  background-color: green;
+  border: none;
+  color: #eeeeee;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 5px;
+  :hover {
+    cursor: pointer;
+  }
+`;
+export const ModalOkButton = styled.button`
+  width: 8vw;
+  height: 5vh;
+  background-color: green;
+  border: none;
+  color: #eeeeee;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 10px;
+  margin-left: 20px;
+  :hover {
+    cursor: pointer;
+  }
+`;

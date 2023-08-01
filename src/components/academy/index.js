@@ -10,12 +10,13 @@ import { dateChange } from "@/src/commons/library/library";
 const GET_STUDENTS = gql`
   query studentsInAcademy($academyId: Int!) {
     studentsInAcademy(academyId: $academyId) {
+      id
       korName
       engName
       gender
       mobileno
       registerDate
-      birthYear
+      birthDate
       origin
       pmobileno
       academies {
@@ -101,7 +102,7 @@ export default function AcademyPage() {
                 </S.TableHeadLeft>
                 <S.TableHead style={{ width: "40%" }}>{el.korName}</S.TableHead>
                 <S.TableHead style={{ width: "40%" }}>
-                  {el.birthYear + "년"}
+                  {el.birthDate + "년"}
                 </S.TableHead>
                 <S.TableHead style={{ width: "50%" }}>
                   {dateChange(el.registerDate)}
@@ -117,7 +118,7 @@ export default function AcademyPage() {
                   <SearchOutlined
                     onClick={() => {
                       window.open(
-                        "/" + router.query.branch + "/academy/" + el.origin,
+                        "/" + router.query.branch + "/academy/" + el.id,
                         "_blank"
                       );
                     }}
