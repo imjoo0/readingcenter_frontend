@@ -6,7 +6,7 @@ export const ClassWrapper = styled.div`
   justify-content: center;
   align-items: flex-start;
   margin-top: 20px;
-  padding-left: 10px;
+  padding: 0px 30px 0px 30px;
 `;
 
 export const ClassTitle = styled.div`
@@ -58,17 +58,27 @@ export const ClassButton = styled.button`
   border: 1px solid #dddddd;
   width: 7vw;
   height: 4vh;
+  border-radius: 15px;
   color: #eeeeee;
+  margin-left: 10px;
   background-color: #1e1e1e;
   :hover {
     cursor: pointer;
+    filter: brightness(200%);
   }
 `;
 
 export const CountNumber = styled.div`
-  font-size: 20px;
-  font-weight: 500;
-  margin-right: 20px;
+	font-size: 20px;
+	height: 45px;
+	line-height: 45px;
+	font-weight: 500;
+	color: black;
+	margin-right: 20px;
+	margin-left: 20px;
+	border-radius: 10px;
+	border: 1px black solid;
+	padding: 0px 40px 0px 40px;
 `;
 
 export const ClassInput = styled.input`
@@ -81,16 +91,65 @@ export const ClassInput = styled.input`
   border-radius: 5px;
 `;
 
-export const ClassSmallButton = styled.button`
-  border: 1px solid #dddddd;
-  width: 6vw;
-  height: 4vh;
-  color: #eeeeee;
-  background-color: #1e1e1e;
-
-  :hover {
-    cursor: pointer;
-  }
+export const ClassSmallGreenButton = styled.button`
+	border: 1px solid #dddddd;
+	width: 6vw;
+	height: 4vh;
+	color: #fff;
+  font-weight: 600;
+  font-size: medium;
+	background-color: #00923f;
+	margin-left: 10px;
+	border-radius: 20px;
+	:hover {
+		cursor: pointer;
+    filter:brightness(120%);
+	}
+`;
+export const ClassSmallBlueButton = styled.button`
+	border: 1px solid #dddddd;
+	width: 6vw;
+	height: 4vh;
+	color: #eeeeee;
+	font-weight: 600;
+	font-size: medium;
+	background-color: #070093;
+	margin-left: 10px;
+	border-radius: 20px;
+	:hover {
+		cursor: pointer;
+		filter: brightness(120%);
+	}
+`;
+export const ClassSmallRedButton = styled.button`
+	border: 1px solid #dddddd;
+	width: 6vw;
+	height: 4vh;
+	color: #eeeeee;
+	font-weight: 600;
+	font-size: medium;
+	background-color: #8b0000;
+	margin-left: 10px;
+	border-radius: 20px;
+	:hover {
+		cursor: pointer;
+		filter: brightness(120%);
+	}
+`;
+export const ClassSmallBlackButton = styled.button`
+	border: 1px solid #dddddd;
+	width: 6vw;
+	height: 4vh;
+	color: #eeeeee;
+	font-weight: 600;
+	font-size: medium;
+	background-color: #1e1e1e;
+	margin-left: 10px;
+	border-radius: 20px;
+	:hover {
+		cursor: pointer;
+		filter: brightness(120%);
+	}
 `;
 
 export const Table = styled.div`
@@ -177,6 +236,7 @@ export const ModalWrapper = styled.div`
   flex-direction: column;
   justify-content: space-around;
   align-items: flex-start;
+  position: relative;
 `;
 
 export const ModalRadioBox = styled.div`
@@ -213,10 +273,10 @@ export const ModalButtonBox = styled.div`
   align-items: center;
 `;
 
-export const ModalOkButton = styled.button`
-  width: 8vw;
-  height: 5vh;
-  background-color: green;
+export const ModalReturnButton = styled.button`
+  width: 6vw;
+  height: 4vh;
+  background-color: black;
   border: none;
   color: #eeeeee;
   font-size: 16px;
@@ -225,22 +285,40 @@ export const ModalOkButton = styled.button`
   margin-left: 20px;
   :hover {
     cursor: pointer;
+    filter:brightness(180%);
   }
 `;
 
+export const ModalOkButton = styled.button`
+	width: 6vw;
+	height: 4vh;
+	background-color: green;
+	border: none;
+	color: #eeeeee;
+	font-size: 16px;
+	font-weight: 600;
+	border-radius: 10px;
+	margin-left: 20px;
+	:hover {
+		cursor: pointer;
+		filter: brightness(120%);
+	}
+`;
+
 export const ModalCancelButton = styled.button`
-  width: 8vw;
-  height: 5vh;
-  background-color: tomato;
-  border: none;
-  color: #eeeeee;
-  font-size: 16px;
-  border-radius: 10px;
-  font-weight: 600;
-  margin-left: 20px;
-  :hover {
-    cursor: pointer;
-  }
+	width: 6vw;
+	height: 4vh;
+	background-color: tomato;
+	border: none;
+	color: #eeeeee;
+	font-size: 16px;
+	border-radius: 10px;
+	font-weight: 600;
+	margin-left: 20px;
+	:hover {
+		cursor: pointer;
+		filter: brightness(120%);
+	}
 `;
 
 export const InputInput = styled.input`
@@ -307,6 +385,8 @@ export const ModalTag = styled.div`
   display: flex;
   justify-content: flex-start;
   width: 100%;
+  font-weight: bold;
+  font-size: large;
 `;
 
 export const ModalHeadLeft = styled.div`
@@ -340,6 +420,9 @@ export const ModalHeadRight = styled.div`
 export const ModalAddButton = styled.button`
   width: 100px;
   height: 30px;
+  position: absolute;
+  right: 50px;
+  bottom: 20px;
   background-color: green;
   border: none;
   color: #eeeeee;
@@ -365,4 +448,10 @@ export const ModalIcon = styled.button`
   .hover {
     cursor: pointer;
   }
+`;
+export const SearchSelect = styled.select`
+  width: 10vw;
+  height: 4vh;
+  border: 1px solid #dddddd;
+  border-radius: 5px;
 `;

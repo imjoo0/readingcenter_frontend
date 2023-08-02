@@ -1,12 +1,12 @@
 import styled from "@emotion/styled";
 
 export const AcademyWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  margin-top: 20px;
-  padding-left: 10px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: flex-start;
+	margin-top: 20px;
+	padding: 0px 30px 0px 30px;
 `;
 
 export const AcademyTitle = styled.div`

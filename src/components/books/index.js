@@ -1,72 +1,96 @@
 import * as S from "./books.style";
 import { BookOutlined } from "@ant-design/icons";
-import { addComma, longWord } from "../../commons/library/library";
-import { useState } from "react";
+import { addComma, dateToInput, longWord } from "../../commons/library/library";
+import { useEffect, useState } from "react";
 import { Modal } from "antd";
 import { v4 as uuidv4 } from "uuid";
+import { useQuery } from "@apollo/client";
+import { GET_BOOKS } from "./books.query";
+import { useRouter } from "next/router";
 
 export default function BookPage() {
-  const [selectedBook, setSelectedBook] = useState({});
-  const [detailToggle, setDetailToggle] = useState(false);
-  const [searchWord, setSearchWord] = useState("");
-  const [searchType, setSearchType] = useState("name");
+  const router = useRouter();
 
-  const [array, setArray] = useState([
-    {
-      name: "The Cloud Kingdom",
-      barcode: "PE201039901",
-      ISBN: "978133807177",
-      author: "Kartrina Charman",
-      ARQuizNum: "505157",
-      AR: 3.4,
-      lexile: "600L",
-      wc: 6061,
-      position: "C34-03-014",
-      AR_IL: "LG",
+  const [searchType, setSearchType] = useState("name");
+  const [minBl, setMinBl] = useState(0);
+  const [maxBl, setMaxBl] = useState(0);
+  const [date, setDate] = useState(new Date());
+  const [bookArray, setBookArray] = useState([]);
+  const [bookPage, setBookPage] = useState(1);
+  const [bookMaxPage, setBookMaxPage] = useState(1);
+  const [bookPageList, setBookPageList] = useState(0);
+  const [bookSearchWord, setBookSearchWord] = useState("");
+  const { data, refetch } = useQuery(GET_BOOKS, {
+    variables: {
+      minBl: 0,
+      maxBl: 0,
+      academyId: Number(router.query.branch),
+      lectureDate: dateToInput(date),
     },
-    {
-      name: "The Cloud Kingdom",
-      barcode: "PE201039902",
-      ISBN: "978133807177",
-      author: "Kartrina Charman",
-      ARQuizNum: "505157",
-      AR: 3.4,
-      lexile: "600L",
-      wc: 6061,
-      position: "C34-03-015",
-      AR_IL: "LG",
-    },
-    {
-      name: "#01:Dinosaurs before dark(Magic.............)",
-      barcode: "PE2000001705",
-      ISBN: "9781338224283",
-      author: "Mary Pope Osborne",
-      ARQuizNum: "6311",
-      AR: 2.6,
-      lexile: "510L",
-      wc: 4750,
-      position: "C26-01-015",
-      AR_IL: "LG",
-    },
-  ]);
+  });
 
   const onChangeSearchType = (event) => {
     setSearchType(event.target.value);
   };
-  const onChangeSearch = (event) => {
-    setSearchWord(event.target.value);
-  };
 
-  const onClickBooks = (el) => () => {
-    setSelectedBook(el);
-    setDetailToggle(true);
-  };
-  const onClickOk = () => {
-    setDetailToggle(false);
-  };
-  const onClickCancel = () => {
-    setDetailToggle(false);
-  };
+  // useEffect(() => {
+  //   refetch();
+  // }, [minBl, maxBl]);
+
+  useEffect(() => {
+    setBookArray(
+      data === undefined
+        ? []
+        : data?.getBooksByBl
+            ?.filter((el) => {
+              return el?.titleAr.includes(bookSearchWord);
+            })
+            ?.filter((el, index) => {
+              return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+            })
+            ?.map((el) => {
+              return el;
+            })
+    );
+    setBookMaxPage(
+      Math.ceil(
+        data?.getBooksByBl?.filter((el) => {
+          return el?.titleAr.includes(bookSearchWord);
+        })?.length / 20
+      )
+    );
+    setBookPage(1);
+    setBookPageList(0);
+  }, [data, bookSearchWord]);
+
+  useEffect(() => {
+    setBookArray(
+      data === undefined
+        ? []
+        : data?.getBooksByBl
+            ?.filter((el) => {
+              return el?.titleAr
+                .toUpperCase()
+                .includes(bookSearchWord.toUpperCase());
+            })
+            ?.filter((el, index) => {
+              return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+            })
+            ?.map((el) => {
+              return el;
+            })
+    );
+    setBookMaxPage(
+      Math.ceil(
+        data?.getBooksByBl?.filter((el) => {
+          return el?.titleAr
+            .toUpperCase()
+            .includes(bookSearchWord.toUpperCase());
+        })?.length / 20
+      )
+    );
+  }, [bookPage, bookSearchWord]);
+  console.log(data, "data");
 
   return (
     <S.BooksWrapper>
@@ -74,6 +98,41 @@ export default function BookPage() {
       <S.BooksTitleLine></S.BooksTitleLine>
       <S.SearchBox>
         <S.SearchTitle>도서 검색</S.SearchTitle>
+        <S.SearchTag
+          style={{
+            flexDirection: "column",
+            justifyContent: "flex-start",
+            alignItems: "flex-start",
+            marginBottom: "20px",
+          }}
+        >
+          <S.SearchTitle></S.SearchTitle>
+          <div>
+            <span>최소 AR 점수</span>
+            <S.SearchInput
+              type="number"
+              onChange={(e) => {
+                setMinBl(Number(e.target.value));
+              }}
+            ></S.SearchInput>
+          </div>
+          <div>
+            <span>최대 AR 점수</span>
+            <S.SearchInput
+              type="number"
+              onChange={(e) => {
+                setMaxBl(Number(e.target.value));
+              }}
+            ></S.SearchInput>
+          </div>
+          <button
+            onClick={() => {
+              refetch({ minBl, maxBl });
+            }}
+          >
+            검색
+          </button>
+        </S.SearchTag>
         <S.SearchTag>
           <div>
             <S.SearchSelect onChange={onChangeSearchType}>
@@ -85,58 +144,123 @@ export default function BookPage() {
             <S.SearchInput
               type="text"
               placeholder=" 도서 제목, 바코드, 저자, isbn 중 선택하여 검색해주세요."
-              onChange={onChangeSearch}
+              onChange={(e) => {
+                setBookSearchWord(e.target.value);
+              }}
             />
           </div>
         </S.SearchTag>
       </S.SearchBox>
-      <S.CountNumber>{"총 " + array.length + "권"}</S.CountNumber>
-      <S.Table>
-        <S.TableHeaderRound>
-          <S.TableHeadLeft>바코드</S.TableHeadLeft>
-          <S.TableHead>ISBN</S.TableHead>
-          <S.TableHead>도서 제목</S.TableHead>
-          <S.TableHead>저자</S.TableHead>
-          <S.TableHead>AR Quiz No.</S.TableHead>
-          <S.TableHead>AR</S.TableHead>
-          <S.TableHead>Lexile</S.TableHead>
-          <S.TableHead style={{ width: "85%" }}>Word Count</S.TableHead>
-          <S.TableHead style={{ width: "85%" }}>도서 위치</S.TableHead>
-          <S.TableHeadRight style={{ width: "70%" }}>
-            상세 보기
-          </S.TableHeadRight>
-        </S.TableHeaderRound>
-
-        {array
-          .filter((el) => {
-            return el[searchType]
+      <S.CountNumber>
+        {"총 " +
+          data?.getBooksByBl?.filter((el) => {
+            return el?.titleAr
               .toUpperCase()
-              .includes(searchWord.toUpperCase());
-          })
-          .map((el) => {
+              .includes(bookSearchWord.toUpperCase());
+          }).length +
+          "권"}
+      </S.CountNumber>
+
+      <table>
+        {bookArray.length === 0 ? (
+          <></>
+        ) : (
+          <thead>
+            <tr>
+              <th>도서 제목</th>
+              <th>저자</th>
+              <th>AR QUIZ No.</th>
+              <th>AR</th>
+              <th>Lexile</th>
+              <th>도서 위치</th>
+              <th>상세 보기</th>
+            </tr>
+          </thead>
+        )}
+        <tbody>
+          {bookArray?.map((el) => {
             return (
-              <S.TableRound key={uuidv4()}>
-                <S.TableHeadLeft>{el.barcode}</S.TableHeadLeft>
-                <S.TableHead>{el.ISBN}</S.TableHead>
-                <S.TableHead>{longWord(el.name)}</S.TableHead>
-                <S.TableHead>{el.author}</S.TableHead>
-                <S.TableHead>{el.ARQuizNum}</S.TableHead>
-                <S.TableHead>{el.AR}</S.TableHead>
-                <S.TableHead>{el.lexile}</S.TableHead>
-                <S.TableHead style={{ width: "85%" }}>
-                  {addComma(el.wc)}
-                </S.TableHead>
-                <S.TableHead style={{ width: "85%" }}>
-                  {el.position}
-                </S.TableHead>
-                <S.TableHeadRight style={{ width: "70%" }}>
-                  <BookOutlined onClick={onClickBooks(el)} />
-                </S.TableHeadRight>
-              </S.TableRound>
+              <tr>
+                <></>
+                <td>{longWord(el.titleAr)}</td>
+                <td>{el.authorAr}</td>
+                <td>{el.arQuiz}</td>
+                <td>{el.bl}</td>
+                <td>{el.lexileLex}</td>
+                <td>
+                  {el.books[0].place === null ? "null" : el.books[0].place}
+                </td>
+                <td>
+                  <BookOutlined />
+                </td>
+              </tr>
             );
           })}
-      </S.Table>
-      {detailToggle ? (
+        </tbody>
+      </table>
+      <div style={{ display: "flex" }}>
+        <span
+          onClick={() => {
+            console.log(bookPageList);
+            if (bookPageList > 0) {
+              setBookPageList(bookPageList - 1);
+              setBookPage((bookPageList - 1) * 10 + 1);
+            }
+          }}
+        >
+          {"<"}
+        </span>
+        {Array.from({ length: bookMaxPage })
+          .filter((_, index) => {
+            return (
+              index + 1 > bookPageList * 10 &&
+              index + 1 <= (bookPageList + 1) * 10
+            );
+          })
+          .map((_, index) => {
+            return (
+              <span
+                onClick={() => {
+                  setBookPage(index + 1 + bookPageList * 10);
+                }}
+                style={
+                  index + 1 + bookPageList * 10 === bookPage
+                    ? {
+                        width: "17px",
+                        color: "white",
+                        backgroundColor: "purple",
+                        border: "1px solid black",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }
+                    : {
+                        width: "17px",
+                        color: "black",
+                        border: "1px solid black",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }
+                }
+              >
+                {index + 1 + 10 * bookPageList}
+              </span>
+            );
+          })}
+        <span
+          onClick={() => {
+            console.log(bookPageList);
+            if ((bookPageList + 1) * 10 < bookMaxPage) {
+              setBookPageList(bookPageList + 1);
+              setBookPage((bookPageList + 1) * 10 + 1);
+            }
+          }}
+        >
+          {">"}
+        </span>
+      </div>
+      {/* {detailToggle ? (
         <Modal
           open={detailToggle}
           width={"55vw"}
@@ -245,7 +369,7 @@ export default function BookPage() {
         </Modal>
       ) : (
         <></>
-      )}
+      )} */}
     </S.BooksWrapper>
   );
 }

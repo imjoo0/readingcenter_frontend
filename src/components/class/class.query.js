@@ -29,6 +29,7 @@ export const GET_CLASS = gql`
             id
           }
           status
+          statusDisplay
           entryTime
           exitTime
         }
@@ -93,8 +94,13 @@ export const GET_BOOKS = gql`
       bl
       arQuiz
       id
+      authorAr
+      lexileLex
+      wcAr
+      arPts
       books {
         id
+        place
       }
     }
   }
@@ -130,11 +136,13 @@ export const GET_ALL_STUDENTS = gql`
       id
       username
       userCategory
+
       profile {
         ... on StudentType {
           id
           korName
           engName
+          origin
           registerDate
           origin
           pmobileno

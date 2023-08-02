@@ -24,19 +24,20 @@ export default function Header() {
     <S.HeaderWrapper>
       {menuList.map((el) => {
         return (
-          <S.HeaderTag
-            key={uuidv4()}
-            style={
-              router.asPath === "/" + el[1]
-                ? { backgroundColor: "#efefef", color: "#1e1e1e" }
-                : {}
-            }
-            onClick={onClickMenu(el[1])}
-          >
-            {el[0]}
-          </S.HeaderTag>
-        );
+					<S.HeaderTag
+						key={uuidv4()}
+						style={
+							router.asPath === '/' + el[1]
+								? { backgroundColor: '#efefef', color: '#1e1e1e' }
+								: {}
+						}
+						onClick={onClickMenu(el[1])}
+					>
+						<S.HeaderText>{el[0]}</S.HeaderText>
+					</S.HeaderTag>
+				);
       })}
+      <S.logout>로그아웃</S.logout>
     </S.HeaderWrapper>
   );
 }
