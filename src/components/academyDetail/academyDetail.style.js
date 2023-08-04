@@ -1,12 +1,12 @@
 import styled from "@emotion/styled";
 
 export const AcademyDetailWrapper = styled.div`
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: flex-start;
-	margin-top: 20px;
-	padding: 0px 30px 0px 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 20px;
+  padding: 0px 30px 0px 30px;
 `;
 
 export const AcademyDetailTitle = styled.div`
@@ -34,13 +34,22 @@ export const ImageBox = styled.div`
 
 export const InputBox = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: space-around;
   align-items: flex-start;
 `;
+export const InputBoxLeft = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+export const InputBoxRight = styled.div`
+  margin-left: 30px;
+  display: flex;
+  flex-direction: column;
+`;
 
 export const InputTag = styled.div`
-  width: 50vw;
+  width: 23vw;
   height: 6vh;
   display: flex;
   justify-content: space-between;
@@ -53,6 +62,7 @@ export const InputInput = styled.input`
   padding: 4px;
   border: 1px solid #dddddd;
   border-radius: 5px;
+  margin: 0;
 `;
 
 export const CalenderDiv = styled.div`
@@ -80,7 +90,7 @@ export const CheckDiv = styled.div`
 `;
 
 export const ButtonBox = styled.div`
-  margin-top: 20px;
+  margin: 20px 0;
   width: 30vw;
   display: flex;
   justify-content: space-evenly;

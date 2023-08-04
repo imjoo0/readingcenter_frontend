@@ -69,16 +69,16 @@ export const ClassButton = styled.button`
 `;
 
 export const CountNumber = styled.div`
-	font-size: 20px;
-	height: 45px;
-	line-height: 45px;
-	font-weight: 500;
-	color: black;
-	margin-right: 20px;
-	margin-left: 20px;
-	border-radius: 10px;
-	border: 1px black solid;
-	padding: 0px 40px 0px 40px;
+  font-size: 20px;
+  height: 45px;
+  line-height: 45px;
+  font-weight: 500;
+  color: black;
+  margin-right: 20px;
+  margin-left: 20px;
+  border-radius: 10px;
+  border: 1px black solid;
+  padding: 0px 40px 0px 40px;
 `;
 
 export const ClassInput = styled.input`
@@ -92,64 +92,64 @@ export const ClassInput = styled.input`
 `;
 
 export const ClassSmallGreenButton = styled.button`
-	border: 1px solid #dddddd;
-	width: 6vw;
-	height: 4vh;
-	color: #fff;
+  border: 1px solid #dddddd;
+  width: 6vw;
+  height: 4vh;
+  color: #fff;
   font-weight: 600;
   font-size: medium;
-	background-color: #00923f;
-	margin-left: 10px;
-	border-radius: 20px;
-	:hover {
-		cursor: pointer;
-    filter:brightness(120%);
-	}
+  background-color: #00923f;
+  margin-left: 10px;
+  border-radius: 20px;
+  :hover {
+    cursor: pointer;
+    filter: brightness(120%);
+  }
 `;
 export const ClassSmallBlueButton = styled.button`
-	border: 1px solid #dddddd;
-	width: 6vw;
-	height: 4vh;
-	color: #eeeeee;
-	font-weight: 600;
-	font-size: medium;
-	background-color: #070093;
-	margin-left: 10px;
-	border-radius: 20px;
-	:hover {
-		cursor: pointer;
-		filter: brightness(120%);
-	}
+  border: 1px solid #dddddd;
+  width: 6vw;
+  height: 4vh;
+  color: #eeeeee;
+  font-weight: 600;
+  font-size: medium;
+  background-color: #070093;
+  margin-left: 10px;
+  border-radius: 20px;
+  :hover {
+    cursor: pointer;
+    filter: brightness(120%);
+  }
 `;
 export const ClassSmallRedButton = styled.button`
-	border: 1px solid #dddddd;
-	width: 6vw;
-	height: 4vh;
-	color: #eeeeee;
-	font-weight: 600;
-	font-size: medium;
-	background-color: #8b0000;
-	margin-left: 10px;
-	border-radius: 20px;
-	:hover {
-		cursor: pointer;
-		filter: brightness(120%);
-	}
+  border: 1px solid #dddddd;
+  width: 6vw;
+  height: 4vh;
+  color: #eeeeee;
+  font-weight: 600;
+  font-size: medium;
+  background-color: #8b0000;
+  margin-left: 10px;
+  border-radius: 20px;
+  :hover {
+    cursor: pointer;
+    filter: brightness(120%);
+  }
 `;
 export const ClassSmallBlackButton = styled.button`
-	border: 1px solid #dddddd;
-	width: 6vw;
-	height: 4vh;
-	color: #eeeeee;
-	font-weight: 600;
-	font-size: medium;
-	background-color: #1e1e1e;
-	margin-left: 10px;
-	border-radius: 20px;
-	:hover {
-		cursor: pointer;
-		filter: brightness(120%);
-	}
+  border: 1px solid #dddddd;
+  width: 6vw;
+  height: 4vh;
+  color: #eeeeee;
+  font-weight: 600;
+  font-size: medium;
+  background-color: #1e1e1e;
+  margin-left: 10px;
+  border-radius: 20px;
+  :hover {
+    cursor: pointer;
+    filter: brightness(120%);
+  }
 `;
 
 export const Table = styled.div`
@@ -285,40 +285,40 @@ export const ModalReturnButton = styled.button`
   margin-left: 20px;
   :hover {
     cursor: pointer;
-    filter:brightness(180%);
+    filter: brightness(180%);
   }
 `;
 
 export const ModalOkButton = styled.button`
-	width: 6vw;
-	height: 4vh;
-	background-color: green;
-	border: none;
-	color: #eeeeee;
-	font-size: 16px;
-	font-weight: 600;
-	border-radius: 10px;
-	margin-left: 20px;
-	:hover {
-		cursor: pointer;
-		filter: brightness(120%);
-	}
+  width: 6vw;
+  height: 4vh;
+  background-color: green;
+  border: none;
+  color: #eeeeee;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 10px;
+  margin-left: 20px;
+  :hover {
+    cursor: pointer;
+    filter: brightness(120%);
+  }
 `;
 
 export const ModalCancelButton = styled.button`
-	width: 6vw;
-	height: 4vh;
-	background-color: tomato;
-	border: none;
-	color: #eeeeee;
-	font-size: 16px;
-	border-radius: 10px;
-	font-weight: 600;
-	margin-left: 20px;
-	:hover {
-		cursor: pointer;
-		filter: brightness(120%);
-	}
+  width: 6vw;
+  height: 4vh;
+  background-color: tomato;
+  border: none;
+  color: #eeeeee;
+  font-size: 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-left: 20px;
+  :hover {
+    cursor: pointer;
+    filter: brightness(120%);
+  }
 `;
 
 export const InputInput = styled.input`
@@ -421,7 +421,7 @@ export const ModalAddButton = styled.button`
   width: 100px;
   height: 30px;
   position: absolute;
-  right: 50px;
+  right: 30px;
   bottom: 20px;
   background-color: green;
   border: none;
@@ -431,6 +431,7 @@ export const ModalAddButton = styled.button`
   border-radius: 5px;
   :hover {
     cursor: pointer;
+    filter: brightness(120%);
   }
 `;
 
@@ -454,4 +455,26 @@ export const SearchSelect = styled.select`
   height: 4vh;
   border: 1px solid #dddddd;
   border-radius: 5px;
+`;
+
+export const DateMoveButton = styled.button`
+  border: none;
+  background-color: white;
+  font-size: "25px";
+  :hover {
+    cursor: pointer;
+    filter: brightness(120%);
+  }
+`;
+
+export const DeleteButton = styled.button`
+  width: 70px;
+  height: 30px;
+  border: none;
+  border-radius: 10px;
+  margin: 0 5px;
+  :hover {
+    cursor: pointer;
+    filter: brightness(120%);
+  }
 `;

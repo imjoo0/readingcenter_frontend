@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@apollo/client";
 import * as S from "./classList.style";
 import { useRouter } from "next/router";
-import { DELETE_LECTURE, GET_ALL_LECTURES } from "./classList.query";
+import { DELETE_LECTURE, GET_ALL_LECTURES, GET_CLASS } from "./classList.query";
 import { useEffect, useState } from "react";
 import { dateToInput } from "@/src/commons/library/library";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
@@ -12,23 +12,40 @@ export default function ClassListPage() {
   const { data, refetch } = useQuery(GET_ALL_LECTURES, {
     variables: { academyId: Number(router.query.branch) },
   });
+
   const [deleteLecture] = useMutation(DELETE_LECTURE);
   const [date, setDate] = useState(new Date());
   const [lecture, setLectures] = useState([]);
   const [studentList, setStudentList] = useState([]);
   const [isViewStudents, setIsViewStudents] = useState(false);
-
+  const [isDelete, setIsDelete] = useState(false);
+  const [deleteId, setDeleteId] = useState(0);
+  const { refetch: refetchLecture } = useQuery(GET_CLASS, {
+    variables: {
+      academyId: 2,
+      date: dateToInput(date),
+    },
+  });
   const onChangeDate = (e) => {
     setDate(new Date(e.target.value));
     console.log(e.target.value);
   };
-  const onClickDeleteLecture = (id) => async () => {
+
+  const onClickDeleteModal = (id) => () => {
+    console.log(id);
+    setIsDelete(true);
+    setDeleteId(id);
+  };
+
+  const onClickDeleteLecture = async () => {
     try {
-      const result = await deleteLecture({ variables: { id: id } });
+      const result = await deleteLecture({ variables: { id: deleteId } });
       refetch();
+      refetchLecture();
     } catch (err) {
-      alert(err);
+      alert("예약한 도서가 있는 원생이 남아있습니다.");
     }
+    setIsDelete(false);
   };
   const onClickViewStudents = (students) => () => {
     setStudentList(students);
@@ -47,18 +64,85 @@ export default function ClassListPage() {
         type="date"
         defaultValue={dateToInput(date)}
         onChange={onChangeDate}
+        style={{
+          fontSize: "20px",
+          padding: "10px",
+          marginBottom: "20px",
+          border: "1px solid",
+        }}
       ></input>
 
-      <S.ClassTable>
-        <S.ClassHeaderLeft style={{ width: "10%" }}>
+      <S.ClassTable style={{ width: "95%" }}>
+        <S.ClassHeaderLeft
+          style={{
+            width: "10%",
+            background: "#42444e",
+            color: "#fff",
+            textAlign: "left",
+          }}
+        >
           수업 번호
         </S.ClassHeaderLeft>
-        <S.ClassHeader style={{ width: "25%" }}>수업 날짜</S.ClassHeader>
-        <S.ClassHeader style={{ width: "20%" }}>수업 시작 시간</S.ClassHeader>
-        <S.ClassHeader style={{ width: "20%" }}>수업 마감 시간</S.ClassHeader>
-        <S.ClassHeader style={{ width: "15%" }}>담담 선생님</S.ClassHeader>
-        <S.ClassHeader style={{ width: "10%" }}>수강 인원</S.ClassHeader>
-        <S.ClassHeader style={{ width: "10%" }}>수업 삭제</S.ClassHeader>
+        <S.ClassHeader
+          style={{
+            width: "25%",
+            background: "#42444e",
+            color: "#fff",
+            textAlign: "left",
+          }}
+        >
+          수업 날짜
+        </S.ClassHeader>
+        <S.ClassHeader
+          style={{
+            width: "20%",
+            background: "#42444e",
+            color: "#fff",
+            textAlign: "left",
+          }}
+        >
+          수업 시작 시간
+        </S.ClassHeader>
+        <S.ClassHeader
+          style={{
+            width: "20%",
+            background: "#42444e",
+            color: "#fff",
+            textAlign: "left",
+          }}
+        >
+          수업 마감 시간
+        </S.ClassHeader>
+        <S.ClassHeader
+          style={{
+            width: "15%",
+            background: "#42444e",
+            color: "#fff",
+            textAlign: "left",
+          }}
+        >
+          담담 선생님
+        </S.ClassHeader>
+        <S.ClassHeader
+          style={{
+            width: "10%",
+            background: "#42444e",
+            color: "#fff",
+            textAlign: "left",
+          }}
+        >
+          수강 인원
+        </S.ClassHeader>
+        <S.ClassHeader
+          style={{
+            width: "10%",
+            background: "#42444e",
+            color: "#fff",
+            textAlign: "left",
+          }}
+        >
+          수업 삭제
+        </S.ClassHeader>
       </S.ClassTable>
 
       {lecture?.allLectures
@@ -67,7 +151,7 @@ export default function ClassListPage() {
         })
         ?.map((el) => {
           return (
-            <S.ClassTable>
+            <S.ClassTable style={{ width: "95%" }}>
               <S.ClassBodyLeft style={{ width: "10%" }}>
                 {el.id}
               </S.ClassBodyLeft>
@@ -86,7 +170,7 @@ export default function ClassListPage() {
                 <PlusOutlined onClick={onClickViewStudents(el.students)} />
               </S.ClassBody>
               <S.ClassBody style={{ width: "10%" }}>
-                <DeleteOutlined onClick={onClickDeleteLecture(Number(el.id))} />
+                <DeleteOutlined onClick={onClickDeleteModal(Number(el.id))} />
               </S.ClassBody>
             </S.ClassTable>
           );
@@ -102,20 +186,66 @@ export default function ClassListPage() {
         >
           {studentList.map((el) => {
             return (
-              <S.ClassTable>
-                <S.ClassBodyLeft>{el.korName}</S.ClassBodyLeft>
-                <S.ClassBody>{el.korName}</S.ClassBody>
-              </S.ClassTable>
+              <div>
+                <div>{el.korName}</div>
+              </div>
             );
           })}
-          ;
-          <button
+          <S.DeleteButton
             onClick={() => {
               setIsViewStudents(false);
             }}
+            style={{ backgroundColor: "#c2c2c2", color: "#1e1e1e" }}
           >
             닫기
-          </button>
+          </S.DeleteButton>
+        </Modal>
+      ) : (
+        <></>
+      )}
+      {isDelete ? (
+        <Modal
+          open={isDelete}
+          onCancel={() => {
+            setIsDelete(false);
+          }}
+          footer={null}
+          closable={false}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "27px",
+                marginBottom: "30px",
+                width: "100%",
+                fontWeight: "700",
+              }}
+            >
+              수업을 삭제하시겠습니까?
+            </div>
+            <div>
+              <S.DeleteButton
+                onClick={onClickDeleteLecture}
+                style={{ backgroundColor: "purple", color: "#e1e1e1" }}
+              >
+                삭제
+              </S.DeleteButton>
+              <S.DeleteButton
+                onClick={() => {
+                  setIsDelete(false);
+                }}
+                style={{ backgroundColor: "#c2c2c2", color: "#1e1e1e" }}
+              >
+                취소
+              </S.DeleteButton>
+            </div>
+          </div>
         </Modal>
       ) : (
         <></>

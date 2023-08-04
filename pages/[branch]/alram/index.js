@@ -1,6 +1,6 @@
 import Calendar from "react-calendar";
 import moment from "moment";
-import * as S from "./class.style";
+import * as S from "../../../src/components/class/class.style";
 import "react-calendar/dist/Calendar.css";
 import { v4 as uuidv4 } from "uuid";
 import React, { useEffect, useState } from "react";
@@ -13,7 +13,7 @@ import {
   longWord,
   dateToClock,
   dateToClockOneHour,
-} from "../../commons/library/library";
+} from "../../../src/commons/library/library";
 import { Modal } from "antd";
 import { BookOutlined, SearchOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
@@ -32,7 +32,8 @@ import {
   DELETE_TOTAL_BOOKS,
   DELETE_BOOK,
   GET_ATTENDANCE,
-} from "./class.query";
+  GET_STUDENTS_BY_DATE,
+} from "../../../src/components/class/class.query";
 
 const week = ["일", "월", "화", "수", "목", "금", "토"];
 const itemsPerPage = 8; // 페이지당 항목 수
@@ -44,7 +45,6 @@ export default function ClassPage() {
   const [endTimes, setEndTimes] = useState([]);
   const [createLecture] = useMutation(CREATE_CLASS);
   const [addStudents] = useMutation(ADD_STUDENTS);
-  // const [createAttendance] = useMutation(CREATE_ATTENDANCE);
   const [reservationBooks] = useMutation(RESERVATION_BOOKS);
   const [deleteTotal] = useMutation(DELETE_TOTAL_BOOKS);
   const [deleteBook] = useMutation(DELETE_BOOK);
@@ -86,17 +86,6 @@ export default function ClassPage() {
       variables: { studentId: 4 },
     }
   );
-  //   const { data: attendanceData, refetch: refetchAttendanceData } = useQuery(
-  //     GET_ATTENDANCE,
-  //     {
-  //       variables: {
-  //         academyId: 2,
-  //         date: dateToInput(date),
-  //         startTime: "14:40:00",
-  //         endtime: "",
-  //       },
-  //     }
-  //   );
   const { data: userData } = useQuery(GET_USERS);
   const [createAttendanceMutation] = useMutation(CREATE_ATTENDANCE);
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -145,7 +134,6 @@ export default function ClassPage() {
   };
   const [minWc, setMinWc] = useState(0);
   const [maxWc, setMaxWc] = useState(100000000);
-  const [inputPlbn, setInputPlbn] = useState("");
   const { data: attendanceData, refetch: refetchAttendance } = useQuery(
     GET_ATTENDANCE,
     {
@@ -157,20 +145,14 @@ export default function ClassPage() {
       },
     }
   );
-  // const [totalPages, setTotalPages] = useState(1);
   const totalPages = Math.ceil(
-    // array.reduce((acc, cur) => {
-    //   return acc + cur.students.length;
-    // }, 0) / itemsPerPage
     lectureData?.getLecturesByAcademyAndDate.length / itemsPerPage
   );
 
   useEffect(() => {
     let lectures = Array.isArray(lectureData?.getLecturesByAcademyAndDate)
       ? [...lectureData?.getLecturesByAcademyAndDate]
-      : []; // 원본 배열을 복사
-
-    // 시작 시간을 기준으로 정렬
+      : []; 
     lectures.sort((a, b) => {
       const dateA = new Date(`1970-01-01T${a.startTime}:00`);
       const dateB = new Date(`1970-01-01T${b.startTime}:00`);
@@ -186,36 +168,30 @@ export default function ClassPage() {
 
     lectures.forEach((lecture) => {
       lecture.students.forEach((student) => {
-        // 등원 및 하원 시간을 체크하고, 필요한 경우 알람을 띄움
         checkAttendanceAndAlarm(lecture, student);
       });
     });
   }, [lectureData, page]);
-  // 등원 및 하원 시간을 체크하고, 필요한 경우 알람을 띄움
   function checkAttendanceAndAlarm(lecture, student) {
     const now = new Date();
 
-    // 등원 시간 체크
     const lectureStartTime = new Date(`1970-01-01T${lecture.startTime}:00`);
     if (
       now.getHours() === lectureStartTime.getHours() &&
       now.getMinutes() === lectureStartTime.getMinutes() &&
       !student.attendances.find((attendance) => attendance.status === "entry")
     ) {
-      // 등원하지 않은 경우, 알람을 띄움
       Modal.warning({
         title: `${student.korName} 학생이 아직 등원하지 않았습니다.`,
         content: `${lecture.startTime}에 시작하는 ${lecture.lectureInfo} 수업에 ${student.korName} 학생이 아직 등원하지 않았습니다.`,
       });
     }
 
-    // 하원 시간 체크
     const lectureEndTime = new Date(`1970-01-01T${lecture.endTime}:00`);
     if (
       now == lectureEndTime &&
       !student.attendances.find((attendance) => attendance.status === "exit")
     ) {
-      // 하원하지 않은 경우, 알람을 띄움
       Modal.warning({
         title: `${student.korName} 학생이 아직 하원하지 않았습니다.`,
         content: `${lecture.endTime}에 끝나는 ${lecture.lectureInfo} 수업에 ${student.korName} 학생이 아직 하원하지 않았습니다.`,
@@ -271,7 +247,6 @@ export default function ClassPage() {
     setPage(pageNumber);
   };
 
-  /* ??????? */
   const onClickDate = (value) => {
     const newDate = new Date(value);
     refetchLecture({
@@ -287,7 +262,6 @@ export default function ClassPage() {
     const newDate = new Date(
       calendarDate.setDate(calendarDate.getDate() + number)
     );
-    // newDate.setDate(calendarDate.getDate() + number);
     setCalendarDate(newDate);
     setIsCalendar(false);
     setPage(1);
@@ -296,7 +270,6 @@ export default function ClassPage() {
     });
   };
 
-  // 여기도 검색시 바로 변화 데이터 아래 변하는 식으로 변경해주세요 + 원생 영어이름 engName도 같이 표시 / 원번origin 도 같이 표시 / 해당 내용으로 검색 가능하게 변경
   const onChangeSearch = (event) => {
     setSearchWord(event.target.value);
   };
@@ -311,10 +284,6 @@ export default function ClassPage() {
     await refetchReservation({ studentId: Number(el.id) });
     setIsBook(true);
   };
-
-  // const onChangeAll = (e) => {
-  //   setCheckList(e.target.checked ? IdList : []);
-  // };
 
   const onChangeEach = (e, lectureId, studentId) => {
     if (e.target.checked) {
@@ -499,7 +468,6 @@ export default function ClassPage() {
             bookInventoryIds: [id],
           },
         });
-        // refetchBook({ minBl: 0, maxBl: 0 });
         refetchLecture();
         refetchReservation();
       } catch (err) {
@@ -560,21 +528,6 @@ export default function ClassPage() {
     }
   };
 
-  // useEffect(() => {
-  //   setDate(new Date());
-  // }, [
-  //   lectureData,
-  //   studentData,
-  //   bookData,
-  //   reservationBookData,
-  //   data,
-  //   userData,
-  //   isLate,
-  //   isAttendance,
-  //   isComplete,
-  //   classToggle,
-  // ]);
-
   useEffect(() => {
     const newDate = new Date();
     if (lectureData && lectureData.getLecturesByAcademyAndDate) {
@@ -607,21 +560,17 @@ export default function ClassPage() {
   function checkTargetTime() {
     const now = new Date();
 
-    // startTimes와 endTimes 배열을 로컬 스토리지에서 가져오기
     const startTimesStr = localStorage.getItem("startTimes");
     const endTimesStr = localStorage.getItem("endTimes");
 
     if (startTimesStr && endTimesStr) {
       const startTimes = JSON.parse(startTimesStr).map(parseTime);
       const endTimes = JSON.parse(endTimesStr).map(parseTime);
-
-      // 시작 시간과 종료 시간 비교하여 원하는 동작 수행
       startTimes.forEach(async (startTime) => {
         if (
           now.getHours() === startTime.getHours() &&
           now.getMinutes() === startTime.getMinutes()
         ) {
-          // 원하는 동작 실행 (예: 알림 표시, WebSocket 메시지 전송 등)
           const result = await refetchAttendance({
             startTime: dateToClock(startTime),
           });
@@ -637,7 +586,6 @@ export default function ClassPage() {
           now.getHours() === endTime.getHours() &&
           now.getMinutes() === endTime.getMinutes()
         ) {
-          // 원하는 동작 실행 (예: 알림 표시, WebSocket 메시지 전송 등)
           const result = await refetchAttendance({
             endtime: dateToClock(endTime),
             startTime: "",
@@ -650,42 +598,6 @@ export default function ClassPage() {
       });
     }
   }
-  // const getLateStudents = (lectureData) => {
-  //   const currentTime = new Date();
-  //   currentTime.setSeconds(0);
-  //   currentTime.setMilliseconds(0);
-  //   const oneMinute = 60 * 1000; // One minute in milliseconds
-  //   return lectureData.getLecturesByAcademyAndDate.flatMap((lecture) => {
-  //     const lectureStartTime = new Date(lecture.date + "T" + lecture.startTime);
-  //     const lectureEndTime = new Date(lecture.date + "T" + lecture.endTime);
-  //     const isWithinOneMinuteOfStartTime =
-  //       Math.abs(currentTime - lectureStartTime) <= oneMinute;
-  //     const isWithinOneMinuteAfterEndTime =
-  //       currentTime - lectureEndTime <= oneMinute;
-
-  //     return lecture.students.filter((student) => {
-  //       if (!student.attendances) {
-  //         return true;
-  //       }
-  //       const attendance = student.attendances.find(
-  //         (attendance) => attendance.lecture.id === lecture.id
-  //       );
-  //       if (attendance) {
-  //         const status = attendance.status || null;
-  //         if (status === null && isWithinOneMinuteOfStartTime) {
-  //           // If the status is null and it is within one minute of the lecture start time,
-  //           // the student has not started the class
-  //           return true;
-  //         } else if (status !== "COMPLETED" && isWithinOneMinuteAfterEndTime) {
-  //           // If the status is not "COMPLETED" and it is within one minute after the lecture end time,
-  //           // the student has not finished the class
-  //           return true;
-  //         }
-  //       }
-  //       return false;
-  //     });
-  //   });
-  // };
   useEffect(() => {
     setInterval(checkTargetTime, 60 * 1000);
   }, [refetch]);
@@ -711,11 +623,6 @@ export default function ClassPage() {
             ?.filter((el) => {
               return Number(el?.wcAr) >= minWc && Number(el?.wcAr) <= maxWc;
             })
-            ?.filter((el) => {
-              return String(el?.kplbn)
-                .toUpperCase()
-                .includes(inputPlbn.toUpperCase());
-            })
             ?.filter((el, index) => {
               return index < bookPage * 20 && index >= (bookPage - 1) * 20;
             })
@@ -739,11 +646,6 @@ export default function ClassPage() {
           })
           ?.filter((el) => {
             return Number(el?.wcAr) >= minWc && Number(el?.wcAr) <= maxWc;
-          })
-          ?.filter((el) => {
-            return String(el?.kplbn)
-              .toUpperCase()
-              .includes(inputPlbn.toUpperCase());
           })?.length / 20
       )
     );
@@ -772,11 +674,6 @@ export default function ClassPage() {
             ?.filter((el) => {
               return Number(el?.wcAr) >= minWc && Number(el?.wcAr) <= maxWc;
             })
-            ?.filter((el) => {
-              return String(el?.kplbn)
-                .toUpperCase()
-                .includes(inputPlbn.toUpperCase());
-            })
             ?.filter((el, index) => {
               return index < bookPage * 20 && index >= (bookPage - 1) * 20;
             })
@@ -800,15 +697,10 @@ export default function ClassPage() {
           })
           ?.filter((el) => {
             return Number(el?.wcAr) >= minWc && Number(el?.wcAr) <= maxWc;
-          })
-          ?.filter((el) => {
-            return String(el?.kplbn)
-              .toUpperCase()
-              .includes(inputPlbn.toUpperCase());
           })?.length / 20
       )
     );
-  }, [bookPage, bookSearchWord, minWc, maxWc, inputPlbn]);
+  }, [bookPage, bookSearchWord, minWc, maxWc]);
 
   useEffect(() => {
     setTeacherId(
@@ -841,7 +733,6 @@ export default function ClassPage() {
           </div>
           {isCalendar ? (
             <Calendar
-              // calendarType="gregory"
               onChange={onClickDate}
               value={date}
               locale="en-US"
@@ -895,24 +786,6 @@ export default function ClassPage() {
                 }}
               >
                 <span>{"등원 시간"}</span>
-                {/* <span>오전</span>
-                <input
-                  type="radio"
-                  name="AmPm"
-                  checked={isAm}
-                  onClick={() => {
-                    setIsAm(true);
-                  }}
-                ></input>
-                <span>오후</span>
-                <input
-                  type="radio"
-                  name="AmPm"
-                  checked={!isAm}
-                  onClick={() => {
-                    setIsAm(false);
-                  }}
-                ></input> */}
                 <input
                   type="time"
                   onChange={(e) => {
@@ -1040,15 +913,6 @@ export default function ClassPage() {
           )}
         </S.ClassMiddleTag>
         <S.ClassMiddleTag>
-          {/* <S.SearchSelect
-            onChange={(e) => {
-              setSearchType(e.target.value);
-            }}
-          >
-            <option value={"korName"}>원생 이름</option>
-            <option value={"engName"}>영어 이름</option>
-            <option value={"origin"}>원생 번호</option>
-          </S.SearchSelect> */}
           <S.ClassInput
             type="text"
             onChange={onChangeSearch}
@@ -1248,23 +1112,6 @@ export default function ClassPage() {
                   );
                 })}
             </select>
-            {/* <S.ModalRadioBox>
-              <input
-                type="radio"
-                name="type"
-                defaultChecked={true}
-                value={"once"}
-                onClick={() => setAddClassType("once")}
-              ></input>
-              <div>단일</div>
-              <input
-                type="radio"
-                name="type"
-                value={"routine"}
-                onClick={() => setAddClassType("routine")}
-              ></input>
-              <div>반복</div>
-            </S.ModalRadioBox> */}
             <S.ModalInputBox>
               <div>
                 <div>수업 날짜</div>
@@ -1698,9 +1545,6 @@ export default function ClassPage() {
             <S.ModalReturnButton onClick={onClickTotalReturn}>
               일괄 반납
             </S.ModalReturnButton>
-            {/* <S.ModalOkButton onClick={onClickBookingBooks}>
-              예약
-            </S.ModalOkButton> */}
             <S.ModalCancelButton
               onClick={() => {
                 setIsBook(false);
@@ -1722,7 +1566,7 @@ export default function ClassPage() {
                   <th>도서 제목</th>
                   <th>저자</th>
                   <th>AR QUIZ No.</th>
-                  <th>PLBN</th>
+                  <th>plbn</th>
                   <th>Lexile</th>
                   <th>Word Count</th>
                   <th>도서 위치</th>
@@ -1739,9 +1583,7 @@ export default function ClassPage() {
                     <td>{el.book.authorAr}</td>
                     <td>{el.book.arQuiz}</td>
                     <td>{el.book.bl}</td>
-                    <td>
-                      {el.book.lexileLex ? el.book.lexileAr : el.book.lexileLex}
-                    </td>
+                    <td>{el.book.lexileLex}</td>
                     <td>{el.book.wcAr}</td>
                     <td>{el.place === null ? "null" : el.place}</td>
                     <td>
@@ -1972,9 +1814,6 @@ export default function ClassPage() {
                     <S.InputInput
                       type="text"
                       style={{ marginLeft: "10px", marginTop: "10px" }}
-                      onChange={(e) => {
-                        setInputPlbn(e.target.value);
-                      }}
                     ></S.InputInput>
                   </div>
                 </div>
@@ -1982,14 +1821,6 @@ export default function ClassPage() {
                   검색
                 </S.ModalAddButton>
               </div>
-              {/* <div>
-                제목
-                <S.InputInput
-                  onChange={(e) => {
-                    setBookWord(e.target.value);
-                  }}
-                ></S.InputInput>
-              </div> */}
             </S.ModalButtonBox>
           </S.ModalWrapper>
           <div
@@ -2091,9 +1922,7 @@ export default function ClassPage() {
                       <td>{el.authorAr}</td>
                       <td>{el.arQuiz}</td>
                       <td>{el.bl}</td>
-                      <td>
-                        {el.lexileLex === null ? el.lexileAr : el.lexileLex}
-                      </td>
+                      <td>{el.lexileLex}</td>
                       <td>{el.wcAr}</td>
                       <td>
                         {el.books[0].place === null
@@ -2101,11 +1930,6 @@ export default function ClassPage() {
                           : el.books[0].place}
                       </td>
                       <td>
-                        {/* <input
-                        type="checkbox"
-                        checked={selectBooks.includes(Number(el.books[0].id))}
-                        onChange={onSelectBook(el)}
-                      ></input> */}
                         <button
                           onClick={onClickBookingBooks(
                             Number(el.id),
@@ -2119,34 +1943,6 @@ export default function ClassPage() {
                   );
                 })}
             </tbody>
-            {/* {bookData?.getBooksByBl
-              .filter((ele) => {
-                return ele.titleAr
-                  .toUpperCase()
-                  .includes(bookWord.toUpperCase());
-              })
-              .map((el) => {
-                return (
-                  <S.ModalTag key={uuidv4()}>
-                    <S.ModalHeadLeft style={{ width: "10%" }}>
-                      <input
-                        type="checkbox"
-                        checked={selectBooks.includes(Number(el.books[0].id))}
-                        onChange={onSelectBook(el)}
-                      ></input>
-                    </S.ModalHeadLeft>
-                    <S.ModalHeadLeft style={{ width: "50%" }}>
-                      {longWord(el.titleAr)}
-                    </S.ModalHeadLeft>
-                    <S.ModalHeadMiddle style={{ width: "10%" }}>
-                      {el.bl}
-                    </S.ModalHeadMiddle>
-                    <S.ModalHeadRight style={{ width: "25%" }}>
-                      {el.arQuiz}
-                    </S.ModalHeadRight>
-                  </S.ModalTag>
-                );
-              })} */}
           </table>
           <div
             style={{
@@ -2180,13 +1976,6 @@ export default function ClassPage() {
               </>
             )}
             {Array.from({ length: bookMaxPage })
-              // .filter((_, index) => {
-              //   return (
-              //     index === 0 ||
-              //     index === bookMaxPage ||
-              //     (index >= bookPage && index <= bookPage + 1)
-              //   );
-              // })
               .map((_, index) => {
                 if (
                   index === 0 ||

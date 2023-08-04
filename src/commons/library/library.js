@@ -46,7 +46,7 @@ export const dateToString = (date) => {
 };
 
 export const dateChange = (date) => {
-  return date.slice(0, 4) + ". " + date.slice(5, 7) + ". " + date.slice(8, 10);
+  return date.slice(0, 4) + "-" + date.slice(5, 7) + "-" + date.slice(8, 10);
 };
 
 export const dateToTime = (date) => {
@@ -90,4 +90,34 @@ export const dateToKoreanTime = (date) => {
   let koreanDate = new Date(date);
   koreanDate.setHours(koreanDate.getHours() + 9 * 1000 * 60 * 60);
   return koreanDate;
+};
+
+export const dateToClock = (date) => {
+  let result = ":";
+  if (date.getHours() < 10) {
+    result = "0" + date.getHours() + result;
+  } else {
+    result = date.getHours() + result;
+  }
+  if (date.getMinutes() < 10) {
+    result = result + "0" + date.getMinutes();
+  } else {
+    result = result + date.getMinutes();
+  }
+  return result;
+};
+
+export const dateToClockOneHour = (date) => {
+  let result = ":";
+  if (date.getHours() + 1 < 10) {
+    result = "0" + String((date.getHours() + 1) % 24) + result;
+  } else {
+    result = String((date.getHours() + 1) % 24) + result;
+  }
+  if (date.getMinutes() < 10) {
+    result = result + "0" + date.getMinutes();
+  } else {
+    result = result + date.getMinutes();
+  }
+  return result;
 };

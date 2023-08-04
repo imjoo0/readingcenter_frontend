@@ -6,7 +6,7 @@ export const ClassWrapper = styled.div`
   justify-content: center;
   align-items: flex-start;
   margin-top: 20px;
-  padding-left: 10px;
+  padding: 0px 30px 0px 30px;
 `;
 
 export const ClassTitle = styled.div`
@@ -60,4 +60,16 @@ export const ClassBody = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+`;
+
+export const DeleteButton = styled.button`
+  width: 70px;
+  height: 30px;
+  border: none;
+  border-radius: 10px;
+  margin: 0 5px;
+  :hover {
+    cursor: pointer;
+    filter: brightness(120%);
+  }
 `;

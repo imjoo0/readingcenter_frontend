@@ -18,11 +18,13 @@ export const GET_BOOKS = gql`
       bl
       arQuiz
       id
+      kplbn
       authorAr
       lexileLex
       wcAr
       arPts
       books {
+        isbn
         id
         place
       }

@@ -102,7 +102,7 @@ export default function AcademyPage() {
                 </S.TableHeadLeft>
                 <S.TableHead style={{ width: "40%" }}>{el.korName}</S.TableHead>
                 <S.TableHead style={{ width: "40%" }}>
-                  {el.birthDate + "년"}
+                  {el.birthDate}
                 </S.TableHead>
                 <S.TableHead style={{ width: "50%" }}>
                   {dateChange(el.registerDate)}

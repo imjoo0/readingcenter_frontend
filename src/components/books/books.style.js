@@ -1,12 +1,12 @@
 import styled from "@emotion/styled";
 
 export const BooksWrapper = styled.div`
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: flex-start;
-	margin-top: 20px;
-	padding: 0px 30px 0px 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 20px;
+  padding: 0px 30px 0px 30px;
 `;
 
 export const BooksTitle = styled.div`
@@ -212,4 +212,20 @@ export const ModalInputBox = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   margin: 10px 0;
+`;
+export const ModalAddButton = styled.button`
+  width: 100px;
+  height: 30px;
+
+  background-color: green;
+  border: none;
+  color: #eeeeee;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 5px;
+  margin-left: 50px;
+  :hover {
+    cursor: pointer;
+    filter: brightness(120%);
+  }
 `;

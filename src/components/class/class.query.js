@@ -14,6 +14,11 @@ export const GET_CLASS = gql`
         korName
         engName
       }
+      bookReservations {
+        student {
+          id
+        }
+      }
       students {
         # 여기에서 학생들의 정보를 가져옵니다.
         id
@@ -24,6 +29,7 @@ export const GET_CLASS = gql`
         mobileno
         birthDate
         gender
+        reservedBooksCount
         attendances {
           lecture {
             id
@@ -72,6 +78,19 @@ export const GET_RESERVATION_BOOKS = gql`
       boxNumber
       booktitle
       id
+      plbn
+      place
+      book {
+        arQuiz
+        arPts
+        lexileAr
+        lexileLex
+        wcAr
+        wcLex
+        titleAr
+        authorAr
+        bl
+      }
     }
   }
 `;
@@ -96,7 +115,9 @@ export const GET_BOOKS = gql`
       id
       authorAr
       lexileLex
+      lexileAr
       wcAr
+      kplbn
       arPts
       books {
         id
@@ -273,6 +294,58 @@ export const DELETE_BOOK = gql`
   mutation deleteBookReservations($bookId: [Int]!) {
     deleteBookReservations(bookId: $bookId) {
       deletedBookIds
+    }
+  }
+`;
+
+export const GET_ATTENDANCE = gql`
+  query getAttendance(
+    $academyId: Int!
+    $date: Date!
+    $startTime: String
+    $endtime: String
+  ) {
+    getAttendance(
+      academyId: $academyId
+      date: $date
+      startTime: $startTime
+      endtime: $endtime
+    ) {
+      id
+    }
+  }
+`;
+
+export const GET_STUDENTS_BY_DATE = gql`
+  query getLecturesByAcademyAndDateStudents($academyId: Int!, $date: Date!) {
+    getLecturesByAcademyAndDateStudents(academyId: $academyId, date: $date) {
+      id
+      attendedLectures {
+        id
+        startTime
+        endTime
+      }
+      profile {
+        ... on StudentType {
+          id
+          korName
+          engName
+          registerDate
+          origin
+          pmobileno
+          birthDate
+          academies {
+            id
+            name
+            location
+          }
+          attendances {
+            status
+            entryTime
+            exitTime
+          }
+        }
+      }
     }
   }
 `;

@@ -2,63 +2,34 @@ import { FormOutlined } from "@ant-design/icons";
 import * as S from "./academyDetail.style";
 import "react-calendar/dist/Calendar.css";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal, TimePicker } from "antd";
 import { v4 as uuidv4 } from "uuid";
-import { useQuery } from "@apollo/client";
-import { GET_STUDENT } from "./academyDetail.query";
-
-const childrenData = {
-  id: "P01",
-  name: "철수",
-  birthYear: "2013년 2월 1일",
-  registerDate: "2023년 5월 3일",
-  status: "재원 중",
-  phone: "010-0000-0000",
-  parentsPhone: "010-0000-0000",
-  address: "서울특별시 광진구 아차산로70길 75",
-};
-
-const classArray = [
-  {
-    date: "2023월 7월 5일",
-    timeStart: "14:00",
-    timeEnd: "16:00",
-    status: "미정",
-    memo: "메모메모메모",
-  },
-  {
-    date: "2023월 7월 3일",
-    timeStart: "14:00",
-    timeEnd: "16:00",
-    status: "등원",
-    memo: "",
-  },
-  {
-    date: "2023월 6월 30일",
-    timeStart: "14:00",
-    timeEnd: "16:00",
-    status: "결석",
-    memo: "",
-  },
-];
-
-const week = ["일", "월", "화", "수", "목", "금", "토"];
+import { useMutation, useQuery } from "@apollo/client";
+import { ADD_MEMO, EDIT_STUDENT, GET_STUDENT } from "./academyDetail.query";
+import { dateToInput } from "@/src/commons/library/library";
 
 export default function AcademyDetailPage() {
   const router = useRouter();
-  const { data } = useQuery(GET_STUDENT, {
+  const { data, refetch } = useQuery(GET_STUDENT, {
     variables: { userId: Number(router.query.id) },
   });
+  const [editStudent] = useMutation(EDIT_STUDENT);
+  const [addMemo] = useMutation(ADD_MEMO);
+  const [editBirthDay, setEditBirthDay] = useState("");
+  const [editMobileNumber, setEditMobileNumber] = useState("");
+  const [editPMobileNumber, setEditPMobileNumber] = useState("");
+  const [editGender, setEditGender] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editMemo, setEditMemo] = useState("");
   const [classToggle, setClassToggle] = useState(false);
   const [imageURL, setImageURL] = useState("");
   const [imageFile, setImageFile] = useState("");
-  const [isMemo, setIsMemo] = useState(classArray.map(() => false));
   const [addClassType, setAddClassType] = useState("once");
   const [selectDates, setSelectDates] = useState([]);
   const [routineCount, setRoutineCount] = useState(0);
   const onClickRouter = (address) => () => {
-    router.push("/" + address);
+    router.push("/2/" + address);
   };
   const onClickClassToggle = () => {
     setAddClassType("once");
@@ -100,16 +71,7 @@ export default function AcademyDetailPage() {
   const onClickChangeType = (value) => () => {
     setAddClassType(value);
   };
-  const onClickMemo = (index) => () => {
-    const newIsMemo = [...isMemo];
-    newIsMemo[index] = true;
-    setIsMemo(newIsMemo);
-  };
-  const onClickMemoClose = (index) => () => {
-    const newIsMemo = [...isMemo];
-    newIsMemo[index] = false;
-    setIsMemo(newIsMemo);
-  };
+
   const onClickDates = (index) => () => {
     if (selectDates.includes(index)) {
       const newDates = [...selectDates];
@@ -134,14 +96,77 @@ export default function AcademyDetailPage() {
     );
   };
 
-  console.log(data);
+  const onClickEdit = async () => {
+    console.log(editBirthDay, "생일");
+    console.log(editMobileNumber, "원생 전화번호");
+    console.log(editPMobileNumber, "부모 전화번호");
+    console.log(editGender, "성별");
+    console.log(editEmail, "이메일");
+    let variables = {
+      userId: Number(router.query.id),
+      birthDate: data?.userDetails?.profile?.birthDate,
+      mobileno: data?.userDetails?.profile.mobileno,
+      pmobileno: data?.userDetails?.profile.pmobileno,
+      gender: data?.userDetails?.profile.gender,
+      email: data?.userDetails?.email,
+      korName: data?.userDetails?.profile?.korName,
+      engName: data?.userDetails?.profile?.engName,
+      registerDate: dateToInput(
+        new Date(data?.userDetails?.profile?.registerDate)
+      ),
+      origin: data?.userDetails?.profile?.origin,
+    };
+    if (data?.userDetails?.profile.birthDate !== editBirthDay) {
+      variables.birthDate = editBirthDay;
+    }
+    if (data?.userDetails?.profile.mobileno !== editMobileNumber) {
+      variables.mobileno = editMobileNumber;
+    }
+    if (data?.userDetails?.profile.pmobileno !== editPMobileNumber) {
+      variables.pmobileno = editPMobileNumber;
+    }
+    if (data?.userDetails?.profile.gender !== editGender) {
+      variables.gender = editGender;
+    }
+    if (data?.userDetails?.email !== editEmail) {
+      variables.email = editEmail;
+    }
+    try {
+      const result = await editStudent({ variables });
+      try {
+        const addResult = await addMemo({
+          variables: {
+            memo: editMemo,
+            userId: Number(router.query.id),
+            academyId: Number(router.query.branch),
+          },
+        });
+        alert("수정 되었습니다.");
+      } catch (err) {
+        alert("메모 내용을 입력해주세요.");
+      }
+    } catch (err) {
+      alert(err);
+    }
+    refetch();
+    console.log(editMemo, "메모");
+  };
+
+  useEffect(() => {
+    setEditBirthDay(data?.userDetails?.profile.birthDate);
+    setEditMobileNumber(data?.userDetails?.profile.mobileno);
+    setEditPMobileNumber(data?.userDetails?.profile.pmobileno);
+    setEditGender(data?.userDetails?.profile.gender);
+    setEditEmail(data?.userDetails?.email);
+    setEditMemo(data?.userDetails?.memo?.memo);
+  }, [data]);
 
   return (
     <S.AcademyDetailWrapper>
       <S.AcademyDetailTitle>원생 정보 상세보기</S.AcademyDetailTitle>
       <S.TitleLine></S.TitleLine>
       <S.EditBox>
-        <S.ImageBox>
+        {/* <S.ImageBox>
           {imageURL !== "" ? (
             <img src={imageURL} width={"200px"} height={"200px"}></img>
           ) : (
@@ -149,76 +174,138 @@ export default function AcademyDetailPage() {
           )}
 
           <input type="file" onChange={onClickImageURL}></input>
-        </S.ImageBox>
-        <S.InputBox>
-          <S.InputTag>
-            <S.InputName>이름</S.InputName>
-            <S.InputInput
-              defaultValue={data?.userDetails?.profile.korName}
-            ></S.InputInput>
-            <S.InputName>원번</S.InputName>
-            <S.InputInput
-              defaultValue={data?.userDetails?.profile?.origin}
-            ></S.InputInput>
-          </S.InputTag>
-          <S.InputTag>
-            <S.InputName>출생년도</S.InputName>
-            <S.InputInput
-              defaultValue={data?.userDetails?.profile.birthDate + "년"}
-            ></S.InputInput>
-            <S.InputName>등록일</S.InputName>
-            <S.InputInput
-              defaultValue={data?.userDetails?.profile.registerDate.slice(
-                0,
-                10
-              )}
-            ></S.InputInput>
-          </S.InputTag>
-          <S.InputTag>
-            <S.InputName>학부모 전화번호</S.InputName>
-            <S.InputInput
-              defaultValue={data?.userDetails?.profile.pmobileno}
-            ></S.InputInput>
-            <S.InputName>학생 전화번호</S.InputName>
-            <S.InputInput
-              defaultValue={data?.userDetails?.profile.mobileno}
-            ></S.InputInput>
-          </S.InputTag>
-          <S.InputTag>
-            <S.InputName>성별</S.InputName>
-            <S.InputInput
-              defaultValue={
-                data?.userDetails?.profile.gender === "M" ? "남" : "여"
-              }
-            ></S.InputInput>
-            <S.InputName>이메일</S.InputName>
-            <S.InputInput
-              defaultValue={data?.userDetails?.email}
-            ></S.InputInput>
-          </S.InputTag>
-          <S.ButtonBox>
-            <S.RouteButton onClick={onClickRouter("academy")}>
-              목록
-            </S.RouteButton>
-            <S.RouteButton>수정하기</S.RouteButton>
-          </S.ButtonBox>
-        </S.InputBox>
+        </S.ImageBox> */}
+        <div>
+          <S.InputBox>
+            <S.InputBoxLeft>
+              <S.InputTag>
+                <S.InputName>이름</S.InputName>
+                <S.InputInput
+                  value={
+                    data?.userDetails?.profile.korName +
+                    "(" +
+                    data?.userDetails?.profile.engName +
+                    ")"
+                  }
+                ></S.InputInput>
+              </S.InputTag>
+              <S.InputTag>
+                <S.InputName>원번</S.InputName>
+                <S.InputInput
+                  value={data?.userDetails?.profile?.origin}
+                ></S.InputInput>
+              </S.InputTag>
+              <S.InputTag>
+                <S.InputName>생년월일</S.InputName>
+                <S.InputInput
+                  type="date"
+                  defaultValue={data?.userDetails?.profile.birthDate}
+                  onChange={(e) => {
+                    setEditBirthDay(e.target.value);
+                  }}
+                ></S.InputInput>
+              </S.InputTag>
+              <S.InputTag>
+                <S.InputName>등록일</S.InputName>
+                <S.InputInput
+                  type="date"
+                  value={data?.userDetails?.profile.registerDate.slice(0, 10)}
+                ></S.InputInput>
+              </S.InputTag>
+            </S.InputBoxLeft>
+            <S.InputBoxRight>
+              <S.InputTag>
+                <S.InputName>학부모 전화번호</S.InputName>
+                <S.InputInput
+                  onChange={(e) => {
+                    setEditPMobileNumber(e.target.value);
+                  }}
+                  defaultValue={data?.userDetails?.profile.pmobileno}
+                ></S.InputInput>
+              </S.InputTag>
+              <S.InputTag>
+                <S.InputName>원생 전화번호</S.InputName>
+                <S.InputInput
+                  onChange={(e) => {
+                    setEditMobileNumber(e.target.value);
+                  }}
+                  defaultValue={data?.userDetails?.profile.mobileno}
+                ></S.InputInput>
+              </S.InputTag>
+              <S.InputTag>
+                <S.InputName>이메일</S.InputName>
+                <S.InputInput
+                  onChange={(e) => {
+                    setEditEmail(e.target.value);
+                  }}
+                  defaultValue={data?.userDetails?.email}
+                ></S.InputInput>
+              </S.InputTag>
+              <S.InputTag>
+                <S.InputName>성별</S.InputName>
+                <div style={{ width: "10vw" }}>
+                  남{" "}
+                  <input
+                    type="radio"
+                    name="gender"
+                    value={"M"}
+                    checked={editGender === "M"}
+                    onClick={(e) => {
+                      setEditGender(e.target.value);
+                    }}
+                  ></input>{" "}
+                  여{" "}
+                  <input
+                    type="radio"
+                    name="gender"
+                    value={"W"}
+                    checked={editGender === "W"}
+                    onClick={(e) => {
+                      setEditGender(e.target.value);
+                    }}
+                  ></input>
+                </div>
+              </S.InputTag>
+            </S.InputBoxRight>
+          </S.InputBox>
+        </div>
+        <div style={{ display: "flex" }}>
+          <S.InputBox style={{ height: "5vh", marginLeft: "30px" }}>
+            <S.InputName>메모</S.InputName>
+          </S.InputBox>
+          <textarea
+            style={{
+              marginLeft: "30px",
+              width: "30vw",
+              height: "80%",
+              fontSize: "18px",
+              resize: "none",
+            }}
+            onChange={(e) => {
+              setEditMemo(e.target.value);
+            }}
+            defaultValue={
+              data?.userDetails?.memos?.filter((el) => {
+                console.log(el.academy.id);
+                return el.academy.id === router.query.branch;
+              })?.[0]?.memo
+            }
+          ></textarea>
+        </div>
       </S.EditBox>
-      <S.TableTitleBox>
-        <div>수업 정보</div>
-        <S.RouteButton onClick={onClickClassToggle}>수업 추가</S.RouteButton>
-      </S.TableTitleBox>
+      <S.ButtonBox>
+        <S.RouteButton onClick={onClickRouter("academy")}>목록</S.RouteButton>
+        <S.RouteButton onClick={onClickEdit}>수정</S.RouteButton>
+      </S.ButtonBox>
       <S.Table>
         <S.TableHeaderRound>
           <S.TableHeadLeft style={{ width: "70%" }}>수업 날짜</S.TableHeadLeft>
           <S.TableHead style={{ width: "70%" }}>수업 시간</S.TableHead>
           <S.TableHead style={{ width: "40%" }}>담당</S.TableHead>
           <S.TableHead>강의 정보</S.TableHead>
-          {/* <S.TableHead style={{ width: "30%" }}>정보 수정</S.TableHead> */}
-          <S.TableHead style={{ width: "30%" }}>보강 학습 추가</S.TableHead>
+          {/* <S.TableHead style={{ width: "30%" }}>보강 학습 추가</S.TableHead> */}
         </S.TableHeaderRound>
-
-        {data?.userDetails?.lectures?.map((el, index) => {
+        {data?.userDetails?.lectures?.map((el) => {
           return (
             <S.TableRound key={uuidv4()}>
               <S.TableHeadLeft style={{ width: "70%" }}>
@@ -230,141 +317,18 @@ export default function AcademyDetailPage() {
               <S.TableHead style={{ width: "40%" }}>
                 {el.teacher.engName}
               </S.TableHead>
-              <S.TableHead>
-                {isMemo[index] ? (
-                  <div style={{ display: "flex" }}>
-                    <S.ClassTableInput
-                      type="text"
-                      defaultValue={el.lectureInfo}
-                    ></S.ClassTableInput>
-                    <S.ClassTableButton>수정</S.ClassTableButton>
-                    <S.ClassTableButtonCancel onClick={onClickMemoClose(index)}>
-                      취소
-                    </S.ClassTableButtonCancel>
-                  </div>
-                ) : (
-                  <div>{el.lectureInfo}</div>
-                )}
-              </S.TableHead>
+              <S.TableHead>{el.lectureInfo}</S.TableHead>
               {/* <S.TableHead style={{ width: "30%" }}>
-                <FormOutlined onClick={onClickMemo(index)}></FormOutlined>
-              </S.TableHead> */}
-              <S.TableHead style={{ width: "30%" }}>
                 {el.status === "결석" ? (
                   <FormOutlined onClick={onClickClassToggle} />
                 ) : (
                   <></>
                 )}
-              </S.TableHead>
+              </S.TableHead> */}
             </S.TableRound>
           );
         })}
       </S.Table>
-      {classToggle ? (
-        <Modal open={classToggle} width={"55vw"} height={"50vh"} footer={null}>
-          <S.AcademyDetailTitle>수업 일정 추가</S.AcademyDetailTitle>
-          <S.TitleLine></S.TitleLine>
-          <S.ModalWrapper>
-            <S.ModalRadioBox>
-              <input
-                type="radio"
-                name="type"
-                defaultChecked={true}
-                value={"once"}
-                onClick={onClickChangeType("once")}
-              ></input>
-              <div>단일</div>
-              <input
-                type="radio"
-                name="type"
-                value={"routine"}
-                onClick={onClickChangeType("routine")}
-              ></input>
-              <div>반복</div>
-            </S.ModalRadioBox>
-            <S.ModalInputBox>
-              <div>
-                <div>수업 날짜</div>
-              </div>
-              {addClassType === "once" ? (
-                <S.InputInput
-                  type="date"
-                  style={{ width: "50%" }}
-                ></S.InputInput>
-              ) : (
-                <S.ModalRoutineInput>
-                  <div>
-                    <input
-                      type="number"
-                      onChange={onChangeRoutineCount}
-                    ></input>
-                    <span>주</span>
-                  </div>
-                  <S.ModalRoutineDates>
-                    {week.map((el, index) => {
-                      return (
-                        <S.ModalRoutineDate
-                          key={uuidv4()}
-                          onClick={onClickDates(index)}
-                          style={
-                            selectDates.includes(index)
-                              ? { backgroundColor: "purple", color: "#eeeeee" }
-                              : {}
-                          }
-                        >
-                          {el}
-                        </S.ModalRoutineDate>
-                      );
-                    })}
-                  </S.ModalRoutineDates>
-                </S.ModalRoutineInput>
-              )}
-            </S.ModalInputBox>
-            <S.ModalInputBox>
-              <div>
-                <div>수업 시간</div>
-              </div>
-              <S.TimeBox>
-                <input
-                  type="time"
-                  style={{
-                    width: "10vw",
-                    fontSize: "17px",
-                    border: "1px solid #dddddd",
-                    paddingLeft: "12px",
-                    borderRadius: "5px",
-                  }}
-                ></input>
-                ~
-                <input
-                  type="time"
-                  style={{
-                    width: "10vw",
-                    fontSize: "17px",
-                    border: "1px solid #dddddd",
-                    paddingLeft: "12px",
-                    borderRadius: "5px",
-                  }}
-                ></input>
-              </S.TimeBox>
-            </S.ModalInputBox>
-            <S.ModalInputBox>
-              <div>
-                <div>메모</div>
-              </div>
-              <S.ModalTextArea></S.ModalTextArea>
-            </S.ModalInputBox>
-          </S.ModalWrapper>
-          <S.ModalButtonBox>
-            <S.ModalCancelButton onClick={onClickCancel}>
-              취소
-            </S.ModalCancelButton>
-            <S.ModalOkButton onClick={onClickOk}>저장</S.ModalOkButton>
-          </S.ModalButtonBox>
-        </Modal>
-      ) : (
-        <></>
-      )}
     </S.AcademyDetailWrapper>
   );
 }

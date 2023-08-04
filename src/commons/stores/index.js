@@ -12,4 +12,4 @@ export const refreshTokenState = selector({
     const newAccessToken = await refreshToken();
     return newAccessToken;
   },
-});
+})
