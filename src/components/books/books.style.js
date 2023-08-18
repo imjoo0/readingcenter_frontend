@@ -209,8 +209,8 @@ export const ModalRadioBox = styled.div`
 export const ModalInputBox = styled.div`
   width: 100%;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: flex-start;
+  align-items: center;
   margin: 10px 0;
 `;
 export const ModalAddButton = styled.button`
@@ -228,4 +228,15 @@ export const ModalAddButton = styled.button`
     cursor: pointer;
     filter: brightness(120%);
   }
+`;
+
+export const EditTitleFont = styled.div`
+  width: 250px;
+  font-weight: 600;
+  font-size: 22px;
+`;
+
+export const EditTagFont = styled.div`
+  font-weight: 600;
+  font-size: 22px;
 `;

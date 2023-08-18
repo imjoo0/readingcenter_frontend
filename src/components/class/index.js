@@ -6,15 +6,15 @@ import { v4 as uuidv4 } from "uuid";
 import React, { useEffect, useState } from "react";
 import {
   dateToString,
-  dateToTime,
   tileClassName,
   dateToInput,
   dateToKoreanTime,
   longWord,
   dateToClock,
   dateToClockOneHour,
+  timeToHour,
 } from "../../commons/library/library";
-import { Modal } from "antd";
+import { Modal, Switch } from "antd";
 import { BookOutlined, SearchOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
 import { useMutation, useQuery } from "@apollo/client";
@@ -22,6 +22,7 @@ import {
   CREATE_CLASS,
   GET_CLASS,
   CREATE_ATTENDANCE,
+  DELETE_STUDENT_FROM_LECTURE,
   ADD_STUDENTS,
   GET_CLASSES,
   GET_ALL_STUDENTS,
@@ -32,22 +33,26 @@ import {
   DELETE_TOTAL_BOOKS,
   DELETE_BOOK,
   GET_ATTENDANCE,
+  GET_ALL_LECTURES,
+  GET_BOOK_COUNT,
+  GET_STUDENTS_BY_DATE,
+  CREATE_MAKE_UP,
 } from "./class.query";
 
-const week = ["일", "월", "화", "수", "목", "금", "토"];
-const itemsPerPage = 8; // 페이지당 항목 수
+const week = ["월", "화", "수", "목", "금", "토", "일"];
+const itemsPerPage = 20; // 페이지당 항목 수
 
 export default function ClassPage() {
   const router = useRouter();
-  const [date, setDate] = useState(new Date());
+  const [date, setTodayDate] = useState(new Date());
   const [startTimes, setStartTimes] = useState([]);
   const [endTimes, setEndTimes] = useState([]);
   const [createLecture] = useMutation(CREATE_CLASS);
   const [addStudents] = useMutation(ADD_STUDENTS);
-  // const [createAttendance] = useMutation(CREATE_ATTENDANCE);
   const [reservationBooks] = useMutation(RESERVATION_BOOKS);
   const [deleteTotal] = useMutation(DELETE_TOTAL_BOOKS);
   const [deleteBook] = useMutation(DELETE_BOOK);
+  const [createMakeup] = useMutation(CREATE_MAKE_UP);
   const [bookArray, setBookArray] = useState([]);
   const [bookPage, setBookPage] = useState(1);
   const [bookMaxPage, setBookMaxPage] = useState(1);
@@ -60,10 +65,14 @@ export default function ClassPage() {
   const [lateList, setLateList] = useState([]);
   const [alarmTime, setAlarmTime] = useState("");
   const [alarmType, setAlarmType] = useState("start");
+  const [checkDate, setCheckDate] = useState(new Date());
+  const [isInfo, setIsInfo] = useState(false);
+  const [info, setInfo] = useState("");
+  const [isSound, setIsSound] = useState(false);
 
   const { data: lectureData, refetch: refetchLecture } = useQuery(GET_CLASS, {
     variables: {
-      academyId: 2,
+      academyId: Number(router.query.branch),
       date: dateToInput(date),
     },
   });
@@ -71,37 +80,43 @@ export default function ClassPage() {
     variables: {
       minBl: 0,
       maxBl: 0,
-      academyId: 2,
+      academyId: Number(router.query.branch),
       lectureDate: dateToInput(date),
     },
   });
-  const [lectures, setLectures] = useState([]);
   const { data, refetch } = useQuery(GET_CLASSES, {
-    variables: { academyId: 2 },
+    variables: { academyId: Number(router.query.branch) },
   });
-  const { data: studentData } = useQuery(GET_ALL_STUDENTS);
   const { data: reservationBookData, refetch: refetchReservation } = useQuery(
     GET_RESERVATION_BOOKS,
     {
       variables: { studentId: 4 },
     }
   );
-  //   const { data: attendanceData, refetch: refetchAttendanceData } = useQuery(
-  //     GET_ATTENDANCE,
-  //     {
-  //       variables: {
-  //         academyId: 2,
-  //         date: dateToInput(date),
-  //         startTime: "14:40:00",
-  //         endtime: "",
-  //       },
-  //     }
-  //   );
   const { data: userData } = useQuery(GET_USERS);
+  const { refetch: refetchList } = useQuery(GET_ALL_LECTURES, {
+    variables: { academyId: Number(router.query.branch) },
+  });
+  const { data: studentListData, refetch: refetchStudentList } = useQuery(
+    GET_STUDENTS_BY_DATE,
+    {
+      variables: {
+        academyId: Number(router.query.branch),
+        date: dateToInput(date),
+      },
+    }
+  );
+  const { data: studentData } = useQuery(GET_ALL_STUDENTS, {
+    variables: {
+      academyId: Number(router.query.branch),
+    },
+  });
   const [createAttendanceMutation] = useMutation(CREATE_ATTENDANCE);
+  const [deleteStudentFromLecture] = useMutation(DELETE_STUDENT_FROM_LECTURE);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [isCalendar, setIsCalendar] = useState(false);
   const [page, setPage] = useState(1);
+  const [studentArray, setStudentArray] = useState([]);
   const [array, setArray] = useState([]); // initial value changed from undefined to []
   const [searchWord, setSearchWord] = useState("");
   const [classToggle, setClassToggle] = useState(false);
@@ -109,10 +124,7 @@ export default function ClassPage() {
   const [checkList, setCheckList] = useState([]);
   const [selectChild, setSelectChild] = useState();
   const [selectLecture, setSelectLecture] = useState();
-  const [IdList, setIdList] = useState([]);
-  const [maxPage, setMaxPage] = useState([]);
   const [isAlarm, setIsAlarm] = useState(false);
-  const [lateStudents, setLateStudents] = useState([]);
   const [addClassDate, setAddClassDate] = useState(dateToInput(date));
   const [addClassStart, setAddClassStart] = useState(dateToClock(date));
   const [addClassEnd, setAddClassEnd] = useState(dateToClockOneHour(date));
@@ -125,20 +137,26 @@ export default function ClassPage() {
   const [isBook, setIsBook] = useState(false);
   const [maxScore, setMaxScore] = useState(0);
   const [minScore, setMinScore] = useState(0);
-  const [bookWord, setBookWord] = useState("");
   const [bookList, setBookList] = useState([]);
   const [selectBooks, setSelectBooks] = useState([]);
-  const [alarmContents, setAlarmContents] = useState();
   const [addClassType, setAddClassType] = useState("once");
   const [routineCount, setRoutineCount] = useState(0);
   const [searchDate, setSearchDate] = useState(new Date());
   const [selectDates, setSelectDates] = useState([]);
   const [selectBookData, setSelectBookData] = useState([]);
-  const [searchType, setSearchType] = useState("korName");
   const [isConfirm, setIsConfirm] = useState(false);
   const [isAm, setIsAm] = useState(date.getHours() < 12);
+  const [isMakeUp, setIsMakeUp] = useState(false);
+  const [intervalArray, setIntervalArray] = useState([]);
+  const [allStudent, setAllStudent] = useState([]);
+  const [studentPage, setStudentPage] = useState(0);
+  const [studentMaxPage, setStudentMaxPage] = useState(0);
+  const [confirmState, setConfirmState] = useState("");
   const onClickCancel = () => {
     setClassToggle(false);
+    setSelectDates([]);
+    setAddList([]);
+    setStudentPage(0);
   };
   const onClickCalendar = () => {
     setIsCalendar(!isCalendar);
@@ -146,113 +164,160 @@ export default function ClassPage() {
   const [minWc, setMinWc] = useState(0);
   const [maxWc, setMaxWc] = useState(100000000);
   const [inputPlbn, setInputPlbn] = useState("");
-  const { data: attendanceData, refetch: refetchAttendance } = useQuery(
-    GET_ATTENDANCE,
+  const { refetch: refetchAttendance } = useQuery(GET_ATTENDANCE, {
+    variables: {
+      date: dateToInput(date),
+      startTime: "17:35",
+      academyId: 2,
+      endtime: "",
+    },
+  });
+
+  const { data: bookCountData, refetch: refetchCount } = useQuery(
+    GET_BOOK_COUNT,
     {
       variables: {
-        date: dateToInput(date),
-        startTime: "17:35",
-        academyId: 2,
-        endtime: "",
+        academyId: Number(router.query.branch),
       },
     }
   );
-  // const [totalPages, setTotalPages] = useState(1);
   const totalPages = Math.ceil(
-    // array.reduce((acc, cur) => {
-    //   return acc + cur.students.length;
-    // }, 0) / itemsPerPage
-    lectureData?.getLecturesByAcademyAndDate.length / itemsPerPage
+    (studentListData?.getLecturesByAcademyAndDateStudents?.filter((el) => {
+      return (
+        el.student.korName.includes(searchWord) ||
+        el.student.origin.toUpperCase().includes(searchWord.toUpperCase()) ||
+        el.student.engName.toUpperCase().includes(searchWord.toUpperCase())
+      );
+    })?.length ?? 1) / itemsPerPage
   );
 
   useEffect(() => {
-    let lectures = Array.isArray(lectureData?.getLecturesByAcademyAndDate)
-      ? [...lectureData?.getLecturesByAcademyAndDate]
-      : []; // 원본 배열을 복사
-
-    // 시작 시간을 기준으로 정렬
-    lectures.sort((a, b) => {
-      const dateA = new Date(`1970-01-01T${a.startTime}:00`);
-      const dateB = new Date(`1970-01-01T${b.startTime}:00`);
-      return dateA - dateB;
-    });
-
-    setLectures(lectures);
+    setPage(1);
+    let students = Array.isArray(
+      studentListData?.getLecturesByAcademyAndDateStudents
+    )
+      ? [...studentListData?.getLecturesByAcademyAndDateStudents]
+      : [];
 
     const start = (page - 1) * itemsPerPage;
     const end = start + itemsPerPage;
-
-    setArray(lectures.slice(start, end));
-
-    lectures.forEach((lecture) => {
-      lecture.students.forEach((student) => {
-        // 등원 및 하원 시간을 체크하고, 필요한 경우 알람을 띄움
-        checkAttendanceAndAlarm(lecture, student);
-      });
-    });
-  }, [lectureData, page]);
-  // 등원 및 하원 시간을 체크하고, 필요한 경우 알람을 띄움
-  function checkAttendanceAndAlarm(lecture, student) {
-    const now = new Date();
-
-    // 등원 시간 체크
-    const lectureStartTime = new Date(`1970-01-01T${lecture.startTime}:00`);
-    if (
-      now.getHours() === lectureStartTime.getHours() &&
-      now.getMinutes() === lectureStartTime.getMinutes() &&
-      !student.attendances.find((attendance) => attendance.status === "entry")
-    ) {
-      // 등원하지 않은 경우, 알람을 띄움
-      Modal.warning({
-        title: `${student.korName} 학생이 아직 등원하지 않았습니다.`,
-        content: `${lecture.startTime}에 시작하는 ${lecture.lectureInfo} 수업에 ${student.korName} 학생이 아직 등원하지 않았습니다.`,
-      });
+    setStudentArray(
+      students
+        .sort((a, b) =>
+          a.student.korName.localeCompare(b.student.korName, "ko-KR")
+        )
+        .sort((a, b) => {
+          let timeA = new Date(`1970-01-01T${a.lecture.startTime}`);
+          let timeB = new Date(`1970-01-01T${b.lecture.startTime}`);
+          if (
+            a?.attendanceStatus?.statusDisplay === "하원" ||
+            a?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+            a?.attendanceStatus?.statusDisplay === "결석"
+          ) {
+            timeA = new Date(`1970-01-02T${a.lecture.startTime}`);
+          }
+          if (
+            b?.attendanceStatus?.statusDisplay === "하원" ||
+            b?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+            b?.attendanceStatus?.statusDisplay === "결석"
+          ) {
+            timeB = new Date(`1970-01-02T${a.lecture.startTime}`);
+          }
+          return timeA - timeB;
+        })
+        ?.filter((el) => {
+          return (
+            el.student.korName.includes(searchWord) ||
+            el.student.origin
+              .toUpperCase()
+              .includes(searchWord.toUpperCase()) ||
+            el.student.engName.toUpperCase().includes(searchWord.toUpperCase())
+          );
+        })
+        ?.slice(start, end)
+    );
+  }, [studentListData, searchWord]);
+  const onClickMakeUpClass = async () => {
+    try {
+      await onClickAttendance("makeup")();
+    } catch (err) {
+      alert(err);
     }
-
-    // 하원 시간 체크
-    const lectureEndTime = new Date(`1970-01-01T${lecture.endTime}:00`);
-    if (
-      now == lectureEndTime &&
-      !student.attendances.find((attendance) => attendance.status === "exit")
-    ) {
-      // 하원하지 않은 경우, 알람을 띄움
-      Modal.warning({
-        title: `${student.korName} 학생이 아직 하원하지 않았습니다.`,
-        content: `${lecture.endTime}에 끝나는 ${lecture.lectureInfo} 수업에 ${student.korName} 학생이 아직 하원하지 않았습니다.`,
+    try {
+      const result = await createMakeup({
+        variables: {
+          academyId: Number(router.query.branch),
+          date: addClassDate,
+          startTime: addClassStart,
+          endTime: addClassEnd,
+          lectureInfo: addClassInfo,
+          studentIds: checkList.map((el) => {
+            return Number(el.studentId);
+          }),
+          teacherId: Number(teacherId),
+          repeatDays: addClassType === "once" ? [-1] : selectDates,
+          repeatWeeks: addClassType === "once" ? 1 : routineCount,
+        },
       });
+      setAddLectureId("");
+      setStudentToggle(false);
+      setAddList([]);
+      setSelectDates([]);
+      setSearchLecture(dateToInput(date));
+      setSearchStudents("");
+      refetchLecture();
+      refetchList();
+      refetchStudentList();
+    } catch (err) {
+      alert(err);
     }
-  }
+    setClassToggle(false);
+    setTeacherId(
+      userData?.allUsers.filter((el) => el.userCategory === "선생님")[0].id
+    );
+    setAddClassInfo("");
+    setAddClassDate(dateToInput(date));
+    setAddClassStart(dateToClock(date));
+    setAddClassEnd(dateToClockOneHour(date));
+  };
   const onClickOk = async () => {
     try {
       const result = await createLecture({
         variables: {
-          academyId: 2,
+          academyId: Number(router.query.branch),
           date: addClassDate,
           startTime: addClassStart,
           endTime: addClassEnd,
           lectureInfo: addClassInfo,
           teacherId: Number(teacherId),
-          repeatDay: Number(routineCount),
+          repeatDays: addClassType === "once" ? [-1] : selectDates,
+          repeatWeeks: addClassType === "once" ? 1 : routineCount,
         },
       });
       if (addList.length !== 0) {
-        try {
-          const data = await addStudents({
-            variables: {
-              lectureId: Number(result.data.createLecture.lecture.id),
-              studentIds: addList,
-            },
-          });
-          setAddLectureId("");
-          setStudentToggle(false);
-          setAddList([]);
-          setSearchLecture(dateToInput(date));
-          setSearchStudents("");
-          refetchLecture();
-          alert("성공");
-        } catch (err) {
-          alert(err);
-        }
+        result?.data?.createLecture?.lectureIds.forEach(async (el) => {
+          try {
+            const data = await addStudents({
+              variables: {
+                lectureId: Number(el),
+                studentIds: addList,
+              },
+            });
+            setAddLectureId("");
+            setStudentToggle(false);
+            setAddList([]);
+            setSelectDates([]);
+            setSearchLecture(dateToInput(date));
+            setSearchStudents("");
+            refetchLecture();
+            refetchList();
+            refetchStudentList();
+            setStudentPage(0);
+          } catch (err) {
+            alert(err);
+          }
+        });
+        alert("성공");
       }
       setClassToggle(false);
       setTeacherId(
@@ -266,22 +331,70 @@ export default function ClassPage() {
       console.log(err);
     }
   };
-
   const onClickPage = (pageNumber) => () => {
     setPage(pageNumber);
+    let students = Array.isArray(
+      studentListData?.getLecturesByAcademyAndDateStudents
+    )
+      ? [...studentListData?.getLecturesByAcademyAndDateStudents]
+      : [];
+    if (students.length !== 0) {
+      const start = (pageNumber - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      setStudentArray(
+        students
+          .sort((a, b) =>
+            a.student.korName.localeCompare(b.student.korName, "ko-KR")
+          )
+          .sort((a, b) => {
+            let timeA = new Date(`1970-01-01T${a.lecture.startTime}`);
+            let timeB = new Date(`1970-01-01T${b.lecture.startTime}`);
+            if (
+              a?.attendanceStatus?.statusDisplay === "하원" ||
+              a?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+              a?.attendanceStatus?.statusDisplay === "결석"
+            ) {
+              timeA = new Date(`1970-01-02T${a.lecture.startTime}`);
+            }
+            if (
+              b?.attendanceStatus?.statusDisplay === "하원" ||
+              b?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+              b?.attendanceStatus?.statusDisplay === "결석"
+            ) {
+              timeB = new Date(`1970-01-02T${a.lecture.startTime}`);
+            }
+            return timeA - timeB;
+          })
+          ?.filter((el) => {
+            return (
+              el.student.korName.includes(searchWord) ||
+              el.student.origin
+                .toUpperCase()
+                .includes(searchWord.toUpperCase()) ||
+              el.student.engName
+                .toUpperCase()
+                .includes(searchWord.toUpperCase())
+            );
+          })
+          .slice(start, end)
+      );
+    } else {
+      setStudentArray(students);
+    }
+    setCheckList([]);
   };
-
-  /* ??????? */
   const onClickDate = (value) => {
     const newDate = new Date(value);
     refetchLecture({
       date: dateToInput(newDate),
     });
+    refetchCount();
     setSearchDate(new Date(value));
     newDate.setDate(newDate.getDate());
     setPage(1);
     setCalendarDate(newDate);
     setIsCalendar(false);
+    refetchStudentList({ date: dateToInput(newDate) });
   };
   const onClickMoveDate = (number) => () => {
     const newDate = new Date(
@@ -294,11 +407,14 @@ export default function ClassPage() {
     refetchLecture({
       date: dateToInput(newDate),
     });
+    refetchCount();
+    refetchStudentList({ date: dateToInput(newDate) });
   };
 
   // 여기도 검색시 바로 변화 데이터 아래 변하는 식으로 변경해주세요 + 원생 영어이름 engName도 같이 표시 / 원번origin 도 같이 표시 / 해당 내용으로 검색 가능하게 변경
   const onChangeSearch = (event) => {
     setSearchWord(event.target.value);
+    setPage(1);
   };
 
   const onChangeRoutineCount = (e) => {
@@ -312,17 +428,14 @@ export default function ClassPage() {
     setIsBook(true);
   };
 
-  // const onChangeAll = (e) => {
-  //   setCheckList(e.target.checked ? IdList : []);
-  // };
-
   const onChangeEach = (e, lectureId, studentId) => {
     if (e.target.checked) {
-      setCheckList([...checkList, { lectureId, studentId }]);
+      setCheckList([...checkList, { lectureId, studentId: Number(studentId) }]);
     } else {
       setCheckList(
         checkList.filter(
-          (item) => item.lectureId !== lectureId || item.studentId !== studentId
+          (item) =>
+            item.lectureId !== lectureId || item.studentId !== Number(studentId)
         )
       );
     }
@@ -332,21 +445,22 @@ export default function ClassPage() {
     setAddLectureId(e.target.value);
   };
 
-  const calculateTimes = (timeString) => {
-    const timeMoment = moment(timeString, "HH:mm");
-    return {
-      hours: timeMoment.hours(),
-      minutes: timeMoment.minutes(),
-    };
-  };
+  // const calculateTimes = (timeString) => {
+  //   const timeMoment = moment(timeString, "HH:mm");
+  //   return {
+  //     hours: timeMoment.hours(),
+  //     minutes: timeMoment.minutes(),
+  //   };
+  // };
   const onClickAttendance = (status) => async () => {
     const newDate = moment();
     const currentCheckList = [...checkList];
 
     for (const item of currentCheckList) {
-      const lecture = lectures.find((lecture) => lecture.id === item.lectureId);
-      const student = lecture.students.find(
-        (student) => student.id === item.studentId
+      const lecture = studentArray.find(
+        (el) =>
+          Number(el.lecture.id) === Number(item.lectureId) &&
+          Number(el.student.id) === Number(item.studentId)
       );
 
       let attendanceStatus = status;
@@ -355,15 +469,15 @@ export default function ClassPage() {
 
       if (status === "attendance") {
         // entryTime = new Date(lecture.date + " " + lecture.startTime);
-        entryTime = new Date(lecture.date + " " + lateTime);
+        entryTime = new Date(lecture.lecture.date + " " + lateTime);
       } else if (status === "completed") {
-        exitTime = new Date(lecture.date + " " + lateTime);
+        exitTime = new Date(lecture.lecture.date + " " + lateTime);
       } else if (status === "late") {
-        entryTime = new Date(lecture.date + " " + lateTime);
+        entryTime = new Date(lecture.lecture.date + " " + lateTime);
       }
       let variables = {
-        lectureId: Number(lecture.id),
-        studentId: student.id,
+        lectureId: Number(lecture.lecture.id),
+        studentId: Number(lecture.student.id),
         statusInput: attendanceStatus,
       };
 
@@ -383,10 +497,40 @@ export default function ClassPage() {
         alert(error);
       }
     }
-    await refetchLecture();
+    await refetch();
+    await refetchStudentList();
     setLateTime(dateToClock(date));
   };
-
+  const onClickDelete = () => async () => {
+    const currentCheckList = [...checkList];
+    // let student_ids = []
+    // let lectureId;
+    for (const item of currentCheckList) {
+      const lecture = studentArray.find(
+        (el) =>
+          Number(el.lecture.id) === Number(item.lectureId) &&
+          Number(el.student.id) === Number(item.studentId)
+      );
+      // student_ids.push(Number(lecture.student.id))
+      // lectureId = Number(lecture.lecture.id);
+      let variables = {
+        lectureId: Number(lecture.lecture.id),
+        studentIds: [Number(lecture.student.id)],
+      };
+      try {
+        await deleteStudentFromLecture({
+          variables,
+        });
+        setCheckList([]);
+      } catch (error) {
+        console.error(error);
+        alert(error.message);
+      }
+    }
+    // setCheckList([]);
+    await refetch();
+    await refetchStudentList();
+  };
   const onClickAddStudents = async () => {
     try {
       const result = await addStudents({
@@ -400,8 +544,9 @@ export default function ClassPage() {
       setAddList([]);
       setSearchLecture(dateToInput(date));
       setSearchStudents("");
-
+      refetchStudentList();
       refetch();
+      setStudentPage(0);
       alert("성공");
     } catch (err) {
       alert(err);
@@ -415,26 +560,6 @@ export default function ClassPage() {
     );
     setSelectBooks(newSelects);
     setSelectBookData(newBookData);
-  };
-
-  const onClickAddClass = () => {
-    setClassToggle(true);
-  };
-
-  const onChangeAddClassStart = (e) => {
-    setAddClassStart(e.target.value);
-  };
-  const onChangeAddClassEnd = (e) => {
-    setAddClassEnd(e.target.value);
-  };
-  const onChangeAddClassInfo = (e) => {
-    setAddClassInfo(e.target.value);
-  };
-  const onChangeAddClassType = (e) => {
-    setAddClassType(e.target.value);
-  };
-  const onChangeTeacherId = (e) => {
-    setTeacherId(e.target.value);
   };
 
   const onClickStudents = (id) => () => {
@@ -458,31 +583,11 @@ export default function ClassPage() {
     await refetchBook({
       minBl: Number(minScore),
       maxBl: Number(maxScore),
-      academyId: 2,
+      academyId: Number(router.query.branch),
       lectureDate: dateToInput(searchDate),
     });
 
     setBookList(bookData);
-  };
-
-  const onSelectBook = (book) => () => {
-    if (!selectBooks.includes(Number(book.books[0].id))) {
-      const newSelectBooks = [...selectBooks];
-      const newBookData = [...selectBookData];
-      newSelectBooks.push(Number(book.books[0].id));
-      newBookData.push(book);
-      setSelectBooks(newSelectBooks);
-      setSelectBookData(newBookData);
-    } else {
-      const newSelectBooks = selectBooks.filter((el) => {
-        return Number(book.books[0].id) !== el;
-      });
-      const newBookData = selectBookData.filter((el) => {
-        return Number(el.books[0].id) !== Number(book.books[0].id);
-      });
-      setSelectBooks(newSelectBooks);
-      setSelectBookData(newBookData);
-    }
   };
 
   const onClickBookingBooks = (id, title) => async () => {
@@ -499,9 +604,11 @@ export default function ClassPage() {
             bookInventoryIds: [id],
           },
         });
-        // refetchBook({ minBl: 0, maxBl: 0 });
         refetchLecture();
+        refetch();
+        refetchStudentList();
         refetchReservation();
+        refetchCount();
       } catch (err) {
         alert(err);
       }
@@ -523,7 +630,10 @@ export default function ClassPage() {
       await deleteTotal({ variables: { studentId: Number(selectChild.id) } });
       alert("반납 완료");
       setIsBook(false);
+      setBookSearchWord("");
       refetchLecture();
+      refetchCount();
+      refetchStudentList();
     } catch (err) {
       alert(err);
     }
@@ -533,65 +643,117 @@ export default function ClassPage() {
     try {
       await deleteBook({ variables: { bookId: [Number(id)] } });
       refetchReservation();
+      refetchCount();
       refetchLecture();
+      refetchStudentList();
     } catch (err) {
       alert(err);
     }
   };
 
   const onChangeAllSelect = () => {
-    if (
-      array.reduce((acc, cur) => {
-        return acc + cur.students.length;
-      }, 0) === checkList.length
-    ) {
+    if (studentArray.length === checkList.length) {
       setCheckList([]);
     } else {
       const newCheckList = [];
-      array.forEach((el) => {
-        el.students.forEach((ele) => {
-          newCheckList.push({
-            lectureId: el.id,
-            studentId: ele.id,
-          });
+      studentArray.forEach((el) => {
+        newCheckList.push({
+          studentId: Number(el.student.id),
+          lectureId: el.lecture.id,
         });
       });
       setCheckList(newCheckList);
     }
   };
 
-  // useEffect(() => {
-  //   setDate(new Date());
-  // }, [
-  //   lectureData,
-  //   studentData,
-  //   bookData,
-  //   reservationBookData,
-  //   data,
-  //   userData,
-  //   isLate,
-  //   isAttendance,
-  //   isComplete,
-  //   classToggle,
-  // ]);
-
   useEffect(() => {
     const newDate = new Date();
-    if (lectureData && lectureData.getLecturesByAcademyAndDate) {
-      const startTimesArray = lectureData.getLecturesByAcademyAndDate.map(
-        (lecture) => lecture.startTime
-      );
+    if (data && data.allLectures) {
+      const startTimesArray = data?.allLectures
+        ?.filter((el) => {
+          return el.date == dateToInput(date);
+        })
+        .map((lecture) => lecture.startTime);
       setStartTimes(startTimesArray);
       const startTimesJSON = JSON.stringify(startTimesArray);
       localStorage.setItem("startTimes", startTimesJSON);
-      const endTimesArray = lectureData.getLecturesByAcademyAndDate.map(
-        (lecture) => lecture.endTime
-      );
+      const endTimesArray = data?.allLectures
+        ?.filter((el) => {
+          return el.date == dateToInput(date);
+        })
+        .map((lecture) => lecture.endTime);
       setEndTimes(endTimesArray);
       const endTimesJSON = JSON.stringify(endTimesArray);
       localStorage.setItem("endTimes", endTimesJSON);
     }
-  }, [lectureData]);
+  }, [data]);
+
+  useEffect(() => {
+    if (studentData !== undefined) {
+      const start = studentPage * itemsPerPage;
+      const end = start + itemsPerPage;
+      setStudentMaxPage(
+        Math.ceil(studentData?.studentsInAcademy?.length / itemsPerPage)
+      );
+      const newArray = [
+        ...studentData?.studentsInAcademy
+          .sort((a, b) => a.korName.localeCompare(b.korName, "ko-KR"))
+          .slice(start, end),
+      ];
+      setAllStudent(newArray);
+    }
+  }, [studentData, classToggle, studentToggle]);
+
+  useEffect(() => {
+    if (studentData !== undefined) {
+      setStudentMaxPage(
+        Math.ceil(
+          studentData?.studentsInAcademy?.filter((el) => {
+            return (
+              el?.origin
+                ?.toUpperCase()
+                ?.includes(searchStudents.toUpperCase()) ||
+              el?.korName?.includes(searchStudents)
+            );
+          })?.length / itemsPerPage
+        )
+      );
+      const newArray = [...studentData?.studentsInAcademy];
+      setStudentPage(0);
+      setAllStudent(
+        newArray
+          .sort((a, b) => a.korName.localeCompare(b.korName, "ko-KR"))
+          ?.filter((el) => {
+            return (
+              el?.origin
+                ?.toUpperCase()
+                ?.includes(searchStudents.toUpperCase()) ||
+              el?.korName?.includes(searchStudents)
+            );
+          })
+          .slice(0, itemsPerPage)
+      );
+    }
+  }, [searchStudents]);
+
+  const onClickStudentPage = (index) => () => {
+    const start = index * itemsPerPage;
+    const end = start + itemsPerPage;
+    const newArray = [
+      ...studentData?.studentsInAcademy
+        .sort((a, b) => a.korName.localeCompare(b.korName, "ko-KR"))
+        ?.filter((el) => {
+          return (
+            el?.origin?.toUpperCase()?.includes(searchStudents.toUpperCase()) ||
+            el?.korName?.includes(searchStudents)
+          );
+        })
+        .slice(start, end),
+    ];
+    setAllStudent(newArray);
+    setStudentPage(index);
+  };
+
   function parseTime(timeString) {
     const [hour, minute, second] = timeString.split(":");
     const now = new Date();
@@ -604,91 +766,83 @@ export default function ClassPage() {
       second
     );
   }
-  function checkTargetTime() {
+  const checkTargetTime = () => () => {
     const now = new Date();
-
+    setCheckDate(now);
     // startTimes와 endTimes 배열을 로컬 스토리지에서 가져오기
+
     const startTimesStr = localStorage.getItem("startTimes");
     const endTimesStr = localStorage.getItem("endTimes");
-
-    if (startTimesStr && endTimesStr) {
+    if (startTimesStr && endTimesStr && router.query.branch !== undefined) {
       const startTimes = JSON.parse(startTimesStr).map(parseTime);
       const endTimes = JSON.parse(endTimesStr).map(parseTime);
 
       // 시작 시간과 종료 시간 비교하여 원하는 동작 수행
       startTimes.forEach(async (startTime) => {
         if (
-          now.getHours() === startTime.getHours() &&
-          now.getMinutes() === startTime.getMinutes()
+          (now.getHours() === startTime.getHours() &&
+            now.getMinutes() === startTime.getMinutes()) ||
+          60 * now.getHours() + now.getMinutes() ===
+            60 * startTime.getHours() + startTime.getMinutes() + 5
         ) {
           // 원하는 동작 실행 (예: 알림 표시, WebSocket 메시지 전송 등)
-          const result = await refetchAttendance({
-            startTime: dateToClock(startTime),
-          });
-          setLateList(result?.data?.getAttendance);
-          setIsAlarm(true);
-          setAlarmTime(dateToClock(startTime));
-          setAlarmType("start");
+          try {
+            const result = await refetchAttendance({
+              startTime: dateToClock(startTime),
+              academyId: Number(router.query.branch),
+            });
+            setLateList(result?.data?.getAttendance);
+            setIsAlarm(true);
+            setAlarmTime(dateToClock(startTime));
+            setAlarmType("start");
+            if (result?.data?.getAttendance?.length !== 0 && isSound) {
+              const audio = new Audio("/2.mp3");
+              audio.play();
+            }
+          } catch {}
         }
       });
 
       endTimes.forEach(async (endTime) => {
         if (
-          now.getHours() === endTime.getHours() &&
-          now.getMinutes() === endTime.getMinutes()
+          (now.getHours() === endTime.getHours() &&
+            now.getMinutes() === endTime.getMinutes()) ||
+          now.getHours() * 60 + now.getMinutes() ===
+            60 * endTime.getHours() + endTime.getMinutes() - 5
         ) {
           // 원하는 동작 실행 (예: 알림 표시, WebSocket 메시지 전송 등)
-          const result = await refetchAttendance({
-            endtime: dateToClock(endTime),
-            startTime: "",
-          });
-          setLateList(result?.data?.getAttendance);
-          setIsAlarm(true);
-          setAlarmTime(dateToClock(endTime));
-          setAlarmType("end");
+          try {
+            const result = await refetchAttendance({
+              endtime: dateToClock(endTime),
+              startTime: "",
+              academyId: Number(router.query.branch),
+            });
+            setLateList(result?.data?.getAttendance);
+            setIsAlarm(true);
+            setAlarmTime(dateToClock(endTime));
+            setAlarmType("end");
+            if (result?.data?.getAttendance !== null && isSound) {
+              const audio = new Audio("/2.mp3");
+              audio.play();
+            }
+          } catch {}
         }
       });
     }
-  }
-  // const getLateStudents = (lectureData) => {
-  //   const currentTime = new Date();
-  //   currentTime.setSeconds(0);
-  //   currentTime.setMilliseconds(0);
-  //   const oneMinute = 60 * 1000; // One minute in milliseconds
-  //   return lectureData.getLecturesByAcademyAndDate.flatMap((lecture) => {
-  //     const lectureStartTime = new Date(lecture.date + "T" + lecture.startTime);
-  //     const lectureEndTime = new Date(lecture.date + "T" + lecture.endTime);
-  //     const isWithinOneMinuteOfStartTime =
-  //       Math.abs(currentTime - lectureStartTime) <= oneMinute;
-  //     const isWithinOneMinuteAfterEndTime =
-  //       currentTime - lectureEndTime <= oneMinute;
+  };
 
-  //     return lecture.students.filter((student) => {
-  //       if (!student.attendances) {
-  //         return true;
-  //       }
-  //       const attendance = student.attendances.find(
-  //         (attendance) => attendance.lecture.id === lecture.id
-  //       );
-  //       if (attendance) {
-  //         const status = attendance.status || null;
-  //         if (status === null && isWithinOneMinuteOfStartTime) {
-  //           // If the status is null and it is within one minute of the lecture start time,
-  //           // the student has not started the class
-  //           return true;
-  //         } else if (status !== "COMPLETED" && isWithinOneMinuteAfterEndTime) {
-  //           // If the status is not "COMPLETED" and it is within one minute after the lecture end time,
-  //           // the student has not finished the class
-  //           return true;
-  //         }
-  //       }
-  //       return false;
-  //     });
-  //   });
-  // };
   useEffect(() => {
-    setInterval(checkTargetTime, 60 * 1000);
-  }, [refetch]);
+    // if (router.query.branch !== undefined) {
+    intervalArray.forEach((el) => {
+      clearInterval(el);
+    });
+    const intervalA = setInterval(checkTargetTime(), 60 * 1000);
+    const newInterval = [...intervalArray];
+    newInterval.push(intervalA);
+    setIntervalArray(newInterval);
+    // }
+    return () => clearInterval(intervalA);
+  }, [studentData, isSound]); // refetch
 
   useEffect(() => {
     setBookArray(
@@ -717,7 +871,10 @@ export default function ClassPage() {
                 .includes(inputPlbn.toUpperCase());
             })
             ?.filter((el, index) => {
-              return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+              return (
+                index < bookPage * itemsPerPage &&
+                index >= (bookPage - 1) * itemsPerPage
+              );
             })
             ?.map((el) => {
               return el;
@@ -744,7 +901,7 @@ export default function ClassPage() {
             return String(el?.kplbn)
               .toUpperCase()
               .includes(inputPlbn.toUpperCase());
-          })?.length / 20
+          })?.length / itemsPerPage
       )
     );
     setBookPage(1);
@@ -778,7 +935,10 @@ export default function ClassPage() {
                 .includes(inputPlbn.toUpperCase());
             })
             ?.filter((el, index) => {
-              return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+              return (
+                index < bookPage * itemsPerPage &&
+                index >= (bookPage - 1) * itemsPerPage
+              );
             })
             ?.map((el) => {
               return el;
@@ -805,7 +965,7 @@ export default function ClassPage() {
             return String(el?.kplbn)
               .toUpperCase()
               .includes(inputPlbn.toUpperCase());
-          })?.length / 20
+          })?.length / itemsPerPage
       )
     );
   }, [bookPage, bookSearchWord, minWc, maxWc, inputPlbn]);
@@ -816,15 +976,58 @@ export default function ClassPage() {
     );
   }, [userData]);
 
-  console.log(
-    new Date(
-      date.setHours(isAm ? (date.getHours() + 12) % 24 : date.getHours())
-    )
-  );
-
   return (
     <S.ClassWrapper>
-      <S.ClassTitle>수업 관리</S.ClassTitle>
+      <style>{`
+            table {
+              border-collapse: separate;
+              border-spacing: 0;
+              width: 100%;
+            }
+            th,
+            td {
+              padding: 6px 15px;
+            }
+            th {
+              background: #42444e;
+              color: #fff;
+              text-align: left;
+            }
+            tr:first-child th:first-child {
+              border-top-left-radius: 6px;
+            }
+            tr:first-child th:last-child {
+              border-top-right-radius: 6px;
+            }
+            td {
+              border-right: 1px solid #c6c9cc;
+              border-bottom: 1px solid #c6c9cc;
+            }
+            td:first-child {
+              border-left: 1px solid #c6c9cc;
+            }
+            tr:nth-child(even) td {
+              background: #eaeaed;
+            }
+            tr:last-child td:first-child {
+              border-bottom-left-radius: 6px;
+            }
+            tr:last-child td:last-child {
+              border-bottom-right-radius: 6px;
+            }
+          `}</style>
+      <S.ClassTitle>수업 원생 추가</S.ClassTitle>
+      <S.SwitchDiv>
+        <S.SwitchFont>알람 소리</S.SwitchFont>
+
+        <Switch
+          defaultChecked={false}
+          onChange={(checked) => {
+            setIsSound(checked);
+          }}
+        ></Switch>
+        <S.SwitchFont>{isSound ? "On" : "Off"}</S.SwitchFont>
+      </S.SwitchDiv>
       <S.ClassTitleLine></S.ClassTitleLine>
       <S.ClassTopMenu>
         <div>
@@ -858,13 +1061,14 @@ export default function ClassPage() {
               setStudentToggle(true);
             }}
           >
-            수업 관리
+            수업 원생 추가
           </S.ClassButton>
 
           <S.ClassButton
             onClick={() => {
               setClassToggle(true);
               setAddClassType("once");
+              setIsMakeUp(false);
             }}
           >
             수업 추가
@@ -874,9 +1078,8 @@ export default function ClassPage() {
       <S.ClassMiddleBox>
         <S.ClassMiddleTag>
           <S.CountNumber>
-            {(lectureData?.getLecturesByAcademyAndDate.reduce((acc, cur) => {
-              return acc + cur.students.length;
-            }, 0) ?? 0) + "명"}
+            {(studentListData?.getLecturesByAcademyAndDateStudents?.length ??
+              0) + "명"}
           </S.CountNumber>
           <S.ClassSmallGreenButton
             onClick={() => {
@@ -895,24 +1098,6 @@ export default function ClassPage() {
                 }}
               >
                 <span>{"등원 시간"}</span>
-                {/* <span>오전</span>
-                <input
-                  type="radio"
-                  name="AmPm"
-                  checked={isAm}
-                  onClick={() => {
-                    setIsAm(true);
-                  }}
-                ></input>
-                <span>오후</span>
-                <input
-                  type="radio"
-                  name="AmPm"
-                  checked={!isAm}
-                  onClick={() => {
-                    setIsAm(false);
-                  }}
-                ></input> */}
                 <input
                   type="time"
                   onChange={(e) => {
@@ -945,6 +1130,7 @@ export default function ClassPage() {
           <S.ClassSmallRedButton
             onClick={() => {
               setIsConfirm(true);
+              setConfirmState("결석");
             }}
           >
             결석
@@ -1002,6 +1188,15 @@ export default function ClassPage() {
           >
             지각
           </S.ClassSmallBlackButton>
+          <S.ClassSmallBlackButton
+            onClick={() => {
+              setIsConfirm(true);
+              setConfirmState("삭제");
+            }}
+            style={{ backgroundColor: "purple" }}
+          >
+            삭제
+          </S.ClassSmallBlackButton>
 
           {isLate ? (
             <>
@@ -1040,15 +1235,6 @@ export default function ClassPage() {
           )}
         </S.ClassMiddleTag>
         <S.ClassMiddleTag>
-          {/* <S.SearchSelect
-            onChange={(e) => {
-              setSearchType(e.target.value);
-            }}
-          >
-            <option value={"korName"}>원생 이름</option>
-            <option value={"engName"}>영어 이름</option>
-            <option value={"origin"}>원생 번호</option>
-          </S.SearchSelect> */}
           <S.ClassInput
             type="text"
             onChange={onChangeSearch}
@@ -1056,152 +1242,139 @@ export default function ClassPage() {
           ></S.ClassInput>
         </S.ClassMiddleTag>
       </S.ClassMiddleBox>
-      <S.Table>
-        <S.TableHeaderRound>
-          <S.TableHeadLeft style={{ width: "30%" }}>
-            <input
-              type="checkbox"
-              style={{ width: "40px", height: "40px" }}
-              checked={
-                checkList.length !== 0 &&
-                array.reduce((acc, cur) => {
-                  return acc + cur.students.length;
-                }, 0) === checkList.length
-              }
-              onChange={onChangeAllSelect}
-            ></input>
-          </S.TableHeadLeft>
-          <S.TableHead style={{ width: "30%" }}>원생 번호</S.TableHead>
-          <S.TableHead style={{ width: "60%" }}>원생명</S.TableHead>
-          <S.TableHead style={{ width: "60%" }}>수업 시작</S.TableHead>
-          <S.TableHead style={{ width: "60%" }}>수업 종료</S.TableHead>
-          <S.TableHead style={{ width: "60%" }}>출결 상태</S.TableHead>
-          <S.TableHead style={{ width: "60%" }}>등원 시간</S.TableHead>
-          <S.TableHead style={{ width: "60%" }}>하원 시간</S.TableHead>
-          <S.TableHead style={{ width: "120%" }}>강의 정보</S.TableHead>
-          <S.TableHead style={{ width: "30%" }}>수업 준비</S.TableHead>
-          <S.TableHead style={{ width: "30%" }}>예약 도서</S.TableHead>
-          <S.TableHeadRight style={{ width: "30%" }}>
-            원생 정보
-          </S.TableHeadRight>
-        </S.TableHeaderRound>
-        {array?.map((lecture) => {
-          return lecture?.students.map((student) => {
-            if (
-              student.korName.includes(searchWord) ||
-              student.engName
-                .toUpperCase()
-                .includes(searchWord.toUpperCase()) ||
-              student.origin.toUpperCase().includes(searchWord.toUpperCase())
-            ) {
-              return (
-                <S.TableRound key={student.id}>
-                  <S.TableHeadLeft style={{ width: "30%" }}>
-                    <input
-                      type="checkbox"
-                      style={{ width: "20px", height: "20px" }}
-                      onChange={(e) => onChangeEach(e, lecture.id, student.id)}
-                      checked={checkList.some(
-                        (item) =>
-                          item.lectureId === lecture.id &&
-                          item.studentId === student.id
-                      )}
-                    />
-                  </S.TableHeadLeft>
-                  <S.TableHead style={{ width: "30%" }}>
-                    {student.origin}
-                  </S.TableHead>
-                  <S.TableHead style={{ width: "60%" }}>
-                    {student.korName + "(" + student.engName + ")"}
-                  </S.TableHead>
-                  <S.TableHead style={{ width: "60%" }}>
-                    {(lecture.startTime[0] === "0"
-                      ? lecture.startTime.slice(1, 2)
-                      : lecture.startTime.slice(0, 2)) +
-                      "시 " +
-                      lecture.startTime.slice(3, 5) +
-                      "분"}
-                  </S.TableHead>
-                  <S.TableHead style={{ width: "60%" }}>
-                    {(lecture.endTime[0] === "0"
-                      ? lecture.endTime.slice(1, 2)
-                      : lecture.endTime.slice(0, 2)) +
-                      "시 " +
-                      lecture.endTime.slice(3, 5) +
-                      "분"}
-                  </S.TableHead>
-
-                  <S.TableHead style={{ width: "60%" }}>
-                    {student.attendances.filter((el) => {
-                      return el.lecture.id === lecture.id;
-                    }).length === 0
-                      ? ""
-                      : student.attendances.filter((el) => {
-                          return el.lecture.id === lecture.id;
-                        })?.[0].statusDisplay}
-                  </S.TableHead>
-                  <S.TableHead style={{ width: "60%" }}>
-                    {student.attendances.filter((el) => {
-                      return el.lecture.id === lecture.id;
-                    }).length === 0
-                      ? ""
-                      : student.attendances.filter((el) => {
-                          return el.lecture.id === lecture.id;
-                        })?.[0].entryTime !== null
-                      ? dateToTime(
-                          dateToKoreanTime(
-                            student.attendances.filter((el) => {
-                              return el.lecture.id === lecture.id;
-                            })?.[0].entryTime
-                          )
-                        )
-                      : ""}
-                  </S.TableHead>
-                  <S.TableHead style={{ width: "60%" }}>
-                    {student.attendances.filter((el) => {
-                      return el.lecture.id === lecture.id;
-                    }).length === 0
-                      ? ""
-                      : student.attendances.filter((el) => {
-                          return el.lecture.id === lecture.id;
-                        })?.[0].exitTime !== null
-                      ? dateToTime(
-                          dateToKoreanTime(
-                            student.attendances.filter((el) => {
-                              return el.lecture.id === lecture.id;
-                            })?.[0].exitTime
-                          )
-                        )
-                      : ""}
-                  </S.TableHead>
-                  <S.TableHead style={{ width: "120%" }}>
-                    {lecture.lectureInfo}
-                  </S.TableHead>
-                  <S.TableHead style={{ width: "30%" }}>
-                    <BookOutlined
-                      onClick={onClickBooks(student, lecture)}
-                    ></BookOutlined>
-                  </S.TableHead>
-                  <S.TableHead style={{ width: "30%" }}>
-                    {
-                      lecture.bookReservations.filter((el) => {
-                        return el.student.id === student.id;
-                      }).length
+      <table>
+        <thead>
+          <tr>
+            <th>
+              <input
+                type="checkbox"
+                style={{ width: "20px", height: "20px" }}
+                checked={
+                  checkList.length !== 0 &&
+                  studentArray.length === checkList.length
+                }
+                onChange={onChangeAllSelect}
+              ></input>
+            </th>
+            <th>원생 번호</th>
+            <th>원생명</th>
+            <th>시작 시간</th>
+            <th>종료 시간</th>
+            <th>출결 상태</th>
+            <th>등원 시간</th>
+            <th>하원 시간</th>
+            <th>강의 정보</th>
+            <th>수업 준비</th>
+            <th>예약 도서</th>
+            <th>원생 정보</th>
+          </tr>
+        </thead>
+        <tbody>
+          {studentArray?.map((el) => {
+            return (
+              <tr key={el.id || uuidv4()}>
+                <td>
+                  <input
+                    type="checkbox"
+                    onChange={(e) =>
+                      onChangeEach(e, el.lecture.id, el.student.id)
                     }
-                  </S.TableHead>
-                  <S.TableHeadRight style={{ width: "30%" }}>
-                    <SearchOutlined
+                    checked={checkList.some((ele) => {
+                      return (
+                        Number(ele.studentId) === Number(el.student.id) &&
+                        Number(ele.lectureId) === Number(el.lecture.id)
+                      );
+                    })}
+                  ></input>
+                </td>
+                <td>{el.student.origin}</td>
+                <td>{el.student.korName + "(" + el.student.engName + ")"}</td>
+                <td
+                  style={
+                    date.getDate() !== calendarDate.getDate() ||
+                    checkDate.getHours() * 60 +
+                      checkDate.getMinutes() -
+                      Number(el.lecture.startTime.slice(0, 2)) * 60 -
+                      Number(el.lecture.startTime.slice(3, 5)) <
+                      0 ||
+                    el?.attendanceStatus !== null
+                      ? {}
+                      : { color: "tomato" }
+                  }
+                >
+                  {timeToHour(el.lecture.startTime)}
+                </td>
+                <td
+                  style={
+                    checkDate.getHours() * 60 +
+                      checkDate.getMinutes() -
+                      Number(el.lecture.endTime.slice(0, 2)) * 60 -
+                      Number(el.lecture.endTime.slice(3, 5)) <
+                      0 ||
+                    el?.attendanceStatus?.exitTime !== null ||
+                    ["결석 (보강)", "결석"].includes(
+                      el?.attendanceStatus?.statusDisplay
+                    )
+                      ? {}
+                      : { color: "tomato" }
+                  }
+                >
+                  {timeToHour(el.lecture.endTime)}
+                </td>
+                <td>{el?.attendanceStatus?.statusDisplay ?? ""}</td>
+                <td>
+                  {el?.attendanceStatus?.entryTime
+                    ? timeToHour(
+                        dateToClock(
+                          dateToKoreanTime(el?.attendanceStatus?.entryTime)
+                        )
+                      )
+                    : ""}
+                </td>
+                <td>
+                  {el?.attendanceStatus?.exitTime
+                    ? timeToHour(
+                        dateToClock(
+                          dateToKoreanTime(el?.attendanceStatus?.exitTime)
+                        )
+                      )
+                    : ""}
+                </td>
+                <td>
+                  {el.lecture.lectureInfo.length > 25 ? (
+                    <S.lectureInfo
                       onClick={() => {
-                        window.open("/2/academy/" + student.id);
+                        setIsInfo(true);
+                        setInfo(el.lecture.lectureInfo);
                       }}
-                    />
-                  </S.TableHeadRight>
-                </S.TableRound>
-              );
-            }
-          });
-        })}
-      </S.Table>
+                    >
+                      {longWord(el.lecture.lectureInfo)}
+                    </S.lectureInfo>
+                  ) : (
+                    el.lecture.lectureInfo
+                  )}
+                </td>
+                <td>
+                  <BookOutlined
+                    onClick={onClickBooks(el.student, el.lecture)}
+                  ></BookOutlined>
+                </td>
+                <td>{el.student.reservedBooksCount + "권"}</td>
+                <td>
+                  <SearchOutlined
+                    onClick={() => {
+                      window.open(
+                        "/" + router.query.branch + "/academy/" + el.student.id
+                      );
+                    }}
+                  />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
       <S.PageContainer>
         {Array.from({ length: totalPages }, (_, i) => (
           <S.PageBox
@@ -1217,6 +1390,7 @@ export default function ClassPage() {
           </S.PageBox>
         ))}
       </S.PageContainer>
+
       {classToggle ? (
         <Modal
           closable={false}
@@ -1226,10 +1400,12 @@ export default function ClassPage() {
           onCancel={() => {
             setClassToggle(false);
             setAddList([]);
+            setSelectDates([]);
+            setStudentPage(0);
           }}
           footer={null}
         >
-          <S.ClassTitle>수업 추가</S.ClassTitle>
+          <S.ClassTitle>{isMakeUp ? "수업 보강" : "수업 추가"}</S.ClassTitle>
           <S.ClassTitleLine></S.ClassTitleLine>
           <S.ModalWrapper>
             <select
@@ -1248,36 +1424,33 @@ export default function ClassPage() {
                   );
                 })}
             </select>
-            {/* <S.ModalRadioBox>
-              <input
-                type="radio"
-                name="type"
-                defaultChecked={true}
-                value={"once"}
-                onClick={() => setAddClassType("once")}
-              ></input>
-              <div>단일</div>
-              <input
-                type="radio"
-                name="type"
-                value={"routine"}
-                onClick={() => setAddClassType("routine")}
-              ></input>
-              <div>반복</div>
-            </S.ModalRadioBox> */}
+            {isMakeUp ? (
+              <></>
+            ) : (
+              <S.ModalRadioBox>
+                <input
+                  type="radio"
+                  name="type"
+                  defaultChecked={true}
+                  value={"once"}
+                  onClick={() => setAddClassType("once")}
+                ></input>
+                <div>단일</div>
+                <input
+                  type="radio"
+                  name="type"
+                  value={"routine"}
+                  onClick={() => setAddClassType("routine")}
+                ></input>
+                <div>반복</div>
+              </S.ModalRadioBox>
+            )}
             <S.ModalInputBox>
               <div>
                 <div>수업 날짜</div>
               </div>
               {addClassType === "once" ? (
-                <S.InputInput
-                  type="date"
-                  defaultValue={dateToInput(date)}
-                  style={{ width: "50%" }}
-                  onChange={(event) => {
-                    setAddClassDate(event.target.value);
-                  }}
-                ></S.InputInput>
+                <></>
               ) : (
                 <S.ModalRoutineInput>
                   <div>
@@ -1307,6 +1480,22 @@ export default function ClassPage() {
                 </S.ModalRoutineInput>
               )}
             </S.ModalInputBox>
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <S.InputInput
+                type="date"
+                defaultValue={dateToInput(date)}
+                style={{ width: "50%" }}
+                onChange={(event) => {
+                  setAddClassDate(event.target.value);
+                }}
+              ></S.InputInput>
+            </div>
             <S.ModalInputBox>
               <div>
                 <div>수업 시간</div>
@@ -1354,57 +1543,82 @@ export default function ClassPage() {
               ></S.ModalTextArea>
             </S.ModalInputBox>
           </S.ModalWrapper>
-          <div>
-            <span style={{ fontSize: "17px", marginRight: "5px" }}>원생</span>
-            <S.InputInput
-              onChange={(e) => {
-                setSearchStudents(e.target.value);
-              }}
-              placeholder="원생 이름 혹은 번호"
-            ></S.InputInput>
-          </div>
-          <S.ModalTable>
-            <S.ModalTag>
-              <S.ModalHeadLeft style={{ width: "30%" }}>원번</S.ModalHeadLeft>
-              <S.ModalHeadMiddle style={{ width: "30%" }}>
-                이름
-              </S.ModalHeadMiddle>
-              <S.ModalHeadRight style={{ width: "25%" }}>추가</S.ModalHeadRight>
-            </S.ModalTag>
-            {studentData?.allStudents
-              ?.filter((el) => {
-                return (
-                  el.profile.origin
-                    .toUpperCase()
-                    .includes(searchStudents.toUpperCase()) ||
-                  el.profile.korName.includes(searchStudents)
-                );
-              })
-              ?.map((el) => {
-                return (
-                  <S.ModalTag key={uuidv4()}>
-                    <S.ModalHeadLeft style={{ width: "30%" }}>
-                      {el?.profile.origin}
-                    </S.ModalHeadLeft>
-                    <S.ModalHeadMiddle style={{ width: "30%" }}>
-                      {el?.profile?.korName}
-                    </S.ModalHeadMiddle>
-                    <S.ModalHeadRight style={{ width: "25%" }}>
-                      <input
-                        type="checkbox"
-                        onChange={onClickStudents(el?.id)}
-                        checked={addList.includes(Number(el?.id))}
-                      ></input>
-                    </S.ModalHeadRight>
-                  </S.ModalTag>
-                );
-              })}
-          </S.ModalTable>
+
+          {isMakeUp ? (
+            <></>
+          ) : (
+            <>
+              <div>
+                <span style={{ fontSize: "17px", marginRight: "5px" }}>
+                  원생
+                </span>
+                <S.InputInput
+                  onChange={(e) => {
+                    setSearchStudents(e.target.value);
+                  }}
+                  placeholder="원생 이름 혹은 번호"
+                ></S.InputInput>
+              </div>{" "}
+              <S.ModalTable>
+                <S.ModalTag>
+                  <S.ModalHeadLeft style={{ width: "30%" }}>
+                    원번
+                  </S.ModalHeadLeft>
+                  <S.ModalHeadMiddle style={{ width: "30%" }}>
+                    이름
+                  </S.ModalHeadMiddle>
+                  <S.ModalHeadRight style={{ width: "25%" }}>
+                    추가
+                  </S.ModalHeadRight>
+                </S.ModalTag>
+                {allStudent?.map((el) => {
+                  return (
+                    <S.ModalTag key={uuidv4()}>
+                      <S.ModalHeadLeft style={{ width: "30%" }}>
+                        {el?.origin}
+                      </S.ModalHeadLeft>
+                      <S.ModalHeadMiddle style={{ width: "30%" }}>
+                        {el?.korName}
+                      </S.ModalHeadMiddle>
+                      <S.ModalHeadRight style={{ width: "25%" }}>
+                        <input
+                          type="checkbox"
+                          onChange={onClickStudents(el?.id)}
+                          checked={addList.includes(Number(el?.id))}
+                        ></input>
+                      </S.ModalHeadRight>
+                    </S.ModalTag>
+                  );
+                })}
+              </S.ModalTable>
+              <S.PageContainer
+                style={{ marginBottom: "20px", justifyContent: "center" }}
+              >
+                {Array.from({ length: studentMaxPage }, (_, i) => (
+                  <S.PageBox
+                    key={i}
+                    style={
+                      i === studentPage
+                        ? { backgroundColor: "purple", color: "#eeeeee" }
+                        : {}
+                    }
+                    onClick={onClickStudentPage(i)}
+                  >
+                    {i + 1}
+                  </S.PageBox>
+                ))}
+              </S.PageContainer>
+            </>
+          )}
           <S.ModalButtonBox>
             <S.ModalCancelButton onClick={onClickCancel}>
               취소
             </S.ModalCancelButton>
-            <S.ModalOkButton onClick={onClickOk}>저장</S.ModalOkButton>
+            <S.ModalOkButton
+              onClick={isMakeUp ? onClickMakeUpClass : onClickOk}
+            >
+              저장
+            </S.ModalOkButton>
           </S.ModalButtonBox>
         </Modal>
       ) : (
@@ -1422,6 +1636,7 @@ export default function ClassPage() {
             setAddLectureId("");
             setSearchLecture(dateToInput(date));
             setSearchStudents("");
+            setStudentPage(0);
           }}
         >
           <div style={{ marginBottom: "10px" }}>
@@ -1455,7 +1670,7 @@ export default function ClassPage() {
                 <S.ModalHeadMiddle
                   style={{ width: "40%", background: "#42444e", color: "#fff" }}
                 >
-                  설명
+                  강의 설명
                 </S.ModalHeadMiddle>
                 <S.ModalHeadRight
                   style={{ width: "10%", background: "#42444e", color: "#fff" }}
@@ -1484,7 +1699,7 @@ export default function ClassPage() {
                       {el.startTime.slice(0, 5) + "~" + el.endTime.slice(0, 5)}
                     </S.ModalHeadMiddle>
                     <S.ModalHeadMiddle style={{ width: "40%" }}>
-                      {el.lectureInfo}
+                      {longWord(el.lectureInfo)}
                     </S.ModalHeadMiddle>
                     <S.ModalHeadRight style={{ width: "10%" }}>
                       <input
@@ -1526,23 +1741,23 @@ export default function ClassPage() {
                 추가
               </S.ModalHeadRight>
             </S.ModalTag>
-            {studentData?.allStudents
+            {allStudent
               ?.filter((el) => {
                 return (
-                  el.profile.origin
+                  el.origin
                     .toUpperCase()
                     .includes(searchStudents.toUpperCase()) ||
-                  el.profile.korName.includes(searchStudents)
+                  el.korName.includes(searchStudents)
                 );
               })
               ?.map((el) => {
                 return (
                   <S.ModalTag key={uuidv4()}>
                     <S.ModalHeadLeft style={{ width: "35%" }}>
-                      {el?.profile.origin}
+                      {el?.origin}
                     </S.ModalHeadLeft>
                     <S.ModalHeadMiddle style={{ width: "35%" }}>
-                      {el?.profile?.korName}
+                      {el?.korName}
                     </S.ModalHeadMiddle>
                     <S.ModalHeadRight style={{ width: "30%" }}>
                       <input
@@ -1555,6 +1770,23 @@ export default function ClassPage() {
                 );
               })}
           </S.ModalTable>
+          <S.PageContainer
+            style={{ marginBottom: "20px", justifyContent: "center" }}
+          >
+            {Array.from({ length: studentMaxPage }, (_, i) => (
+              <S.PageBox
+                key={i}
+                style={
+                  i === studentPage
+                    ? { backgroundColor: "purple", color: "#eeeeee" }
+                    : {}
+                }
+                onClick={onClickStudentPage(i)}
+              >
+                {i + 1}
+              </S.PageBox>
+            ))}
+          </S.PageContainer>
           <S.ModalCancelButton
             onClick={() => {
               setStudentToggle(false);
@@ -1562,6 +1794,7 @@ export default function ClassPage() {
               setAddLectureId("");
               setSearchLecture(dateToInput(date));
               setSearchStudents("");
+              setStudentPage(0);
             }}
           >
             취소
@@ -1581,44 +1814,6 @@ export default function ClassPage() {
             setIsAlarm(false);
           }}
         >
-          <style>{`
-        table {
-          border-collapse: separate;
-          border-spacing: 0;
-          width: 100%;
-        }
-        th,
-        td {
-          padding: 6px 15px;
-        }
-        th {
-          background: #42444e;
-          color: #fff;
-          text-align: left;
-        }
-        tr:first-child th:first-child {
-          border-top-left-radius: 6px;
-        }
-        tr:first-child th:last-child {
-          border-top-right-radius: 6px;
-        }
-        td {
-          border-right: 1px solid #c6c9cc;
-          border-bottom: 1px solid #c6c9cc;
-        }
-        td:first-child {
-          border-left: 1px solid #c6c9cc;
-        }
-        tr:nth-child(even) td {
-          background: #eaeaed;
-        }
-        tr:last-child td:first-child {
-          border-bottom-left-radius: 6px;
-        }
-        tr:last-child td:last-child {
-          border-bottom-right-radius: 6px;
-        }
-      `}</style>
           <S.AlarmDiv style={{ fontSize: "25px" }}>
             {alarmType === "start" ? "등원" : "하원"} 확인 명단
           </S.AlarmDiv>
@@ -1647,23 +1842,23 @@ export default function ClassPage() {
                   <tr>
                     <td key={index}>
                       {
-                        studentData?.allStudents?.find(
-                          (el) => el.id === student.id
-                        )?.profile.origin
+                        studentData?.studentsInAcademy?.find(
+                          (el) => Number(el.id) === Number(student.id)
+                        )?.origin
                       }
                     </td>
                     <td key={index}>
                       {
-                        studentData?.allStudents?.find(
-                          (el) => el.id === student.id
-                        )?.profile.korName
+                        studentData?.studentsInAcademy?.find(
+                          (el) => Number(el.id) === Number(student.id)
+                        )?.korName
                       }
                     </td>
                     <td key={index}>
                       {
-                        studentData?.allStudents?.find(
-                          (el) => el.id === student.id
-                        )?.profile.pmobileno
+                        studentData?.studentsInAcademy?.find(
+                          (el) => Number(el.id) === Number(student.id)
+                        )?.pmobileno
                       }
                     </td>
                   </tr>
@@ -1705,8 +1900,7 @@ export default function ClassPage() {
               onClick={() => {
                 setIsBook(false);
                 refetchBook({ minBl: 0, maxBl: 0 });
-                setSelectBookData([]);
-                setSelectBooks([]);
+                setBookSearchWord("");
               }}
             >
               취소
@@ -1722,7 +1916,7 @@ export default function ClassPage() {
                   <th>도서 제목</th>
                   <th>저자</th>
                   <th>AR QUIZ No.</th>
-                  <th>PLBN</th>
+                  <th>AR점수</th>
                   <th>Lexile</th>
                   <th>Word Count</th>
                   <th>도서 위치</th>
@@ -1982,14 +2176,6 @@ export default function ClassPage() {
                   검색
                 </S.ModalAddButton>
               </div>
-              {/* <div>
-                제목
-                <S.InputInput
-                  onChange={(e) => {
-                    setBookWord(e.target.value);
-                  }}
-                ></S.InputInput>
-              </div> */}
             </S.ModalButtonBox>
           </S.ModalWrapper>
           <div
@@ -2019,44 +2205,7 @@ export default function ClassPage() {
               ></S.InputInput>
             </div>
           </div>
-          <style>{`
-            table {
-              border-collapse: separate;
-              border-spacing: 0;
-              width: 100%;
-            }
-            th,
-            td {
-              padding: 6px 15px;
-            }
-            th {
-              background: #42444e;
-              color: #fff;
-              text-align: left;
-            }
-            tr:first-child th:first-child {
-              border-top-left-radius: 6px;
-            }
-            tr:first-child th:last-child {
-              border-top-right-radius: 6px;
-            }
-            td {
-              border-right: 1px solid #c6c9cc;
-              border-bottom: 1px solid #c6c9cc;
-            }
-            td:first-child {
-              border-left: 1px solid #c6c9cc;
-            }
-            tr:nth-child(even) td {
-              background: #eaeaed;
-            }
-            tr:last-child td:first-child {
-              border-bottom-left-radius: 6px;
-            }
-            tr:last-child td:last-child {
-              border-bottom-right-radius: 6px;
-            }
-          `}</style>
+
           <table>
             {bookData?.getBooksByBl.length === 0 || bookData === undefined ? (
               <></>
@@ -2101,11 +2250,6 @@ export default function ClassPage() {
                           : el.books[0].place}
                       </td>
                       <td>
-                        {/* <input
-                        type="checkbox"
-                        checked={selectBooks.includes(Number(el.books[0].id))}
-                        onChange={onSelectBook(el)}
-                      ></input> */}
                         <button
                           onClick={onClickBookingBooks(
                             Number(el.id),
@@ -2119,34 +2263,6 @@ export default function ClassPage() {
                   );
                 })}
             </tbody>
-            {/* {bookData?.getBooksByBl
-              .filter((ele) => {
-                return ele.titleAr
-                  .toUpperCase()
-                  .includes(bookWord.toUpperCase());
-              })
-              .map((el) => {
-                return (
-                  <S.ModalTag key={uuidv4()}>
-                    <S.ModalHeadLeft style={{ width: "10%" }}>
-                      <input
-                        type="checkbox"
-                        checked={selectBooks.includes(Number(el.books[0].id))}
-                        onChange={onSelectBook(el)}
-                      ></input>
-                    </S.ModalHeadLeft>
-                    <S.ModalHeadLeft style={{ width: "50%" }}>
-                      {longWord(el.titleAr)}
-                    </S.ModalHeadLeft>
-                    <S.ModalHeadMiddle style={{ width: "10%" }}>
-                      {el.bl}
-                    </S.ModalHeadMiddle>
-                    <S.ModalHeadRight style={{ width: "25%" }}>
-                      {el.arQuiz}
-                    </S.ModalHeadRight>
-                  </S.ModalTag>
-                );
-              })} */}
           </table>
           <div
             style={{
@@ -2179,83 +2295,75 @@ export default function ClassPage() {
                 </button>
               </>
             )}
-            {Array.from({ length: bookMaxPage })
-              // .filter((_, index) => {
-              //   return (
-              //     index === 0 ||
-              //     index === bookMaxPage ||
-              //     (index >= bookPage && index <= bookPage + 1)
-              //   );
-              // })
-              .map((_, index) => {
-                if (
-                  index === 0 ||
-                  index === bookMaxPage - 1 ||
-                  (index + 3 >= bookPage && index - 1 <= bookPage)
-                ) {
-                  return (
-                    <>
-                      {bookPage > 4 && bookPage === index + 3 ? (
-                        <span
-                          style={{
-                            width: "17px",
-                            color: "black",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                          }}
-                        >
-                          ...
-                        </span>
-                      ) : (
-                        <></>
-                      )}
+            {Array.from({ length: bookMaxPage }).map((_, index) => {
+              if (
+                index === 0 ||
+                index === bookMaxPage - 1 ||
+                (index + 3 >= bookPage && index - 1 <= bookPage)
+              ) {
+                return (
+                  <>
+                    {bookPage > 4 && bookPage === index + 3 ? (
                       <span
-                        onClick={() => {
-                          setBookPage(index + 1);
+                        style={{
+                          width: "17px",
+                          color: "black",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
                         }}
-                        style={
-                          index + 1 + bookPageList * 10 === bookPage
-                            ? {
-                                width: "27px",
-                                color: "white",
-                                backgroundColor: "purple",
-                                border: "1px solid black",
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                              }
-                            : {
-                                width: "27px",
-                                color: "black",
-                                border: "1px solid black",
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                              }
-                        }
                       >
-                        {index + 1}
+                        ...
                       </span>
-                      {bookPage < bookMaxPage - 3 && bookPage === index - 1 ? (
-                        <span
-                          style={{
-                            width: "17px",
-                            color: "black",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                          }}
-                        >
-                          ...
-                        </span>
-                      ) : (
-                        <></>
-                      )}
-                    </>
-                  );
-                }
-              })}
+                    ) : (
+                      <></>
+                    )}
+                    <span
+                      onClick={() => {
+                        setBookPage(index + 1);
+                      }}
+                      style={
+                        index + 1 + bookPageList * 10 === bookPage
+                          ? {
+                              width: "27px",
+                              color: "white",
+                              backgroundColor: "purple",
+                              border: "1px solid black",
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                            }
+                          : {
+                              width: "27px",
+                              color: "black",
+                              border: "1px solid black",
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                            }
+                      }
+                    >
+                      {index + 1}
+                    </span>
+                    {bookPage < bookMaxPage - 3 && bookPage === index - 1 ? (
+                      <span
+                        style={{
+                          width: "17px",
+                          color: "black",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        ...
+                      </span>
+                    ) : (
+                      <></>
+                    )}
+                  </>
+                );
+              }
+            })}
             {bookData === undefined || bookData?.getBooksByBl.length === 0 ? (
               <></>
             ) : (
@@ -2289,7 +2397,7 @@ export default function ClassPage() {
         <Modal
           open={isConfirm}
           onCancel={() => {
-            setIsConfirm(true);
+            setIsConfirm(false);
           }}
           footer={null}
           closable={false}
@@ -2309,14 +2417,21 @@ export default function ClassPage() {
                 fontWeight: "700",
               }}
             >
-              정말 결석 처리를 하시겠습니까?
+              {confirmState + " 처리 하시겠습니까?"}
             </div>
             <div>
               <S.DeleteButton
-                onClick={() => {
-                  onClickAttendance("absent")();
-                  setIsConfirm(false);
-                }}
+                onClick={
+                  confirmState === "삭제"
+                    ? () => {
+                        onClickDelete()();
+                        setIsConfirm(false);
+                      }
+                    : () => {
+                        onClickAttendance("absent")();
+                        setIsConfirm(false);
+                      }
+                }
                 style={{ backgroundColor: "purple", color: "#e1e1e1" }}
               >
                 확인
@@ -2335,6 +2450,16 @@ export default function ClassPage() {
       ) : (
         <></>
       )}
+      <Modal
+        open={isInfo}
+        onCancel={() => {
+          setIsInfo(false);
+        }}
+        closable={false}
+        footer={null}
+      >
+        <S.lectureModalInfo>{"수업 정보: " + info}</S.lectureModalInfo>
+      </Modal>
     </S.ClassWrapper>
   );
 }

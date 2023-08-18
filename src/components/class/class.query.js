@@ -152,28 +152,21 @@ export const GET_USERS = gql`
 `;
 
 export const GET_ALL_STUDENTS = gql`
-  query {
-    allStudents {
+  query studentsInAcademy($academyId: Int!) {
+    studentsInAcademy(academyId: $academyId) {
       id
-      username
-      userCategory
-
-      profile {
-        ... on StudentType {
-          id
-          korName
-          engName
-          origin
-          registerDate
-          origin
-          pmobileno
-          birthDate
-          academies {
-            id
-            name
-            location
-          }
-        }
+      korName
+      engName
+      gender
+      mobileno
+      registerDate
+      birthDate
+      origin
+      pmobileno
+      academies {
+        id
+        branchName
+        name
       }
     }
   }
@@ -187,7 +180,8 @@ export const CREATE_CLASS = gql`
     $endTime: Time!
     $lectureInfo: String!
     $teacherId: Int!
-    $repeatDay: Int!
+    $repeatDays: [Int]!
+    $repeatWeeks: Int!
   ) {
     createLecture(
       academyId: $academyId
@@ -196,26 +190,10 @@ export const CREATE_CLASS = gql`
       endTime: $endTime
       lectureInfo: $lectureInfo
       teacherId: $teacherId
-      repeatDay: $repeatDay
+      repeatDays: $repeatDays
+      repeatWeeks: $repeatWeeks
     ) {
-      lecture {
-        id
-        academy {
-          id
-          name
-          branchName
-        }
-        date
-        startTime
-        endTime
-        lectureInfo
-        repeatDay
-        teacher {
-          id
-          korName
-          engName
-        }
-      }
+      lectureIds
     }
   }
 `;
@@ -237,6 +215,21 @@ export const CREATE_ATTENDANCE = gql`
     ) {
       attendance {
         id
+      }
+    }
+  }
+`;
+
+export const DELETE_STUDENT_FROM_LECTURE = gql`
+  mutation removeStudentFromLecture($lectureId: ID!, $studentIds: [ID]!) {
+    removeStudentFromLecture(lectureId: $lectureId, studentIds: $studentIds) {
+      lecture {
+        id
+        students {
+          id
+          korName
+          engName
+        }
       }
     }
   }
@@ -319,33 +312,97 @@ export const GET_ATTENDANCE = gql`
 export const GET_STUDENTS_BY_DATE = gql`
   query getLecturesByAcademyAndDateStudents($academyId: Int!, $date: Date!) {
     getLecturesByAcademyAndDateStudents(academyId: $academyId, date: $date) {
-      id
-      attendedLectures {
+      student {
+        id
+        korName
+        engName
+        origin
+        pmobileno
+        birthDate
+        reservedBooksCount
+      }
+      lecture {
         id
         startTime
         endTime
+        lectureInfo
+        date
       }
-      profile {
-        ... on StudentType {
-          id
-          korName
-          engName
-          registerDate
-          origin
-          pmobileno
-          birthDate
-          academies {
-            id
-            name
-            location
-          }
-          attendances {
-            status
-            entryTime
-            exitTime
-          }
-        }
+      attendanceStatus {
+        id
+        entryTime
+        exitTime
+        statusDisplay
       }
+    }
+  }
+`;
+
+export const GET_ALL_LECTURES = gql`
+  query allLectures($academyId: Int!) {
+    allLectures(academyId: $academyId) {
+      id
+      date
+      startTime
+      endTime
+      lectureInfo
+      repeatDay
+      teacher {
+        id
+        korName
+        engName
+      }
+      students {
+        id
+        korName
+        engName
+        gender
+        registerDate
+        origin
+        pmobileno
+        birthDate
+      }
+    }
+  }
+`;
+
+export const GET_BOOK_COUNT = gql`
+  query getLecturesBookCount($academyId: Int!) {
+    getLecturesBookCount(academyId: $academyId) {
+      lecture {
+        id
+      }
+      student {
+        id
+      }
+    }
+  }
+`;
+
+export const CREATE_MAKE_UP = gql`
+  mutation createMakeup(
+    $academyId: Int!
+    $date: Date!
+    $startTime: Time!
+    $endTime: Time!
+    $lectureInfo: String!
+    $teacherId: Int!
+    $repeatDays: [Int]!
+    $repeatWeeks: Int!
+    $studentIds: [Int]!
+  ) {
+    createMakeup(
+      academyId: $academyId
+      date: $date
+      startTime: $startTime
+      endTime: $endTime
+      lectureInfo: $lectureInfo
+      teacherId: $teacherId
+      repeatDays: $repeatDays
+      repeatWeeks: $repeatWeeks
+      studentIds: $studentIds # 이 부분을 추가하려는 학생들의 ID 목록으로 교체하세요.
+    ) {
+      lectureIds
     }
   }
 `;

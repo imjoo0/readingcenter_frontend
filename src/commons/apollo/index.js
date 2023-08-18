@@ -59,6 +59,14 @@ export default function ApolloSetting(props) {
   const client = new ApolloClient({
     link: ApolloLink.from([errorLink, uploadLink]),
     cache: GLOBAL_STATE,
+    defaultOptions: {
+      watchQuery: {
+        fetchPolicy: "network-only",
+      },
+      query: {
+        fetchPolicy: "network-only",
+      },
+    },
   });
 
   return <ApolloProvider client={client}>{props.children}</ApolloProvider>;

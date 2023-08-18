@@ -121,3 +121,9 @@ export const dateToClockOneHour = (date) => {
   }
   return result;
 };
+
+export const timeToHour = (string) => {
+  if (string !== undefined) {
+    return string.slice(0, 2) + "시 " + string.slice(3, 5) + "분";
+  }
+};

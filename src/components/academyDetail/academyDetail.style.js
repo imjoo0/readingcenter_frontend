@@ -91,9 +91,9 @@ export const CheckDiv = styled.div`
 
 export const ButtonBox = styled.div`
   margin: 20px 0;
-  width: 30vw;
+  width: 90vw;
   display: flex;
-  justify-content: space-evenly;
+  justify-content: flex-end;
   align-items: center;
 `;
 
@@ -104,6 +104,7 @@ export const RouteButton = styled.button`
   border: none;
   color: #eeeeee;
   font-size: 16px;
+  margin-right: 20px;
   :hover {
     cursor: pointer;
   }
@@ -296,4 +297,15 @@ export const ModalRoutineDate = styled.div`
   width: 2vw;
   height: 3vh;
   border: 1px solid #1e1e1e;
+`;
+
+export const ClassTitle = styled.div`
+  font-size: 35px;
+  font-weight: 600;
+`;
+
+export const ClassTitleLine = styled.div`
+  border-top: 2px solid;
+  width: 100%;
+  margin: 3vh 0;
 `;

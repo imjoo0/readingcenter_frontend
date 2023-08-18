@@ -20,6 +20,18 @@ export const ClassTitleLine = styled.div`
   margin: 3vh 0;
 `;
 
+export const SwitchDiv = styled.div`
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+  align-items: center;
+`;
+
+export const SwitchFont = styled.div`
+  font-size: 17px;
+  font-weight: 600;
+`;
+
 export const ClassTopMenu = styled.div`
   display: flex;
   width: 100%;
@@ -405,6 +417,7 @@ export const ModalHeadMiddle = styled.div`
   font-weight: 600;
   border-bottom: 0.5px solid #1e1e1e;
   border-top: 0.5px solid #1e1e1e;
+  border-right: 0.5px solid #1e1e1e;
 `;
 
 export const ModalHeadRight = styled.div`
@@ -415,6 +428,7 @@ export const ModalHeadRight = styled.div`
   font-size: 17px;
   font-weight: 600;
   border: 0.5px solid #1e1e1e;
+  border-left: none;
 `;
 
 export const ModalAddButton = styled.button`
@@ -477,4 +491,15 @@ export const DeleteButton = styled.button`
     cursor: pointer;
     filter: brightness(120%);
   }
+`;
+
+export const lectureInfo = styled.div`
+  :hover {
+    cursor: pointer;
+  }
+`;
+
+export const lectureModalInfo = styled.div`
+  font-size: 24px;
+  font-weight: 600;
 `;

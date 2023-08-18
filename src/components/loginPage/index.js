@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import * as S from "./loginPage.style";
-import { useMutation, gql } from "@apollo/client";
+import { useMutation, gql, useQuery } from "@apollo/client";
 import { useRecoilState, useSetRecoilState } from "recoil";
 import { accessTokenState, refreshTokenState } from "src/commons/stores"; // accessTokenState import
 
@@ -11,6 +11,52 @@ const LOGIN_MUTATION = gql`
     login(username: $username, password: $password) {
       accessToken
       refreshToken
+      userInfo {
+        id
+        username
+        email
+        userCategory
+        profile {
+          ... on StudentType {
+            id
+            korName
+            engName
+            registerDate
+            origin
+            pmobileno
+            birthDate
+            academies {
+              id
+              name
+              location
+            }
+          }
+          ... on TeacherType {
+            id
+            korName
+            engName
+            registerDate
+            birthDate
+            academy {
+              id
+              name
+              location
+            }
+          }
+          ... on ManagerType {
+            id
+            korName
+            engName
+            registerDate
+            birthDate
+            academies {
+              id
+              name
+              location
+            }
+          }
+        }
+      }
     }
   }
 `;
@@ -50,7 +96,10 @@ export default function LoginPageComponent() {
       // setRefreshToken(refreshToken);
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
-      router.push("/2/class");
+      console.log(response);
+      router.push(
+        "/" + response?.data?.login?.userInfo?.profile?.academy?.id + "/class"
+      );
     } catch (error) {
       console.error("로그인 오류:", error);
       alert("로그인에 실패했습니다.");
@@ -68,34 +117,34 @@ export default function LoginPageComponent() {
   };
 
   return (
-		<S.Wrapper>
-			<S.LoginBox>
-				<S.LoginBoxLeft>
-					<S.logoImage></S.logoImage>
-				</S.LoginBoxLeft>
+    <S.Wrapper>
+      <S.LoginBox>
+        <S.LoginBoxLeft>
+          <S.logoImage></S.logoImage>
+        </S.LoginBoxLeft>
 
-				<S.LoginBoxRight>
-					<S.LoginTitle>Sign in</S.LoginTitle>
-					<S.LoginLine></S.LoginLine>
-					<S.InputTag>
-						<S.LoginInputTitle>ID</S.LoginInputTitle>
-						<S.LoginInput
-							type="text"
-							onChange={onChangeId}
-							onKeyPress={handleKeyPress}
-						/>
-					</S.InputTag>
-					<S.InputTag>
-						<S.LoginInputTitle>PW</S.LoginInputTitle>
-						<S.LoginInput
-							type="password"
-							onChange={onChangePassword}
-							onKeyPress={handleKeyPress}
-						/>
-					</S.InputTag>
-					<S.LoginButton onClick={onClickLogin}>Sign in</S.LoginButton>
-				</S.LoginBoxRight>
-			</S.LoginBox>
-		</S.Wrapper>
-	);
+        <S.LoginBoxRight>
+          <S.LoginTitle>Sign in</S.LoginTitle>
+          <S.LoginLine></S.LoginLine>
+          <S.InputTag>
+            <S.LoginInputTitle>ID</S.LoginInputTitle>
+            <S.LoginInput
+              type="text"
+              onChange={onChangeId}
+              onKeyPress={handleKeyPress}
+            />
+          </S.InputTag>
+          <S.InputTag>
+            <S.LoginInputTitle>PW</S.LoginInputTitle>
+            <S.LoginInput
+              type="password"
+              onChange={onChangePassword}
+              onKeyPress={handleKeyPress}
+            />
+          </S.InputTag>
+          <S.LoginButton onClick={onClickLogin}>Sign in</S.LoginButton>
+        </S.LoginBoxRight>
+      </S.LoginBox>
+    </S.Wrapper>
+  );
 }

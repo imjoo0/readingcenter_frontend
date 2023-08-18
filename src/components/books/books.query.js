@@ -27,6 +27,20 @@ export const GET_BOOKS = gql`
         isbn
         id
         place
+        plbn
+      }
+    }
+  }
+`;
+
+export const EDIT_BOOK_PLACE = gql`
+  mutation bookInventoryUpdate($id: ID!, $newPlace: String!) {
+    bookInventoryUpdate(id: $id, newPlace: $newPlace) {
+      bookInfo {
+        id
+        kplbn
+        titleAr
+        authorAr
       }
     }
   }

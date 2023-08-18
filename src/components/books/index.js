@@ -1,11 +1,11 @@
 import * as S from "./books.style";
-import { BookOutlined } from "@ant-design/icons";
+import { BookOutlined, DeleteOutlined } from "@ant-design/icons";
 import { addComma, dateToInput, longWord } from "../../commons/library/library";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal } from "antd";
 import { v4 as uuidv4 } from "uuid";
-import { useQuery } from "@apollo/client";
-import { GET_BOOKS } from "./books.query";
+import { useMutation, useQuery } from "@apollo/client";
+import { EDIT_BOOK_PLACE, GET_BOOKS } from "./books.query";
 import { useRouter } from "next/router";
 
 export default function BookPage() {
@@ -25,6 +25,11 @@ export default function BookPage() {
   const [minWc, setMinWc] = useState(0);
   const [maxWc, setMaxWc] = useState(100000000);
   const [inputPlbn, setInputPlbn] = useState("");
+  const [isAddBook, setIsAddBook] = useState(false);
+  const [inputFile, setInputFile] = useState([]);
+  const [dragging, setDragging] = useState(false);
+  const [inputPlace, setInputPlace] = useState([]);
+  const fileInputRef = useRef();
   const { data, refetch } = useQuery(GET_BOOKS, {
     variables: {
       minBl: 0,
@@ -34,8 +39,94 @@ export default function BookPage() {
     },
   });
 
-  const onChangeSearchType = (event) => {
-    setSearchType(event.target.value);
+  const [editBookPlace] = useMutation(EDIT_BOOK_PLACE);
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    setDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    if (e.dataTransfer.files.length > 1) {
+      alert("한 개의 파일만 드래그 해주십시요.");
+      return;
+    }
+    const allowedFile = ["xlsx"];
+    if (
+      !allowedFile.includes(
+        e.dataTransfer.files[0].name.split(".").pop().toLowerCase()
+      )
+    ) {
+      alert("엑셀 파일을 올려주십시오.");
+      return;
+    }
+    // const newFiles = ...e.dataTransfer.files;
+    setInputFile(...e.dataTransfer.files);
+  };
+
+  const onClickAddList = () => {
+    console.log(inputFile);
+    setIsAddBook(false);
+    setInputFile([]);
+  };
+
+  const onClickFileRef = () => {
+    fileInputRef.current.click();
+  };
+
+  const onChangeAddBooks = (e) => {
+    if (e.target.files.length === 0) {
+      return;
+    }
+    const fileArray = Array.from(e.target.files);
+    const allowedFile = ["xlsx"];
+
+    if (
+      !allowedFile.includes(fileArray[0].name.split(".").pop().toLowerCase())
+    ) {
+      alert("엑셀 파일을 올려주십시오.");
+      return;
+    }
+    setInputFile(...fileArray);
+  };
+  const editPlace = (id, index) => async () => {
+    console.log(id);
+    console.log(inputPlace);
+    if (inputPlace[index].place === "") {
+      alert("변경 내용이 없습니다.");
+      return;
+    }
+    try {
+      await editBookPlace({
+        variables: { id: id, newPlace: inputPlace[index].place },
+      });
+      refetch();
+      inputPlace[index].place = "";
+      alert("변경했습니다.");
+    } catch {
+      alert("변경에 실패했습니다.");
+    }
+  };
+
+  const onClickSelectBook = (el) => () => {
+    setDetailToggle(true);
+    setSelectBook(el);
+    setInputPlace(
+      el.books.map((ele) => {
+        return { id: ele.id, place: "" };
+      })
+    );
   };
 
   // useEffect(() => {
@@ -161,8 +252,22 @@ export default function BookPage() {
       )
     );
   }, [bookPage, bookSearchWord, minWc, maxWc, inputPlbn]);
-  console.log(minWc, data, "data");
 
+  // const deleteFile = (fileName) => () => {
+  //   setInputFile(
+  //     inputFile.filter((el) => {
+  //       return el.name !== fileName;
+  //     })
+  //   );
+  // };
+
+  const onChangeInputPlace = (index) => (e) => {
+    const newArray = [...inputPlace];
+    newArray[index].place = e.target.value;
+    setInputPlace(newArray);
+  };
+
+  console.log(data);
   return (
     <S.BooksWrapper>
       <S.BooksTitle>도서 관리</S.BooksTitle>
@@ -317,7 +422,7 @@ export default function BookPage() {
           marginBottom: "10px",
         }}
       >
-        {(data !== undefined &&
+        {(data?.getBooksByBl !== undefined &&
           data?.getBooksByBl
             ?.filter((el) => {
               return (
@@ -334,7 +439,8 @@ export default function BookPage() {
             })
             ?.filter((el) => {
               return Number(el?.wcAr) >= minWc && Number(el?.wcAr) <= maxWc;
-            }).length) !== 0 || undefined
+            }).length !== 0) ||
+        undefined
           ? data?.getBooksByBl
               ?.filter((el) => {
                 return (
@@ -410,7 +516,7 @@ export default function BookPage() {
               <th>AR</th>
               <th>Lexile</th>
               <th>Word Count</th>
-              <th>도서 위치</th>
+              <th>도서 권수</th>
               <th>상세 보기</th>
             </tr>
           </thead>
@@ -426,16 +532,9 @@ export default function BookPage() {
                 <td>{el.bl}</td>
                 <td>{el.lexileLex ?? el.lexileAr}</td>
                 <td>{el.wcAr}</td>
+                <td>{el.books.length + "권"}</td>
                 <td>
-                  {el.books[0].place === null ? "null" : el.books[0].place}
-                </td>
-                <td>
-                  <BookOutlined
-                    onClick={() => {
-                      setDetailToggle(true);
-                      setSelectBook(el);
-                    }}
-                  />
+                  <BookOutlined onClick={onClickSelectBook(el)} />
                 </td>
               </tr>
             );
@@ -578,6 +677,80 @@ export default function BookPage() {
           </>
         )}
       </div>
+      <button
+        onClick={() => {
+          setIsAddBook(true);
+        }}
+      >
+        도서 등록
+      </button>
+      {isAddBook ? (
+        <Modal
+          open={isAddBook}
+          onCancel={() => {
+            setIsAddBook(false);
+            setInputFile([]);
+          }}
+          footer={null}
+          closable={false}
+        >
+          <button onClick={onClickFileRef}>첨부</button>
+          <div className="App">
+            <div
+              className={`drop-box ${dragging ? "dragging" : ""}`}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              style={{
+                border: "1px solid #2d2d2d",
+                width: "450px",
+                height: "300px",
+              }}
+            >
+              {/* {dragging ? "Drop here" : "Drag and drop files here"} */}
+            </div>
+
+            <div className="file-list" style={{ margin: "10px 0" }}>
+              {/* <div>
+                {inputFile.map((file, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      width: "450px",
+                    }}
+                  >
+                    <div>{file.name}</div>
+                    <DeleteOutlined onClick={deleteFile(file.name)} />
+                  </div>
+                ))}
+              </div> */}
+              <div>{inputFile.name}</div>
+            </div>
+          </div>
+          <input
+            type="file"
+            onChange={onChangeAddBooks}
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            multiple={false}
+            // accept="application/vnd.ms-excel"
+          ></input>
+          <button onClick={onClickAddList}>등록</button>
+          <button
+            onClick={() => {
+              setIsAddBook(false);
+              setInputFile([]);
+            }}
+          >
+            취소
+          </button>
+        </Modal>
+      ) : (
+        <></>
+      )}
       {detailToggle ? (
         <Modal
           open={detailToggle}
@@ -587,34 +760,26 @@ export default function BookPage() {
           closable={false}
           onCancel={() => {
             setDetailToggle(false);
+            setInputPlace([]);
           }}
         >
           <S.BooksTitle>도서 정보</S.BooksTitle>
-          <S.BooksTitle></S.BooksTitle>
+          <S.BooksTitleLine></S.BooksTitleLine>
           <S.ModalWrapper>
             <S.ModalInputBox>
-              <div>도서 제목</div>
-              <S.InputInput
-                type="text"
-                style={{ width: "80%" }}
-                defaultValue={selectBook.titleAr}
-              ></S.InputInput>
+              <S.EditTitleFont>도서 제목</S.EditTitleFont>
+
+              <S.EditTagFont>{selectBook.titleAr}</S.EditTagFont>
             </S.ModalInputBox>
             <S.ModalInputBox>
-              <div>저자</div>
-              <S.InputInput
-                type="text"
-                style={{ width: "80%" }}
-                defaultValue={selectBook.authorAr}
-              ></S.InputInput>
+              <S.EditTitleFont>저자</S.EditTitleFont>
+
+              <S.EditTagFont>{selectBook.authorAr}</S.EditTagFont>
             </S.ModalInputBox>
             <S.ModalInputBox>
-              <div>바코드</div>
-              <S.InputInput
-                type="text"
-                style={{ width: "80%" }}
-                defaultValue={selectBook.books[0].isbn}
-              ></S.InputInput>
+              <S.EditTitleFont>바코드</S.EditTitleFont>
+
+              <S.EditTagFont>{selectBook.books[0].isbn}</S.EditTagFont>
             </S.ModalInputBox>
             {/* <S.ModalInputBox>
               <div>F/NF</div>
@@ -625,53 +790,60 @@ export default function BookPage() {
               ></S.InputInput>
             </S.ModalInputBox> */}
             <S.ModalInputBox>
-              <div>AR Quiz No.</div>
-              <S.InputInput
-                type="text"
-                style={{ width: "80%" }}
-                defaultValue={selectBook.arQuiz}
-              ></S.InputInput>
+              <S.EditTitleFont>AR Quiz No.</S.EditTitleFont>
+              <S.EditTagFont>{selectBook.arQuiz}</S.EditTagFont>
             </S.ModalInputBox>
             <S.ModalInputBox>
-              <div>AR</div>
-              <S.InputInput
-                type="text"
-                style={{ width: "80%" }}
-                defaultValue={selectBook.bl}
-              ></S.InputInput>
-            </S.ModalInputBox>
-
-            <S.ModalInputBox>
-              <div>Lexile</div>
-              <S.InputInput
-                type="text"
-                style={{ width: "80%" }}
-                defaultValue={selectBook.lexileLex ?? selectBook.lexileAr}
-              ></S.InputInput>
+              <S.EditTitleFont>AR</S.EditTitleFont>
+              <S.EditTagFont>{selectBook.bl}</S.EditTagFont>
             </S.ModalInputBox>
             <S.ModalInputBox>
-              <div>Word Count</div>
-              <S.InputInput
-                type="text"
-                style={{ width: "80%" }}
-                defaultValue={selectBook.wcAr}
-              ></S.InputInput>
+              <S.EditTitleFont>Lexile</S.EditTitleFont>
+              <S.EditTagFont>
+                {selectBook.lexileLex ?? selectBook.lexileAr}
+              </S.EditTagFont>
             </S.ModalInputBox>
             <S.ModalInputBox>
-              <div>도서 위치</div>
-              <S.InputInput
-                type="text"
-                style={{ width: "80%" }}
-                defaultValue={selectBook.books[0].place ?? "null"}
-              ></S.InputInput>
+              <S.EditTitleFont>Word Count</S.EditTitleFont>
+              <S.EditTagFont>{selectBook.wcAr}</S.EditTagFont>
             </S.ModalInputBox>
+            <S.BooksTitle>재고 정보</S.BooksTitle>
+            <S.BooksTitleLine></S.BooksTitleLine>
+            {selectBook.books.map((el, index) => {
+              return (
+                <S.ModalInputBox>
+                  <div>{"도서 위치(" + el.plbn + ")"}</div>
+                  <div
+                    style={{
+                      width: "81%",
+                      display: "flex",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <S.InputInput
+                      type="text"
+                      style={{ width: "90%" }}
+                      defaultValue={el.place}
+                      onChange={onChangeInputPlace(index)}
+                    ></S.InputInput>
+                    <button onClick={editPlace(Number(el.id), index)}>
+                      변경
+                    </button>
+                  </div>
+                </S.ModalInputBox>
+              );
+            })}
           </S.ModalWrapper>
-          {/* <S.ModalButtonBox>
-            <S.ModalCancelButton onClick={onClickCancel}>
+          <S.ModalButtonBox>
+            <S.ModalCancelButton
+              onClick={() => {
+                setDetailToggle(false);
+                setInputPlace([]);
+              }}
+            >
               취소
             </S.ModalCancelButton>
-            <S.ModalOkButton onClick={onClickOk}>확인</S.ModalOkButton>
-          </S.ModalButtonBox> */}
+          </S.ModalButtonBox>
         </Modal>
       ) : (
         <></>

@@ -6,16 +6,32 @@ import { useEffect, useState } from "react";
 import { Modal, TimePicker } from "antd";
 import { v4 as uuidv4 } from "uuid";
 import { useMutation, useQuery } from "@apollo/client";
-import { ADD_MEMO, EDIT_STUDENT, GET_STUDENT } from "./academyDetail.query";
-import { dateToInput } from "@/src/commons/library/library";
+import {
+  ADD_MEMO,
+  CREATE_ATTENDANCE,
+  CREATE_MAKE_UP,
+  EDIT_STUDENT,
+  GET_STUDENT,
+  GET_STUDENTS_BY_DATE,
+  GET_USERS,
+} from "./academyDetail.query";
+import {
+  dateToClock,
+  dateToClockOneHour,
+  dateToInput,
+} from "@/src/commons/library/library";
 
 export default function AcademyDetailPage() {
   const router = useRouter();
   const { data, refetch } = useQuery(GET_STUDENT, {
-    variables: { userId: Number(router.query.id) },
+    variables: { userId: Number(router.query.id), academyId: Number(router.query.branch) },
   });
+  const { refetch: refetchStudents } = useQuery(GET_STUDENTS_BY_DATE);
+  const { data: userData, refetch: refetchUsers } = useQuery(GET_USERS);
   const [editStudent] = useMutation(EDIT_STUDENT);
   const [addMemo] = useMutation(ADD_MEMO);
+  const [createAttendance] = useMutation(CREATE_ATTENDANCE);
+  const [createMakeUp] = useMutation(CREATE_MAKE_UP);
   const [editBirthDay, setEditBirthDay] = useState("");
   const [editMobileNumber, setEditMobileNumber] = useState("");
   const [editPMobileNumber, setEditPMobileNumber] = useState("");
@@ -25,14 +41,23 @@ export default function AcademyDetailPage() {
   const [classToggle, setClassToggle] = useState(false);
   const [imageURL, setImageURL] = useState("");
   const [imageFile, setImageFile] = useState("");
-  const [addClassType, setAddClassType] = useState("once");
   const [selectDates, setSelectDates] = useState([]);
   const [routineCount, setRoutineCount] = useState(0);
+  const [teacherId, setTeacherId] = useState("");
+  const [date] = useState(new Date());
+  const [addClassStart, setAddClassStart] = useState(dateToClock(date));
+  const [addClassEnd, setAddClassEnd] = useState(dateToClockOneHour(date));
+  const [addClassDate, setAddClassDate] = useState(dateToInput(date));
+  const [addClassInfo, setAddClassInfo] = useState("");
+  const [makeUpLectureId, setMakeUpLectureId] = useState("");
+  const [selectId, setSelectId] = useState("");
+  const [isCheck, setIsCheck] = useState(false);
+  
   const onClickRouter = (address) => () => {
     router.push("/2/" + address);
   };
-  const onClickClassToggle = () => {
-    setAddClassType("once");
+  const onClickClassToggle = (id) => () => {
+    setMakeUpLectureId(id);
     setClassToggle(true);
   };
 
@@ -60,6 +85,10 @@ export default function AcademyDetailPage() {
     setClassToggle(false);
   };
 
+  const onClickCheck = (id, active) => () => {
+    setSelectId({ id: id, active: active });
+    setIsCheck(true);
+  };
   const onClickImageURL = (event) => {
     setImageFile(event.target.files[0]);
     let reader = new FileReader();
@@ -67,9 +96,6 @@ export default function AcademyDetailPage() {
       setImageURL(event.target.result);
     };
     reader.readAsDataURL(event.target.files[0]);
-  };
-  const onClickChangeType = (value) => () => {
-    setAddClassType(value);
   };
 
   const onClickDates = (index) => () => {
@@ -88,20 +114,44 @@ export default function AcademyDetailPage() {
     console.log(routineCount);
   };
 
-  const onClickAddClass = () => {
-    console.log(
-      "id : " + router.query.id,
-      routineCount + "주",
-      "선택요일 : " + selectDates
-    );
+  const onClickMakeUpClass = async () => {
+    try {
+      await createAttendance({
+        variables: {
+          lectureId: Number(makeUpLectureId),
+          studentId: Number(Number(router.query.id)),
+          statusInput: "makeup",
+        },
+      });
+      try {
+        await createMakeUp({
+          variables: {
+            academyId: Number(router.query.branch),
+            date: addClassDate,
+            startTime: addClassStart,
+            endTime: addClassEnd,
+            lectureInfo: addClassInfo,
+            teacherId: Number(teacherId),
+            repeatDays: [-1],
+            repeatWeeks: 1,
+            studentIds: [Number(router.query.id)],
+          },
+        });
+      } catch (err) {
+        alert(err);
+        console.log("보강 추가 에러");
+      }
+    } catch (err) {
+      alert(err);
+      console.log("출석 에러");
+    }
+    refetch();
+    refetchUsers();
+    refetchStudents();
+    setClassToggle(false);
   };
 
   const onClickEdit = async () => {
-    console.log(editBirthDay, "생일");
-    console.log(editMobileNumber, "원생 전화번호");
-    console.log(editPMobileNumber, "부모 전화번호");
-    console.log(editGender, "성별");
-    console.log(editEmail, "이메일");
     let variables = {
       userId: Number(router.query.id),
       birthDate: data?.userDetails?.profile?.birthDate,
@@ -149,17 +199,32 @@ export default function AcademyDetailPage() {
       alert(err);
     }
     refetch();
-    console.log(editMemo, "메모");
+    setTeacherId(
+      userData?.allUsers.filter((el) => el.userCategory === "선생님")[0].id
+    );
+    setAddClassDate(dateToClock(date));
   };
 
+  useEffect(() => {
+    setTeacherId(
+      userData?.allUsers.filter((el) => el.userCategory === "선생님")[0].id
+    );
+  }, [userData]);
   useEffect(() => {
     setEditBirthDay(data?.userDetails?.profile.birthDate);
     setEditMobileNumber(data?.userDetails?.profile.mobileno);
     setEditPMobileNumber(data?.userDetails?.profile.pmobileno);
     setEditGender(data?.userDetails?.profile.gender);
     setEditEmail(data?.userDetails?.email);
-    setEditMemo(data?.userDetails?.memo?.memo);
+    setEditMemo(
+      data?.userDetails?.memos?.filter((el) => {
+        console.log(el.academy.id);
+        return el.academy.id === router.query.branch;
+      })?.[0]?.memo
+    );
   }, [data]);
+
+  console.log(userData);
 
   return (
     <S.AcademyDetailWrapper>
@@ -294,6 +359,9 @@ export default function AcademyDetailPage() {
         </div>
       </S.EditBox>
       <S.ButtonBox>
+        <S.RouteButton onClick={onClickCheck(data?.userDetails?.id, data?.userDetails?.isActive)}>
+          {data?.userDetails?.isActive ? "휴원 처리" : "휴원 처리 철회"}
+        </S.RouteButton>
         <S.RouteButton onClick={onClickRouter("academy")}>목록</S.RouteButton>
         <S.RouteButton onClick={onClickEdit}>수정</S.RouteButton>
       </S.ButtonBox>
@@ -302,33 +370,161 @@ export default function AcademyDetailPage() {
           <S.TableHeadLeft style={{ width: "70%" }}>수업 날짜</S.TableHeadLeft>
           <S.TableHead style={{ width: "70%" }}>수업 시간</S.TableHead>
           <S.TableHead style={{ width: "40%" }}>담당</S.TableHead>
+          <S.TableHead style={{ width: "30%" }}>출석현황</S.TableHead>
           <S.TableHead>강의 정보</S.TableHead>
-          {/* <S.TableHead style={{ width: "30%" }}>보강 학습 추가</S.TableHead> */}
+          <S.TableHead style={{ width: "30%" }}>보강 학습 추가</S.TableHead>
         </S.TableHeaderRound>
-        {data?.userDetails?.lectures?.map((el) => {
-          return (
-            <S.TableRound key={uuidv4()}>
-              <S.TableHeadLeft style={{ width: "70%" }}>
-                {el.date}
-              </S.TableHeadLeft>
-              <S.TableHead style={{ width: "70%" }}>
-                {el.startTime.slice(0, 5) + "~" + el.endTime.slice(0, 5)}
-              </S.TableHead>
-              <S.TableHead style={{ width: "40%" }}>
-                {el.teacher.engName}
-              </S.TableHead>
-              <S.TableHead>{el.lectureInfo}</S.TableHead>
-              {/* <S.TableHead style={{ width: "30%" }}>
-                {el.status === "결석" ? (
-                  <FormOutlined onClick={onClickClassToggle} />
-                ) : (
-                  <></>
-                )}
-              </S.TableHead> */}
-            </S.TableRound>
-          );
-        })}
+        {data?.userDetails?.profile?.lectures
+          ?.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return dateA - dateB;
+          })
+          ?.sort((a, b) => {
+            if (
+              a.attendanceStatus?.statusDisplay === "결석" &&
+              b.attendanceStatus?.statusDisplay !== "결석"
+            ) {
+              return -1;
+            } else {
+              return 1;
+            }
+          })
+          ?.map((el) => {
+            return (
+              <S.TableRound key={uuidv4()}>
+                <S.TableHeadLeft style={{ width: "70%" }}>
+                  {el.date}
+                </S.TableHeadLeft>
+                <S.TableHead style={{ width: "70%" }}>
+                  {el.startTime.slice(0, 5) + "~" + el.endTime.slice(0, 5)}
+                </S.TableHead>
+                <S.TableHead style={{ width: "40%" }}>
+                  {el.teacher.engName}
+                </S.TableHead>
+                <S.TableHead style={{ width: "30%" }}>
+                  {el.attendanceStatus?.statusDisplay}
+                </S.TableHead>
+                <S.TableHead>{el.lectureInfo}</S.TableHead>
+                <S.TableHead style={{ width: "30%" }}>
+                  {el.attendanceStatus?.statusDisplay === "결석" ? (
+                    <FormOutlined onClick={onClickClassToggle(el.id)} />
+                  ) : (
+                    <></>
+                  )}
+                </S.TableHead>
+              </S.TableRound>
+            );
+          })}
       </S.Table>
+      {classToggle ? (
+        <Modal
+          closable={false}
+          open={classToggle}
+          width={"55vw"}
+          height={"50vh"}
+          onCancel={() => {
+            setClassToggle(false);
+          }}
+          footer={null}
+        >
+          <S.ClassTitle>{"수업 보강"}</S.ClassTitle>
+          <S.ClassTitleLine></S.ClassTitleLine>
+          <S.ModalWrapper>
+            <select
+              onChange={(event) => {
+                setTeacherId(event.target.value);
+              }}
+              value={teacherId}
+            >
+              {userData?.allUsers
+                .filter((el) => el.userCategory === "선생님")
+                .map((el) => {
+                  return (
+                    <option key={uuidv4()} value={el.profile.id}>
+                      {el.profile.korName}
+                    </option>
+                  );
+                })}
+            </select>
+            <S.ModalInputBox>
+              <div>
+                <div>수업 날짜</div>
+              </div>
+            </S.ModalInputBox>
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <S.InputInput
+                type="date"
+                defaultValue={dateToInput(date)}
+                style={{ width: "50%" }}
+                onChange={(event) => {
+                  setAddClassDate(event.target.value);
+                }}
+              ></S.InputInput>
+            </div>
+            <S.ModalInputBox>
+              <div>
+                <div>수업 시간</div>
+              </div>
+              <S.TimeBox>
+                <input
+                  type="time"
+                  style={{
+                    width: "10vw",
+                    fontSize: "17px",
+                    border: "1px solid #dddddd",
+                    paddingLeft: "12px",
+                    borderRadius: "5px",
+                  }}
+                  defaultValue={dateToClock(date)}
+                  onChange={(event) => {
+                    setAddClassStart(event.target.value);
+                  }}
+                ></input>
+                ~
+                <input
+                  type="time"
+                  style={{
+                    width: "10vw",
+                    fontSize: "17px",
+                    border: "1px solid #dddddd",
+                    paddingLeft: "12px",
+                    borderRadius: "5px",
+                  }}
+                  defaultValue={dateToClockOneHour(date)}
+                  onChange={(event) => {
+                    setAddClassEnd(event.target.value);
+                  }}
+                ></input>
+              </S.TimeBox>
+            </S.ModalInputBox>
+            <S.ModalInputBox>
+              <div>
+                <div>메모</div>
+              </div>
+              <S.ModalTextArea
+                onChange={(event) => {
+                  setAddClassInfo(event.target.value);
+                }}
+              ></S.ModalTextArea>
+            </S.ModalInputBox>
+          </S.ModalWrapper>
+          <S.ModalButtonBox>
+            <S.ModalCancelButton onClick={onClickCancel}>
+              취소
+            </S.ModalCancelButton>
+            <S.ModalOkButton onClick={onClickMakeUpClass}>저장</S.ModalOkButton>
+          </S.ModalButtonBox>
+        </Modal>
+      ) : (
+        <></>
+      )}
     </S.AcademyDetailWrapper>
   );
 }

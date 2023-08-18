@@ -22,7 +22,7 @@ export default function ClassListPage() {
   const [deleteId, setDeleteId] = useState(0);
   const { refetch: refetchLecture } = useQuery(GET_CLASS, {
     variables: {
-      academyId: 2,
+      academyId: Number(router.query.branch),
       date: dateToInput(date),
     },
   });
@@ -163,10 +163,10 @@ export default function ClassListPage() {
                 {el.endTime.slice(0, 5)}
               </S.ClassBody>
               <S.ClassBody style={{ width: "15%" }}>
-                {el.teacher.korName}
+                {el?.teacher?.korName}
               </S.ClassBody>
               <S.ClassBody style={{ width: "10%" }}>
-                {el.students.length + "명"}
+                {el?.students?.length + "명"}
                 <PlusOutlined onClick={onClickViewStudents(el.students)} />
               </S.ClassBody>
               <S.ClassBody style={{ width: "10%" }}>
