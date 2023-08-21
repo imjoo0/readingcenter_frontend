@@ -1,8 +1,8 @@
 import { gql } from "@apollo/client";
 
 export const GET_STUDENT = gql`
-  query userDetails($userId: Int!,$academyId : Int!) {
-    userDetails(userId: $userId,academyId: $academyId) {
+  query userDetails($userId: Int!, $academyId: Int!) {
+    userDetails(userId: $userId, academyId: $academyId) {
       id
       username
       email
@@ -31,7 +31,7 @@ export const GET_STUDENT = gql`
             startTime
             endTime
             lectureInfo
-            attendanceStatus {
+            attendanceStatus(studentId: $userId) {
               id
               entryTime
               exitTime

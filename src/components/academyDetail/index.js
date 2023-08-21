@@ -24,7 +24,10 @@ import {
 export default function AcademyDetailPage() {
   const router = useRouter();
   const { data, refetch } = useQuery(GET_STUDENT, {
-    variables: { userId: Number(router.query.id), academyId: Number(router.query.branch) },
+    variables: {
+      userId: Number(router.query.id),
+      academyId: Number(router.query.branch),
+    },
   });
   const { refetch: refetchStudents } = useQuery(GET_STUDENTS_BY_DATE);
   const { data: userData, refetch: refetchUsers } = useQuery(GET_USERS);
@@ -52,7 +55,7 @@ export default function AcademyDetailPage() {
   const [makeUpLectureId, setMakeUpLectureId] = useState("");
   const [selectId, setSelectId] = useState("");
   const [isCheck, setIsCheck] = useState(false);
-  
+
   const onClickRouter = (address) => () => {
     router.push("/2/" + address);
   };
@@ -224,7 +227,7 @@ export default function AcademyDetailPage() {
     );
   }, [data]);
 
-  console.log(userData);
+  console.log(data);
 
   return (
     <S.AcademyDetailWrapper>
@@ -359,9 +362,9 @@ export default function AcademyDetailPage() {
         </div>
       </S.EditBox>
       <S.ButtonBox>
-        <S.RouteButton onClick={onClickCheck(data?.userDetails?.id, data?.userDetails?.isActive)}>
+        {/* <S.RouteButton onClick={onClickCheck(data?.userDetails?.id, data?.userDetails?.isActive)}>
           {data?.userDetails?.isActive ? "휴원 처리" : "휴원 처리 철회"}
-        </S.RouteButton>
+        </S.RouteButton> */}
         <S.RouteButton onClick={onClickRouter("academy")}>목록</S.RouteButton>
         <S.RouteButton onClick={onClickEdit}>수정</S.RouteButton>
       </S.ButtonBox>
@@ -378,7 +381,7 @@ export default function AcademyDetailPage() {
           ?.sort((a, b) => {
             const dateA = new Date(a.date);
             const dateB = new Date(b.date);
-            return dateA - dateB;
+            return dateB - dateA;
           })
           ?.sort((a, b) => {
             if (

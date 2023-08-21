@@ -2,16 +2,26 @@ import { gql } from "@apollo/client";
 
 export const GET_BOOKS = gql`
   query getBooksByBl(
-    $minBl: Float!
-    $maxBl: Float!
+    $minBl: Float
+    $maxBl: Float
+    $maxWc: Int
+    $minWc: Int
+    $maxLex: Int
+    $minLex: Int
     $academyId: Int!
     $lectureDate: Date!
+    $studentId: ID
   ) {
     getBooksByBl(
       minBl: $minBl
       maxBl: $maxBl
+      maxWc: $maxWc
+      minWc: $minWc
+      maxLex: $maxLex
+      minLex: $minLex
       academyId: $academyId
       lectureDate: $lectureDate
+      studentId: $studentId
     ) {
       titleAr
       titleLex

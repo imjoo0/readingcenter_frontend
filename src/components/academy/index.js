@@ -5,6 +5,7 @@ import {
   FormOutlined,
   UpOutlined,
   DownOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 import { useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -379,6 +380,9 @@ export default function AcademyPage() {
             <S.TableHeadRight style={{ width: "30%" }}>
               상세 보기
             </S.TableHeadRight>
+            <S.TableHeadRight style={{ width: "30%" }}>
+              리딩 이력
+            </S.TableHeadRight>
             <S.TableHeadRight style={{ width: "30%" }}>휴원</S.TableHeadRight>
           </S.TableHeaderRound>
           {array?.map((el) => {
@@ -410,6 +414,16 @@ export default function AcademyPage() {
                       );
                     }}
                   ></SearchOutlined>
+                </S.TableHeadRight>
+                <S.TableHeadRight style={{ width: "30%" }}>
+                  <BookOutlined
+                    onClick={() => {
+                      window.open(
+                        "/" + router.query.branch + "/report/" + el.id,
+                        "_blank"
+                      );
+                    }}
+                  ></BookOutlined>
                 </S.TableHeadRight>
                 <S.TableHeadRight style={{ width: "30%" }}>
                   <button onClick={onClickCheck(el.id, el.user.isActive)}>
@@ -714,7 +728,11 @@ export default function AcademyPage() {
           footer={null}
         >
           <div>
-            <div>{"휴원 처리 하시겠습니까?"}</div>
+            <div>
+              {!isStop
+                ? "휴원 처리 하시겠습니까?"
+                : "비휴원 처리 하시겠습니까?"}
+            </div>
             <button onClick={onClickStop}>확인</button>
             <button
               onClick={() => {
