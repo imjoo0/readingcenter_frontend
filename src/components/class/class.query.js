@@ -97,31 +97,42 @@ export const GET_RESERVATION_BOOKS = gql`
 
 export const GET_BOOKS = gql`
   query getBooksByBl(
-    $minBl: Float!
-    $maxBl: Float!
+    $minBl: Float
+    $maxBl: Float
+    $maxWc: Int
+    $minWc: Int
+    $maxLex: Int
+    $minLex: Int
+    $studentId: ID
     $academyId: Int!
     $lectureDate: Date!
   ) {
     getBooksByBl(
       minBl: $minBl
       maxBl: $maxBl
+      maxWc: $maxWc
+      minWc: $minWc
+      maxLex: $maxLex
+      minLex: $minLex
       academyId: $academyId
       lectureDate: $lectureDate
+      studentId: $studentId
     ) {
       titleAr
       titleLex
       bl
       arQuiz
       id
+      kplbn
       authorAr
       lexileLex
-      lexileAr
       wcAr
-      kplbn
       arPts
       books {
+        isbn
         id
         place
+        plbn
       }
     }
   }
@@ -403,6 +414,55 @@ export const CREATE_MAKE_UP = gql`
       studentIds: $studentIds # 이 부분을 추가하려는 학생들의 ID 목록으로 교체하세요.
     ) {
       lectureIds
+    }
+  }
+`;
+
+export const GET_ACADEMY_SETTING = gql`
+  query academyInfo($academyId: ID!) {
+    academyInfo(academyId: $academyId) {
+      id
+      notificationInterval
+      endNotificationCustom
+    }
+  }
+`;
+
+export const EDIT_ACADEMY_SETTING = gql`
+  mutation updateAcademy(
+    $academyId: ID!
+    $notificationInterval: Int
+    $endNotificationCustom: Boolean
+  ) {
+    updateAcademy(
+      academyId: $academyId
+      notificationInterval: $notificationInterval
+      endNotificationCustom: $endNotificationCustom
+    ) {
+      academy {
+        id
+        notificationInterval
+        endNotificationCustom
+      }
+    }
+  }
+`;
+
+export const GET_CUSTOM_ATTENDANCE = gql`
+  query getCustomattendance(
+    $academyId: Int!
+    $date: Date!
+    $entryTime: String!
+    $endTime: String!
+  ) {
+    getCustomattendance(
+      academyId: $academyId
+      date: $date
+      entryTime: $entryTime
+      endTime: $endTime
+    ) {
+      id
+      korName
     }
   }
 `;

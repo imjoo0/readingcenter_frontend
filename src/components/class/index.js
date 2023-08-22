@@ -14,8 +14,8 @@ import {
   dateToClockOneHour,
   timeToHour,
 } from "../../commons/library/library";
-import { Modal, Switch } from "antd";
-import { BookOutlined, SearchOutlined } from "@ant-design/icons";
+import { Modal, Spin, Switch } from "antd";
+import { BookOutlined, SearchOutlined, ToolOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
 import { useMutation, useQuery } from "@apollo/client";
 import {
@@ -37,6 +37,9 @@ import {
   GET_BOOK_COUNT,
   GET_STUDENTS_BY_DATE,
   CREATE_MAKE_UP,
+  GET_ACADEMY_SETTING,
+  EDIT_ACADEMY_SETTING,
+  GET_CUSTOM_ATTENDANCE,
 } from "./class.query";
 
 const week = ["월", "화", "수", "목", "금", "토", "일"];
@@ -53,6 +56,7 @@ export default function ClassPage() {
   const [deleteTotal] = useMutation(DELETE_TOTAL_BOOKS);
   const [deleteBook] = useMutation(DELETE_BOOK);
   const [createMakeup] = useMutation(CREATE_MAKE_UP);
+  const [updateSetting] = useMutation(EDIT_ACADEMY_SETTING);
   const [bookArray, setBookArray] = useState([]);
   const [bookPage, setBookPage] = useState(1);
   const [bookMaxPage, setBookMaxPage] = useState(1);
@@ -69,6 +73,10 @@ export default function ClassPage() {
   const [isInfo, setIsInfo] = useState(false);
   const [info, setInfo] = useState("");
   const [isSound, setIsSound] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSetting, setIsSetting] = useState(false);
+  const [intervalTime, setIntervalTime] = useState(0);
+  const [isNotificationCustom, setIsNotificationCustom] = useState(false);
 
   const { data: lectureData, refetch: refetchLecture } = useQuery(GET_CLASS, {
     variables: {
@@ -111,6 +119,10 @@ export default function ClassPage() {
       academyId: Number(router.query.branch),
     },
   });
+  const { data: settingData, refetch: refetchSetting } = useQuery(
+    GET_ACADEMY_SETTING,
+    { variables: { academyId: Number(router.query.branch) } }
+  );
   const [createAttendanceMutation] = useMutation(CREATE_ATTENDANCE);
   const [deleteStudentFromLecture] = useMutation(DELETE_STUDENT_FROM_LECTURE);
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -135,8 +147,8 @@ export default function ClassPage() {
   const [searchLecture, setSearchLecture] = useState(dateToInput(date));
   const [searchStudents, setSearchStudents] = useState("");
   const [isBook, setIsBook] = useState(false);
-  const [maxScore, setMaxScore] = useState(0);
-  const [minScore, setMinScore] = useState(0);
+  const [maxScore, setMaxScore] = useState("");
+  const [minScore, setMinScore] = useState("");
   const [bookList, setBookList] = useState([]);
   const [selectBooks, setSelectBooks] = useState([]);
   const [addClassType, setAddClassType] = useState("once");
@@ -161,15 +173,25 @@ export default function ClassPage() {
   const onClickCalendar = () => {
     setIsCalendar(!isCalendar);
   };
-  const [minWc, setMinWc] = useState(0);
-  const [maxWc, setMaxWc] = useState(100000000);
-  const [inputPlbn, setInputPlbn] = useState("");
+  const [minWc, setMinWc] = useState("");
+  const [maxWc, setMaxWc] = useState("");
+  const [minLex, setMinLex] = useState("");
+  const [maxLex, setMaxLex] = useState("");
   const { refetch: refetchAttendance } = useQuery(GET_ATTENDANCE, {
     variables: {
       date: dateToInput(date),
       startTime: "17:35",
       academyId: 2,
       endtime: "",
+    },
+  });
+
+  const { refetch: refetchCustomAttendance } = useQuery(GET_CUSTOM_ATTENDANCE, {
+    variables: {
+      academyId: 2,
+      date: dateToInput(date),
+      entryTime: "22:59",
+      endTime: "23:59",
     },
   });
 
@@ -445,6 +467,23 @@ export default function ClassPage() {
     setAddLectureId(e.target.value);
   };
 
+  const onClickSetting = async () => {
+    try {
+      await updateSetting({
+        variables: {
+          academyId: Number(router.query.branch),
+          notificationInterval: intervalTime,
+          endNotificationCustom: isNotificationCustom,
+        },
+      });
+      setIsSetting(false);
+      refetchSetting();
+      alert("설정이 저장되었습니다.");
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   // const calculateTimes = (timeString) => {
   //   const timeMoment = moment(timeString, "HH:mm");
   //   return {
@@ -578,16 +617,38 @@ export default function ClassPage() {
   };
 
   const onClickSearchBooks = async () => {
+    setIsLoading(true);
     const newDate = new Date(calendarDate);
     newDate.setDate(newDate.getDate() - 1);
-    await refetchBook({
-      minBl: Number(minScore),
-      maxBl: Number(maxScore),
+    const variables = {
       academyId: Number(router.query.branch),
       lectureDate: dateToInput(searchDate),
-    });
-
-    setBookList(bookData);
+      studentId: Number(selectChild.id),
+    };
+    if (minScore !== "") {
+      variables.minBl = Number(minScore);
+    }
+    if (maxScore !== "") {
+      variables.maxBl = Number(maxScore);
+    }
+    if (minLex !== "") {
+      variables.minLex = Number(minLex);
+    }
+    if (maxLex !== "") {
+      variables.maxLex = Number(maxLex);
+    }
+    if (minWc !== "") {
+      variables.minWc = Number(minWc);
+    }
+    if (maxWc !== "") {
+      variables.maxWc = Number(maxWc);
+    }
+    try {
+      await refetchBook(variables);
+    } catch (err) {
+      console.log(err);
+    }
+    setIsLoading(false);
   };
 
   const onClickBookingBooks = (id, title) => async () => {
@@ -667,8 +728,7 @@ export default function ClassPage() {
   };
 
   useEffect(() => {
-    const newDate = new Date();
-    if (data && data.allLectures) {
+    if (data && data.allLectures && settingData) {
       const startTimesArray = data?.allLectures
         ?.filter((el) => {
           return el.date == dateToInput(date);
@@ -686,7 +746,68 @@ export default function ClassPage() {
       const endTimesJSON = JSON.stringify(endTimesArray);
       localStorage.setItem("endTimes", endTimesJSON);
     }
-  }, [data]);
+  }, [data, settingData]);
+
+  useEffect(() => {
+    if (studentListData && settingData && data) {
+      if (settingData?.academyInfo?.endNotificationCustom) {
+        const lateTimesArray =
+          studentListData?.getLecturesByAcademyAndDateStudents
+            ?.map((el) => {
+              let hours =
+                Number(el.lecture.endTime.slice(0, 2)) -
+                Number(el.lecture.startTime.slice(0, 2));
+              let mins =
+                Number(el.lecture.endTime.slice(3, 5)) -
+                Number(el.lecture.startTime.slice(3, 5));
+
+              if (mins < 0) {
+                hours--;
+                mins = mins + 60;
+              }
+              let lateTime;
+              const entryDate = new Date(el.attendanceStatus.entryTime);
+              entryDate.setHours(
+                entryDate.getHours() + hours,
+                entryDate.getMinutes() + mins,
+                0
+              );
+              if (entryDate.getHours() < 10 && entryDate.getMinutes() < 10) {
+                lateTime =
+                  "0" + entryDate.getHours() + ":0" + entryDate.getMinutes();
+              }
+              if (entryDate.getHours() >= 10 && entryDate.getMinutes() < 10) {
+                lateTime = entryDate.getHours() + ":0" + entryDate.getMinutes();
+              }
+              if (entryDate.getHours() < 10 && entryDate.getMinutes() >= 10) {
+                lateTime =
+                  "0" + entryDate.getHours() + ":" + entryDate.getMinutes();
+              }
+              if (entryDate.getHours() >= 10 && entryDate.getMinutes() >= 10) {
+                lateTime = entryDate.getHours() + ":" + entryDate.getMinutes();
+              }
+              if (el?.attendanceStatus !== null) {
+                return {
+                  lateTime: lateTime,
+                  endTime: el.lecture.endTime,
+                  entryTime: el.attendanceStatus.entryTime,
+                };
+              }
+            })
+            .filter((el) => {
+              return el !== undefined;
+            });
+        const uniqueLateTimesMap = new Map();
+        for (const obj of lateTimesArray) {
+          uniqueLateTimesMap.set(obj.lateTime, obj);
+        }
+        const uniqueLateTimesArray = Array.from(uniqueLateTimesMap.values());
+
+        const lateTimesJSON = JSON.stringify(uniqueLateTimesArray);
+        localStorage.setItem("lateTimes", lateTimesJSON);
+      }
+    }
+  }, [studentListData, data, settingData]);
 
   useEffect(() => {
     if (studentData !== undefined) {
@@ -766,13 +887,14 @@ export default function ClassPage() {
       second
     );
   }
-  const checkTargetTime = () => () => {
+  const checkTargetTime = (time, isCustom) => () => {
     const now = new Date();
     setCheckDate(now);
     // startTimes와 endTimes 배열을 로컬 스토리지에서 가져오기
 
     const startTimesStr = localStorage.getItem("startTimes");
     const endTimesStr = localStorage.getItem("endTimes");
+
     if (startTimesStr && endTimesStr && router.query.branch !== undefined) {
       const startTimes = JSON.parse(startTimesStr).map(parseTime);
       const endTimes = JSON.parse(endTimesStr).map(parseTime);
@@ -780,10 +902,11 @@ export default function ClassPage() {
       // 시작 시간과 종료 시간 비교하여 원하는 동작 수행
       startTimes.forEach(async (startTime) => {
         if (
-          (now.getHours() === startTime.getHours() &&
-            now.getMinutes() === startTime.getMinutes()) ||
-          60 * now.getHours() + now.getMinutes() ===
-            60 * startTime.getHours() + startTime.getMinutes() + 5
+          now.getHours() === startTime.getHours() &&
+          now.getMinutes() === startTime.getMinutes()
+          //   ||
+          // 60 * now.getHours() + now.getMinutes() ===
+          //   60 * startTime.getHours() + startTime.getMinutes() + 5
         ) {
           // 원하는 동작 실행 (예: 알림 표시, WebSocket 메시지 전송 등)
           try {
@@ -808,7 +931,7 @@ export default function ClassPage() {
           (now.getHours() === endTime.getHours() &&
             now.getMinutes() === endTime.getMinutes()) ||
           now.getHours() * 60 + now.getMinutes() ===
-            60 * endTime.getHours() + endTime.getMinutes() - 5
+            60 * endTime.getHours() + endTime.getMinutes() - time
         ) {
           // 원하는 동작 실행 (예: 알림 표시, WebSocket 메시지 전송 등)
           try {
@@ -828,6 +951,41 @@ export default function ClassPage() {
           } catch {}
         }
       });
+
+      if (isCustom) {
+        const lateTimesStr = localStorage.getItem("lateTimes");
+        if (lateTimesStr && router.query.branch !== undefined) {
+          const lateTimes = JSON.parse(lateTimesStr);
+          lateTimes.forEach(async (lateTime) => {
+            if (
+              now.getHours() === Number(lateTime.lateTime.slice(0, 2)) &&
+              now.getMinutes() === Number(lateTime.lateTime.slice(3, 5))
+            ) {
+              try {
+                const result = await refetchCustomAttendance({
+                  academyId: Number(router.query.branch),
+                  endTime: lateTime.endTime + ".000000",
+                  entryTime:
+                    lateTime.entryTime.slice(0, 10) +
+                    " " +
+                    lateTime.entryTime.slice(11, 18) +
+                    ".000000",
+                });
+                setAlarmType("end");
+                setLateList(result?.data?.getCustomattendance);
+                setIsAlarm(true);
+                setAlarmTime(lateTime.lateTime);
+                if (result?.data?.getCustomattendance !== null && isSound) {
+                  const audio = new Audio("/2.mp3");
+                  audio.play();
+                }
+              } catch (err) {
+                console.log(err);
+              }
+            }
+          });
+        }
+      }
     }
   };
 
@@ -836,13 +994,22 @@ export default function ClassPage() {
     intervalArray.forEach((el) => {
       clearInterval(el);
     });
-    const intervalA = setInterval(checkTargetTime(), 60 * 1000);
-    const newInterval = [...intervalArray];
-    newInterval.push(intervalA);
-    setIntervalArray(newInterval);
+    if (settingData !== undefined) {
+      const intervalA = setInterval(
+        checkTargetTime(
+          settingData?.academyInfo?.notificationInterval,
+          settingData?.academyInfo?.endNotificationCustom
+        ),
+        60 * 1000
+      );
+      const newInterval = [...intervalArray];
+      newInterval.push(intervalA);
+      setIntervalArray(newInterval);
+      return () => clearInterval(intervalA);
+    }
+
     // }
-    return () => clearInterval(intervalA);
-  }, [studentData, isSound]); // refetch
+  }, [studentData, isSound, settingData]); // refetch
 
   useEffect(() => {
     setBookArray(
@@ -859,16 +1026,11 @@ export default function ClassPage() {
                   .includes(bookSearchWord.toUpperCase()) ||
                 el?.authorAr
                   .toUpperCase()
+                  .includes(bookSearchWord.toUpperCase()) ||
+                String(el?.kplbn)
+                  .toUpperCase()
                   .includes(bookSearchWord.toUpperCase())
               );
-            })
-            ?.filter((el) => {
-              return Number(el?.wcAr) >= minWc && Number(el?.wcAr) <= maxWc;
-            })
-            ?.filter((el) => {
-              return String(el?.kplbn)
-                .toUpperCase()
-                .includes(inputPlbn.toUpperCase());
             })
             ?.filter((el, index) => {
               return (
@@ -882,26 +1044,18 @@ export default function ClassPage() {
     );
     setBookMaxPage(
       Math.ceil(
-        bookData?.getBooksByBl
-          ?.filter((el) => {
-            return (
-              el?.titleAr
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase()) ||
-              String(el?.books[0]?.isbn)
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase()) ||
-              el?.authorAr.toUpperCase().includes(bookSearchWord.toUpperCase())
-            );
-          })
-          ?.filter((el) => {
-            return Number(el?.wcAr) >= minWc && Number(el?.wcAr) <= maxWc;
-          })
-          ?.filter((el) => {
-            return String(el?.kplbn)
+        bookData?.getBooksByBl?.filter((el) => {
+          return (
+            el?.titleAr.toUpperCase().includes(bookSearchWord.toUpperCase()) ||
+            String(el?.books[0]?.isbn)
               .toUpperCase()
-              .includes(inputPlbn.toUpperCase());
-          })?.length / itemsPerPage
+              .includes(bookSearchWord.toUpperCase()) ||
+            el?.authorAr.toUpperCase().includes(bookSearchWord.toUpperCase()) ||
+            String(el?.kplbn)
+              .toUpperCase()
+              .includes(bookSearchWord.toUpperCase())
+          );
+        })?.length / itemsPerPage
       )
     );
     setBookPage(1);
@@ -923,16 +1077,11 @@ export default function ClassPage() {
                   .includes(bookSearchWord.toUpperCase()) ||
                 el?.authorAr
                   .toUpperCase()
+                  .includes(bookSearchWord.toUpperCase()) ||
+                String(el?.kplbn)
+                  .toUpperCase()
                   .includes(bookSearchWord.toUpperCase())
               );
-            })
-            ?.filter((el) => {
-              return Number(el?.wcAr) >= minWc && Number(el?.wcAr) <= maxWc;
-            })
-            ?.filter((el) => {
-              return String(el?.kplbn)
-                .toUpperCase()
-                .includes(inputPlbn.toUpperCase());
             })
             ?.filter((el, index) => {
               return (
@@ -946,35 +1095,32 @@ export default function ClassPage() {
     );
     setBookMaxPage(
       Math.ceil(
-        bookData?.getBooksByBl
-          ?.filter((el) => {
-            return (
-              el?.titleAr
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase()) ||
-              String(el?.books[0]?.isbn)
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase()) ||
-              el?.authorAr.toUpperCase().includes(bookSearchWord.toUpperCase())
-            );
-          })
-          ?.filter((el) => {
-            return Number(el?.wcAr) >= minWc && Number(el?.wcAr) <= maxWc;
-          })
-          ?.filter((el) => {
-            return String(el?.kplbn)
+        bookData?.getBooksByBl?.filter((el) => {
+          return (
+            el?.titleAr.toUpperCase().includes(bookSearchWord.toUpperCase()) ||
+            String(el?.books[0]?.isbn)
               .toUpperCase()
-              .includes(inputPlbn.toUpperCase());
-          })?.length / itemsPerPage
+              .includes(bookSearchWord.toUpperCase()) ||
+            el?.authorAr.toUpperCase().includes(bookSearchWord.toUpperCase()) ||
+            String(el?.kplbn)
+              .toUpperCase()
+              .includes(bookSearchWord.toUpperCase())
+          );
+        })?.length / itemsPerPage
       )
     );
-  }, [bookPage, bookSearchWord, minWc, maxWc, inputPlbn]);
+  }, [bookPage, bookSearchWord, minWc, maxWc]);
 
   useEffect(() => {
     setTeacherId(
       userData?.allUsers.filter((el) => el.userCategory === "선생님")[0].id
     );
   }, [userData]);
+
+  useEffect(() => {
+    setIsNotificationCustom(settingData?.academyInfo?.endNotificationCustom);
+    setIntervalTime(settingData?.academyInfo?.notificationInterval);
+  }, [settingData]);
 
   return (
 		<S.ClassWrapper>

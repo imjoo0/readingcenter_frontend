@@ -3,7 +3,7 @@ import * as S from "./classList.style";
 import { useRouter } from "next/router";
 import { DELETE_LECTURE, GET_ALL_LECTURES, GET_CLASS } from "./classList.query";
 import { useEffect, useState } from "react";
-import { dateToInput } from "@/src/commons/library/library";
+import { dateToInput, longWord } from "@/src/commons/library/library";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { Modal } from "antd";
 
@@ -94,7 +94,7 @@ export default function ClassListPage() {
         </S.ClassHeader>
         <S.ClassHeader
           style={{
-            width: "20%",
+            width: "15%",
             background: "#42444e",
             color: "#fff",
             textAlign: "left",
@@ -104,13 +104,23 @@ export default function ClassListPage() {
         </S.ClassHeader>
         <S.ClassHeader
           style={{
-            width: "20%",
+            width: "15%",
             background: "#42444e",
             color: "#fff",
             textAlign: "left",
           }}
         >
           수업 마감 시간
+        </S.ClassHeader>
+        <S.ClassHeader
+          style={{
+            width: "50%",
+            background: "#42444e",
+            color: "#fff",
+            textAlign: "left",
+          }}
+        >
+          수업 정보
         </S.ClassHeader>
         <S.ClassHeader
           style={{
@@ -155,18 +165,21 @@ export default function ClassListPage() {
                 {el.id}
               </S.ClassBodyLeft>
               <S.ClassBody style={{ width: "25%" }}>{el.date}</S.ClassBody>
-              <S.ClassBody style={{ width: "20%" }}>
+              <S.ClassBody style={{ width: "15%" }}>
                 {el.startTime.slice(0, 5)}
               </S.ClassBody>
-              <S.ClassBody style={{ width: "20%" }}>
+              <S.ClassBody style={{ width: "15%" }}>
                 {el.endTime.slice(0, 5)}
+              </S.ClassBody>
+              <S.ClassBody style={{ width: "50%" }}>
+                {longWord(el.lectureInfo)}
               </S.ClassBody>
               <S.ClassBody style={{ width: "15%" }}>
                 {el?.teacher?.korName}
               </S.ClassBody>
               <S.ClassBody style={{ width: "10%" }}>
                 {el?.students?.length + "명"}
-                <PlusOutlined onClick={onClickViewStudents(el.students)} />
+                {/* <PlusOutlined onClick={onClickViewStudents(el.students)} /> */}
               </S.ClassBody>
               <S.ClassBody style={{ width: "10%" }}>
                 <DeleteOutlined onClick={onClickDeleteModal(Number(el.id))} />
