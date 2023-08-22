@@ -283,451 +283,445 @@ export default function AcademyPage() {
   }, [sortType]);
   console.log(data);
   return (
-    <>
-      <S.AcademyWrapper>
-        <S.AcademyTitle>원생 관리</S.AcademyTitle>
-        <div
-          style={{ display: "flex", width: "100%", justifyContent: "flex-end" }}
-        >
-          {" "}
-          휴원 학생 보기
-          <Switch
-            defaultChecked={false}
-            onChange={(checked) => {
-              setIsStop(checked);
-            }}
-          ></Switch>
-        </div>
+		<>
+			<S.AcademyWrapper>
+				<S.AcademyTitle>원생 관리</S.AcademyTitle>
 
-        <S.AcademyTitleLine></S.AcademyTitleLine>
-        <S.SearchBox>
-          <S.SearchTitle>원생 검색</S.SearchTitle>
-          <S.SearchTag>
-            <S.SearchInput
-              type="text"
-              placeholder="원번 혹은 이름을 입력하세요"
-              onChange={onChangeSearchWord}
-              onKeyPress={onKeyPress}
-            />
-            <S.SearchButton onClick={onClickSearch}>검색</S.SearchButton>
-          </S.SearchTag>
-        </S.SearchBox>
-        <S.CountBox>
-          <S.CountNumber>{"총 " + array?.length + "명"}</S.CountNumber>
-        </S.CountBox>
+				<S.SearchBox>
+					<S.SearchTag>
+						<S.SearchInput
+							type="text"
+							placeholder="       원번 혹은 이름을 입력하세요."
+							onChange={onChangeSearchWord}
+							onKeyPress={onKeyPress}
+						/>
+						<S.SearchButton onClick={onClickSearch}>검색하기</S.SearchButton>
+					</S.SearchTag>
+				</S.SearchBox>
+				<S.CountBox>
+					<S.CountLeft>
+						<S.CountNumber>{'전체 ' + array?.length + '명'}</S.CountNumber>
+					</S.CountLeft>
+					<S.CountRight>
+						<S.ContinueOrRest>
+							재원 / 휴원
+							<Switch
+								defaultChecked={false}
+								onChange={(checked) => {
+									setIsStop(checked);
+								}}
+							></Switch>
+						</S.ContinueOrRest>
+						<S.RegistButton
+							onClick={() => {
+								setAddToggle(true);
+							}}
+						>
+							원생 등록
+						</S.RegistButton>
+					</S.CountRight>
+				</S.CountBox>
 
-        <S.Table>
-          <S.TableHeaderRound>
-            <S.TableHeadLeft style={{ width: "40%" }}>
-              원번{" "}
-              {sortType !== "origin" || sortType === "" ? (
-                <DownOutlined
-                  style={{ marginLeft: "5px" }}
-                  onClick={onClickSort("origin")}
-                ></DownOutlined>
-              ) : (
-                <UpOutlined
-                  style={{ marginLeft: "5px" }}
-                  onClick={onClickSort("originReverse")}
-                />
-              )}
-            </S.TableHeadLeft>
-            <S.TableHead style={{ width: "40%" }}>
-              원생명
-              {sortType !== "name" || sortType === "" ? (
-                <DownOutlined
-                  style={{ marginLeft: "5px" }}
-                  onClick={onClickSort("name")}
-                ></DownOutlined>
-              ) : (
-                <UpOutlined
-                  style={{ marginLeft: "5px" }}
-                  onClick={onClickSort("nameReverse")}
-                />
-              )}
-            </S.TableHead>
-            <S.TableHead style={{ width: "40%" }}>
-              생년월일{" "}
-              {sortType !== "birthDate" || sortType === "" ? (
-                <DownOutlined
-                  style={{ marginLeft: "5px" }}
-                  onClick={onClickSort("birthDate")}
-                ></DownOutlined>
-              ) : (
-                <UpOutlined
-                  style={{ marginLeft: "5px" }}
-                  onClick={onClickSort("birthDateReverse")}
-                />
-              )}
-            </S.TableHead>
-            <S.TableHead style={{ width: "50%" }}>
-              등록일{" "}
-              {sortType !== "register" || sortType === "" ? (
-                <DownOutlined
-                  style={{ marginLeft: "5px" }}
-                  onClick={onClickSort("register")}
-                ></DownOutlined>
-              ) : (
-                <UpOutlined
-                  style={{ marginLeft: "5px" }}
-                  onClick={onClickSort("registerReverse")}
-                />
-              )}
-            </S.TableHead>
-            <S.TableHead style={{ width: "100%" }}>연락처</S.TableHead>
-            <S.TableHead style={{ width: "30%" }}>성별</S.TableHead>
-            <S.TableHeadRight style={{ width: "30%" }}>
-              상세 보기
-            </S.TableHeadRight>
-            <S.TableHeadRight style={{ width: "30%" }}>휴원</S.TableHeadRight>
-          </S.TableHeaderRound>
-          {array?.map((el) => {
-            return (
-              <S.TableRound key={uuidv4()}>
-                <S.TableHeadLeft style={{ width: "40%" }}>
-                  {el.origin}
-                </S.TableHeadLeft>
-                <S.TableHead style={{ width: "40%" }}>{el.korName}</S.TableHead>
-                <S.TableHead style={{ width: "40%" }}>
-                  {el.birthDate}
-                </S.TableHead>
-                <S.TableHead style={{ width: "50%" }}>
-                  {dateChange(el.registerDate)}
-                </S.TableHead>
-                <S.TableHead2 style={{ width: "100%" }}>
-                  <div>{"학생 : " + el.mobileno}</div>
-                  <div>{"학부모 : " + el.pmobileno}</div>
-                </S.TableHead2>
-                <S.TableHead style={{ width: "30%" }}>
-                  {el.gender === "M" ? "남" : "여"}
-                </S.TableHead>
-                <S.TableHeadRight style={{ width: "30%" }}>
-                  <SearchOutlined
-                    onClick={() => {
-                      window.open(
-                        "/" + router.query.branch + "/academy/" + el.id,
-                        "_blank"
-                      );
-                    }}
-                  ></SearchOutlined>
-                </S.TableHeadRight>
-                <S.TableHeadRight style={{ width: "30%" }}>
-                  <button onClick={onClickCheck(el.id, el.user.isActive)}>
-                    {el.user.isActive ? "휴원 처리" : "비휴원 처리"}
-                  </button>
-                </S.TableHeadRight>
-              </S.TableRound>
-            );
-          })}
-        </S.Table>
-      </S.AcademyWrapper>
-      <div
-        style={{
-          width: "98%",
-          display: "flex",
-          justifyContent: "flex-end",
-          margin: "25px 0",
-        }}
-      >
-        <S.SearchButton
-          onClick={() => {
-            setAddToggle(true);
-          }}
-        >
-          원생 등록
-        </S.SearchButton>
-      </div>
-      {addToggle ? (
-        <Modal
-          closable={false}
-          open={addToggle}
-          onCancel={() => {
-            setAddToggle(false);
-            setAddKorName("");
-            setAddEmail("");
-            setPassword("");
-            setAddEngName("");
-            setAddGender("M");
-            setAddMobileNumber1("");
-            setAddMobileNumber2("");
-            setAddMobileNumber3("");
-            setAddPMobileNumber1("");
-            setAddPMobileNumber2("");
-            setAddPMobileNumber3("");
-            setAddBirthDay(dateToInput(date));
-            setAddRegisterDay(dateToInput(date));
-            setAddOrigin("");
-          }}
-          footer={null}
-        >
-          <S.AcademyTitle>원생 추가</S.AcademyTitle>
-          <S.ModalWrapper>
-            <S.ModalTag>
-              <S.ModalTitle>원생 아이디</S.ModalTitle>
-              <S.ModalInput
-                type="text"
-                onChange={(e) => {
-                  setAddId(e.target.value);
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    onClickAddStudent();
-                  }
-                }}
-              ></S.ModalInput>
-            </S.ModalTag>
-            <S.ModalTag>
-              <S.ModalTitle>E-Mail</S.ModalTitle>
-              <S.ModalInput
-                type="text"
-                onChange={(e) => {
-                  setAddEmail(e.target.value);
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    onClickAddStudent();
-                  }
-                }}
-              ></S.ModalInput>
-            </S.ModalTag>
-            <S.ModalTag>
-              <S.ModalTitle>Password</S.ModalTitle>
-              <S.ModalInput
-                type="password"
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    onClickAddStudent();
-                  }
-                }}
-              ></S.ModalInput>
-            </S.ModalTag>
-            <S.ModalTag>
-              <S.ModalTitle>한글 이름</S.ModalTitle>
-              <S.ModalInput
-                type="text"
-                onChange={(e) => {
-                  setAddKorName(e.target.value);
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    onClickAddStudent();
-                  }
-                }}
-              ></S.ModalInput>
-            </S.ModalTag>
-            <S.ModalTag>
-              <S.ModalTitle>영어 이름</S.ModalTitle>
-              <S.ModalInput
-                type="text"
-                onChange={(e) => {
-                  setAddEngName(e.target.value);
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    onClickAddStudent();
-                  }
-                }}
-              ></S.ModalInput>
-            </S.ModalTag>
-            <S.ModalTag>
-              <S.ModalTitle>성별</S.ModalTitle>
-              <div>
-                <input
-                  type="radio"
-                  name="gender"
-                  value={"M"}
-                  checked={addGender === "M"}
-                  onChange={(e) => {
-                    setAddGender(e.target.value);
-                  }}
-                ></input>{" "}
-                남
-                <input
-                  type="radio"
-                  name="gender"
-                  value={"W"}
-                  checked={addGender === "W"}
-                  onChange={(e) => {
-                    setAddGender(e.target.value);
-                  }}
-                ></input>{" "}
-                여
-              </div>
-            </S.ModalTag>
-            <S.ModalTag>
-              <S.ModalTitle>원생 전화번호</S.ModalTitle>
-              <div>
-                <S.ModalSmall
-                  type="text"
-                  maxLength={3}
-                  onChange={(e) => {
-                    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
-                    setAddMobileNumber1(onlyNumber);
-                    if (e.target.value.length === 3) {
-                      mobileNumber2.current.focus();
-                    }
-                  }}
-                  value={addMobileNumber1}
-                ></S.ModalSmall>{" "}
-                -{" "}
-                <S.ModalSmall
-                  type="text"
-                  maxLength={4}
-                  onChange={(e) => {
-                    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
-                    setAddMobileNumber2(onlyNumber);
-                    if (e.target.value.length === 4) {
-                      mobileNumber3.current.focus();
-                    }
-                  }}
-                  ref={mobileNumber2}
-                  value={addMobileNumber2}
-                ></S.ModalSmall>{" "}
-                -{" "}
-                <S.ModalSmall
-                  type="text"
-                  maxLength={4}
-                  onChange={(e) => {
-                    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
-                    setAddMobileNumber3(onlyNumber);
-                  }}
-                  ref={mobileNumber3}
-                  value={addMobileNumber3}
-                ></S.ModalSmall>
-              </div>
-            </S.ModalTag>
-            <S.ModalTag>
-              <S.ModalTitle>학부모 전화번호</S.ModalTitle>
-              <div>
-                <S.ModalSmall
-                  type="text"
-                  maxLength={3}
-                  onChange={(e) => {
-                    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
-                    setAddPMobileNumber1(onlyNumber);
-                    if (e.target.value.length === 3) {
-                      pMobileNumber2.current.focus();
-                    }
-                  }}
-                  value={addPMobileNumber1}
-                ></S.ModalSmall>{" "}
-                -{" "}
-                <S.ModalSmall
-                  type="text"
-                  maxLength={4}
-                  onChange={(e) => {
-                    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
-                    setAddPMobileNumber2(onlyNumber);
-                    if (e.target.value.length === 4) {
-                      pMobileNumber3.current.focus();
-                    }
-                  }}
-                  ref={pMobileNumber2}
-                  value={addPMobileNumber2}
-                ></S.ModalSmall>{" "}
-                -{" "}
-                <S.ModalSmall
-                  type="text"
-                  maxLength={4}
-                  onChange={(e) => {
-                    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
-                    setAddPMobileNumber3(onlyNumber);
-                  }}
-                  ref={pMobileNumber3}
-                  value={addPMobileNumber3}
-                ></S.ModalSmall>
-              </div>
-            </S.ModalTag>
-            <S.ModalTag>
-              <S.ModalTitle>생년월일</S.ModalTitle>
-              <S.ModalInput
-                type="date"
-                defaultValue={addBirthDay}
-                onChange={(e) => {
-                  setAddBirthDay(e.target.value);
-                }}
-              ></S.ModalInput>
-            </S.ModalTag>
-            <S.ModalTag>
-              <S.ModalTitle>등록일</S.ModalTitle>
-              <S.ModalInput
-                type="date"
-                defaultValue={addRegisterDay}
-                onChange={(e) => {
-                  setAddRegisterDay(e.target.value);
-                }}
-              ></S.ModalInput>
-            </S.ModalTag>
-            <S.ModalTag>
-              <S.ModalTitle>원생 번호</S.ModalTitle>
-              <S.ModalInput
-                type="text"
-                onChange={(e) => {
-                  setAddOrigin(e.target.value);
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    onClickAddStudent();
-                  }
-                }}
-              ></S.ModalInput>
-            </S.ModalTag>
-          </S.ModalWrapper>
-          <S.ModalButtonBox>
-            <S.ModalOkButton onClick={onClickAddStudent}>등록</S.ModalOkButton>
-            <S.ModalReturnButton
-              onClick={() => {
-                setAddToggle(false);
-                setAddKorName("");
-                setAddEmail("");
-                setPassword("");
-                setAddEngName("");
-                setAddGender("M");
-                setAddMobileNumber1("");
-                setAddMobileNumber2("");
-                setAddMobileNumber3("");
-                setAddPMobileNumber1("");
-                setAddPMobileNumber2("");
-                setAddPMobileNumber3("");
-                setAddBirthDay(dateToInput(date));
-                setAddRegisterDay(dateToInput(date));
-                setAddOrigin("");
-              }}
-            >
-              취소
-            </S.ModalReturnButton>
-          </S.ModalButtonBox>
-        </Modal>
-      ) : (
-        <></>
-      )}
-      {isCheck ? (
-        <Modal
-          open={isCheck}
-          closable={false}
-          onCancel={() => {
-            setIsCheck(false);
-          }}
-          footer={null}
-        >
-          <div>
-            <div>{"휴원 처리 하시겠습니까?"}</div>
-            <button onClick={onClickStop}>확인</button>
-            <button
-              onClick={() => {
-                setIsCheck(false);
-              }}
-            >
-              취소
-            </button>
-          </div>
-        </Modal>
-      ) : (
-        <></>
-      )}
-    </>
-  );
+				<S.Table>
+					<S.TableHeaderRound>
+						<S.TableHeadLeft style={{ width: '40%' }}>
+							원번{' '}
+							{sortType !== 'origin' || sortType === '' ? (
+								<DownOutlined
+									style={{ marginLeft: '5px' }}
+									onClick={onClickSort('origin')}
+								></DownOutlined>
+							) : (
+								<UpOutlined
+									style={{ marginLeft: '5px' }}
+									onClick={onClickSort('originReverse')}
+								/>
+							)}
+						</S.TableHeadLeft>
+						<S.TableHead style={{ width: '40%' }}>
+							원생명
+							{sortType !== 'name' || sortType === '' ? (
+								<DownOutlined
+									style={{ marginLeft: '5px' }}
+									onClick={onClickSort('name')}
+								></DownOutlined>
+							) : (
+								<UpOutlined
+									style={{ marginLeft: '5px' }}
+									onClick={onClickSort('nameReverse')}
+								/>
+							)}
+						</S.TableHead>
+						<S.TableHead style={{ width: '40%' }}>
+							생년월일{' '}
+							{sortType !== 'birthDate' || sortType === '' ? (
+								<DownOutlined
+									style={{ marginLeft: '5px' }}
+									onClick={onClickSort('birthDate')}
+								></DownOutlined>
+							) : (
+								<UpOutlined
+									style={{ marginLeft: '5px' }}
+									onClick={onClickSort('birthDateReverse')}
+								/>
+							)}
+						</S.TableHead>
+						<S.TableHead style={{ width: '50%' }}>
+							등록일{' '}
+							{sortType !== 'register' || sortType === '' ? (
+								<DownOutlined
+									style={{ marginLeft: '5px' }}
+									onClick={onClickSort('register')}
+								></DownOutlined>
+							) : (
+								<UpOutlined
+									style={{ marginLeft: '5px' }}
+									onClick={onClickSort('registerReverse')}
+								/>
+							)}
+						</S.TableHead>
+						<S.TableHead style={{ width: '100%' }}>연락처</S.TableHead>
+						<S.TableHead style={{ width: '30%' }}>성별</S.TableHead>
+						<S.TableHeadRight style={{ width: '30%' }}>
+							상세 보기
+						</S.TableHeadRight>
+						<S.TableHeadRight style={{ width: '30%' }}>휴원</S.TableHeadRight>
+					</S.TableHeaderRound>
+					{array?.map((el) => {
+						return (
+							<S.TableRound key={uuidv4()}>
+								<S.TableHeadLeft style={{ width: '40%' }}>
+									{el.origin}
+								</S.TableHeadLeft>
+								<S.TableHead style={{ width: '40%' }}>{el.korName}</S.TableHead>
+								<S.TableHead style={{ width: '40%' }}>
+									{el.birthDate}
+								</S.TableHead>
+								<S.TableHead style={{ width: '50%' }}>
+									{dateChange(el.registerDate)}
+								</S.TableHead>
+								<S.TableHead2 style={{ width: '100%' }}>
+									<div>{'학생 : ' + el.mobileno}</div>
+									<div>{'학부모 : ' + el.pmobileno}</div>
+								</S.TableHead2>
+								<S.TableHead style={{ width: '30%' }}>
+									{el.gender === 'M' ? '남' : '여'}
+								</S.TableHead>
+								<S.TableHeadRight style={{ width: '30%' }}>
+									<SearchOutlined
+										onClick={() => {
+											window.open(
+												'/' + router.query.branch + '/academy/' + el.id,
+												'_blank'
+											);
+										}}
+									></SearchOutlined>
+								</S.TableHeadRight>
+								<S.TableHeadRight style={{ width: '30%' }}>
+									<button
+										style={{ backgroundColor: 'transparent', border: 0 }}
+										onClick={onClickCheck(el.id, el.user.isActive)}
+									>
+										{el.user.isActive ? '휴원 처리' : '비휴원 처리'}
+									</button>
+								</S.TableHeadRight>
+							</S.TableRound>
+						);
+					})}
+				</S.Table>
+			</S.AcademyWrapper>
+
+			{addToggle ? (
+				<Modal
+					closable={false}
+					open={addToggle}
+					onCancel={() => {
+						setAddToggle(false);
+						setAddKorName('');
+						setAddEmail('');
+						setPassword('');
+						setAddEngName('');
+						setAddGender('M');
+						setAddMobileNumber1('');
+						setAddMobileNumber2('');
+						setAddMobileNumber3('');
+						setAddPMobileNumber1('');
+						setAddPMobileNumber2('');
+						setAddPMobileNumber3('');
+						setAddBirthDay(dateToInput(date));
+						setAddRegisterDay(dateToInput(date));
+						setAddOrigin('');
+					}}
+					footer={null}
+				>
+					<S.ModalWrapperTitle>원생 등록</S.ModalWrapperTitle>
+					<S.ModalWrapper>
+						<S.ModalTag>
+							<S.ModalTitle>원생 아이디</S.ModalTitle>
+							<S.ModalInput
+								type="text"
+								onChange={(e) => {
+									setAddId(e.target.value);
+								}}
+								onKeyPress={(e) => {
+									if (e.key === 'Enter') {
+										onClickAddStudent();
+									}
+								}}
+							></S.ModalInput>
+						</S.ModalTag>
+						<S.ModalTag>
+							<S.ModalTitle>E-Mail</S.ModalTitle>
+							<S.ModalInput
+								type="text"
+								onChange={(e) => {
+									setAddEmail(e.target.value);
+								}}
+								onKeyPress={(e) => {
+									if (e.key === 'Enter') {
+										onClickAddStudent();
+									}
+								}}
+							></S.ModalInput>
+						</S.ModalTag>
+						<S.ModalTag>
+							<S.ModalTitle>Password</S.ModalTitle>
+							<S.ModalInput
+								type="password"
+								onChange={(e) => {
+									setPassword(e.target.value);
+								}}
+								onKeyPress={(e) => {
+									if (e.key === 'Enter') {
+										onClickAddStudent();
+									}
+								}}
+							></S.ModalInput>
+						</S.ModalTag>
+						<S.ModalTag>
+							<S.ModalTitle>한글 이름</S.ModalTitle>
+							<S.ModalInput
+								type="text"
+								onChange={(e) => {
+									setAddKorName(e.target.value);
+								}}
+								onKeyPress={(e) => {
+									if (e.key === 'Enter') {
+										onClickAddStudent();
+									}
+								}}
+							></S.ModalInput>
+						</S.ModalTag>
+						<S.ModalTag>
+							<S.ModalTitle>영어 이름</S.ModalTitle>
+							<S.ModalInput
+								type="text"
+								onChange={(e) => {
+									setAddEngName(e.target.value);
+								}}
+								onKeyPress={(e) => {
+									if (e.key === 'Enter') {
+										onClickAddStudent();
+									}
+								}}
+							></S.ModalInput>
+						</S.ModalTag>
+						<S.ModalTag>
+							<S.ModalTitle>성별</S.ModalTitle>
+							<div>
+								<input
+									type="radio"
+									name="gender"
+									value={'M'}
+									checked={addGender === 'M'}
+									onChange={(e) => {
+										setAddGender(e.target.value);
+									}}
+								></input>{' '}
+								남
+								<input
+									type="radio"
+									name="gender"
+									value={'W'}
+									checked={addGender === 'W'}
+									onChange={(e) => {
+										setAddGender(e.target.value);
+									}}
+								></input>{' '}
+								여
+							</div>
+						</S.ModalTag>
+						<S.ModalTag>
+							<S.ModalTitle>원생 전화번호</S.ModalTitle>
+							<div>
+								<S.ModalSmall
+									type="text"
+									maxLength={3}
+									onChange={(e) => {
+										const onlyNumber = e.target.value.replace(/[^0-9]/g, '');
+										setAddMobileNumber1(onlyNumber);
+										if (e.target.value.length === 3) {
+											mobileNumber2.current.focus();
+										}
+									}}
+									value={addMobileNumber1}
+								></S.ModalSmall>{' '}
+								-{' '}
+								<S.ModalSmall
+									type="text"
+									maxLength={4}
+									onChange={(e) => {
+										const onlyNumber = e.target.value.replace(/[^0-9]/g, '');
+										setAddMobileNumber2(onlyNumber);
+										if (e.target.value.length === 4) {
+											mobileNumber3.current.focus();
+										}
+									}}
+									ref={mobileNumber2}
+									value={addMobileNumber2}
+								></S.ModalSmall>{' '}
+								-{' '}
+								<S.ModalSmall
+									type="text"
+									maxLength={4}
+									onChange={(e) => {
+										const onlyNumber = e.target.value.replace(/[^0-9]/g, '');
+										setAddMobileNumber3(onlyNumber);
+									}}
+									ref={mobileNumber3}
+									value={addMobileNumber3}
+								></S.ModalSmall>
+							</div>
+						</S.ModalTag>
+						<S.ModalTag>
+							<S.ModalTitle>학부모 전화번호</S.ModalTitle>
+							<div>
+								<S.ModalSmall
+									type="text"
+									maxLength={3}
+									onChange={(e) => {
+										const onlyNumber = e.target.value.replace(/[^0-9]/g, '');
+										setAddPMobileNumber1(onlyNumber);
+										if (e.target.value.length === 3) {
+											pMobileNumber2.current.focus();
+										}
+									}}
+									value={addPMobileNumber1}
+								></S.ModalSmall>{' '}
+								-{' '}
+								<S.ModalSmall
+									type="text"
+									maxLength={4}
+									onChange={(e) => {
+										const onlyNumber = e.target.value.replace(/[^0-9]/g, '');
+										setAddPMobileNumber2(onlyNumber);
+										if (e.target.value.length === 4) {
+											pMobileNumber3.current.focus();
+										}
+									}}
+									ref={pMobileNumber2}
+									value={addPMobileNumber2}
+								></S.ModalSmall>{' '}
+								-{' '}
+								<S.ModalSmall
+									type="text"
+									maxLength={4}
+									onChange={(e) => {
+										const onlyNumber = e.target.value.replace(/[^0-9]/g, '');
+										setAddPMobileNumber3(onlyNumber);
+									}}
+									ref={pMobileNumber3}
+									value={addPMobileNumber3}
+								></S.ModalSmall>
+							</div>
+						</S.ModalTag>
+						<S.ModalTag>
+							<S.ModalTitle>생년월일</S.ModalTitle>
+							<S.ModalInput
+								type="date"
+								defaultValue={addBirthDay}
+								onChange={(e) => {
+									setAddBirthDay(e.target.value);
+								}}
+							></S.ModalInput>
+						</S.ModalTag>
+						<S.ModalTag>
+							<S.ModalTitle>등록일</S.ModalTitle>
+							<S.ModalInput
+								type="date"
+								defaultValue={addRegisterDay}
+								onChange={(e) => {
+									setAddRegisterDay(e.target.value);
+								}}
+							></S.ModalInput>
+						</S.ModalTag>
+						<S.ModalTag>
+							<S.ModalTitle>원생 번호</S.ModalTitle>
+							<S.ModalInput
+								type="text"
+								onChange={(e) => {
+									setAddOrigin(e.target.value);
+								}}
+								onKeyPress={(e) => {
+									if (e.key === 'Enter') {
+										onClickAddStudent();
+									}
+								}}
+							></S.ModalInput>
+						</S.ModalTag>
+					</S.ModalWrapper>
+					<S.ModalButtonBox>
+						<S.ModalReturnButton
+							onClick={() => {
+								setAddToggle(false);
+								setAddKorName('');
+								setAddEmail('');
+								setPassword('');
+								setAddEngName('');
+								setAddGender('M');
+								setAddMobileNumber1('');
+								setAddMobileNumber2('');
+								setAddMobileNumber3('');
+								setAddPMobileNumber1('');
+								setAddPMobileNumber2('');
+								setAddPMobileNumber3('');
+								setAddBirthDay(dateToInput(date));
+								setAddRegisterDay(dateToInput(date));
+								setAddOrigin('');
+							}}
+						>
+							취소
+						</S.ModalReturnButton>
+						<S.ModalOkButton onClick={onClickAddStudent}>저장</S.ModalOkButton>
+					</S.ModalButtonBox>
+				</Modal>
+			) : (
+				<></>
+			)}
+			{isCheck ? (
+				<Modal
+					open={isCheck}
+					closable={false}
+					onCancel={() => {
+						setIsCheck(false);
+					}}
+					footer={null}
+				>
+					<div>
+						<div>{'휴원 처리 하시겠습니까?'}</div>
+						<button onClick={onClickStop}>확인</button>
+						<button
+							onClick={() => {
+								setIsCheck(false);
+							}}
+						>
+							취소
+						</button>
+					</div>
+				</Modal>
+			) : (
+				<></>
+			)}
+		</>
+	);
 }

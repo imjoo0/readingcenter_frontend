@@ -1,53 +1,66 @@
 import styled from "@emotion/styled";
 
+
 export const HeaderWrapper = styled.div`
-	width: 100vw;
-	height: 10vh;
+	width: 83.2%;
+	padding-left: 8.4%;
+	padding-right: 8.4%;
+	height: 5rem;
+	border-bottom: 0.8px solid #dfe1e5 !important;
 	display: flex;
-	justify-content: flex-start;
-	align-items: center;
-	background-color: #3c3e44;
+	justify-content: space-between;
+	background-color: #fff;
+	position: fixed;
+	top: 0;
 `;
 
-export const HeaderTag = styled.div`
-	//margin: 0 1vw;
-	padding: 0 2vw;
-	height: 100%;
-	background-color: #3c3e44;
-	color: #efefef;
+export const MenuDiv = styled.div`
 	display: flex;
 	justify-content: center;
 	align-items: center;
+`;
+
+export const logoHorizentalImage = styled.div`
+	width: 15.6875rem;
+	height: 2rem;
+	flex-shrink: 0;
+	background-image: url('/logo_horizental.svg');
+	background-repeat: no-repeat;
+`;
+
+export const HeaderTag = styled.div`
+	margin-left: 4%;
+	height: 100%;
+	width: 10rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: #5f6268;
+	font-size: 1rem;
+	line-height: normal;
 	:hover {
 		cursor: pointer;
-		box-shadow: 200px 0 0 0 rgba(0, 0, 0, 0.15) inset,
-			-200px 0 0 0 rgba(0, 0, 0, 0.15) inset;
+		color: #000;
 	}
 `;
 
 export const HeaderText = styled.div`
-	font-size: 20px;
-	font-weight: 600;
-	color: #efefef;
-
 	:hover {
 		cursor: pointer;
-		box-shadow: 200px 0 0 0 rgba(0, 0, 0, 0.15) inset,
-			-200px 0 0 0 rgba(0, 0, 0, 0.15) inset;
 	}
 `;
 
 
 export const logout = styled.button`
-	font-size: 20px;
-  height: 40px;
-	font-weight: 600;
-	color: black;
-  position: absolute;
-  right: 50px;
+	font-size: 1rem;
+	font-style: normal;
+	font-weight: 500;
+	line-height: normal;
+	background-color: transparent;
+	border: 0;
+	color: #5f6268;
 	:hover {
 		cursor: pointer;
-		box-shadow: 200px 0 0 0 rgba(0, 0, 0, 0.15) inset,
-			-200px 0 0 0 rgba(0, 0, 0, 0.15) inset;
+		color: #000;
 	}
 `;

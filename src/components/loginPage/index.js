@@ -117,34 +117,33 @@ export default function LoginPageComponent() {
   };
 
   return (
-    <S.Wrapper>
-      <S.LoginBox>
-        <S.LoginBoxLeft>
-          <S.logoImage></S.logoImage>
-        </S.LoginBoxLeft>
+		<S.Wrapper>
+			<S.LoginBox>
+				<S.LoginBoxLeft>
+					<S.logoImage></S.logoImage>
+				</S.LoginBoxLeft>
 
-        <S.LoginBoxRight>
-          <S.LoginTitle>Sign in</S.LoginTitle>
-          <S.LoginLine></S.LoginLine>
-          <S.InputTag>
-            <S.LoginInputTitle>ID</S.LoginInputTitle>
-            <S.LoginInput
-              type="text"
-              onChange={onChangeId}
-              onKeyPress={handleKeyPress}
-            />
-          </S.InputTag>
-          <S.InputTag>
-            <S.LoginInputTitle>PW</S.LoginInputTitle>
-            <S.LoginInput
-              type="password"
-              onChange={onChangePassword}
-              onKeyPress={handleKeyPress}
-            />
-          </S.InputTag>
-          <S.LoginButton onClick={onClickLogin}>Sign in</S.LoginButton>
-        </S.LoginBoxRight>
-      </S.LoginBox>
-    </S.Wrapper>
-  );
+				<S.LoginBoxRight>
+					<S.LoginTitle>Sign in</S.LoginTitle>
+					<S.InputTag>
+						<S.LoginInput
+							type="text"
+							onChange={onChangeId}
+							onKeyPress={handleKeyPress}
+							placeholder="아이디를 입력해주세요."
+						/>
+					</S.InputTag>
+					<S.InputTag>
+						<S.LoginInput
+							type="password"
+							onChange={onChangePassword}
+							onKeyPress={handleKeyPress}
+							placeholder="비밀번호를 입력해주세요."
+						/>
+					</S.InputTag>
+					<S.LoginButton onClick={onClickLogin}>Sign in</S.LoginButton>
+				</S.LoginBoxRight>
+			</S.LoginBox>
+		</S.Wrapper>
+	);
 }

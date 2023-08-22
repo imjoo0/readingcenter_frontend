@@ -1,12 +1,12 @@
 import styled from "@emotion/styled";
 
 export const BooksWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  margin-top: 20px;
-  padding: 0px 30px 0px 30px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: flex-start;
+	margin-top: 10rem;
+	padding: 0 8.4% 0 8.4%;
 `;
 
 export const BooksTitle = styled.div`

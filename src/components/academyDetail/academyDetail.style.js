@@ -1,18 +1,39 @@
 import styled from "@emotion/styled";
 
 export const AcademyDetailWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  margin-top: 20px;
-  padding: 0px 30px 0px 30px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: flex-start;
+	margin-top: 10rem;
+	padding: 0 8.4% 0 8.4%;
 `;
 
 export const AcademyDetailTitle = styled.div`
-  font-size: 35px;
-  font-weight: 600;
+	font-size: 2.5rem;
+	font-style: normal;
+	font-weight: 500;
+	line-height: 3.5rem;
+  height: 3.5rem;
+  display: flex;
+  vertical-align: center;
 `;
+export const BackButton = styled.button`
+	width: 2.5rem;
+	margin-right: 0.5rem;
+	background-color: transparent;
+	border: none;
+	height: 3.5rem;
+  margin-bottom: 0;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40' fill='none'%3E%3Cpath d='M35 20H5M5 20L19.1667 5.83331M5 20L19.1667 34.1666' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: center;
+	background-position-y: center;
+	:hover {
+		cursor: pointer;
+	}
+`;
+
 
 export const TitleLine = styled.div`
   border-top: 2px solid;
@@ -21,8 +42,8 @@ export const TitleLine = styled.div`
 `;
 
 export const EditBox = styled.div`
-  display: flex;
-  justify-content: space-between;
+  margin-top:2.5rem;
+  width: 100%;
 `;
 
 export const ImageBox = styled.div`
@@ -33,36 +54,25 @@ export const ImageBox = styled.div`
 `;
 
 export const InputBox = styled.div`
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: flex-start;
-`;
-export const InputBoxLeft = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-export const InputBoxRight = styled.div`
-  margin-left: 30px;
-  display: flex;
-  flex-direction: column;
 `;
 
 export const InputTag = styled.div`
-  width: 23vw;
-  height: 6vh;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  width: 47%;
+  display: block;
+`;
+export const TagLine = styled.div`
+	display: flex;
+	justify-content: space-between;
+	width: 100%;
+	margin-bottom: 1.25rem;
 `;
 
 export const InputInput = styled.input`
-  width: 10vw;
-  font-size: 16px;
-  padding: 4px;
-  border: 1px solid #dddddd;
-  border-radius: 5px;
-  margin: 0;
+	padding: 0.81rem 1.5rem;
+	border-radius: 0.5rem;
+	border: 1px solid #dbdde1;
+	width: calc(100% - 3rem);
+  color:#333;
 `;
 
 export const CalenderDiv = styled.div`
@@ -73,13 +83,11 @@ export const CalenderDiv = styled.div`
 `;
 
 export const InputName = styled.div`
-  width: 9vw;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #1e1e1e;
-  color: #efefef;
+	font-size: 0.875rem;
+	font-style: normal;
+	font-weight: 500;
+	line-height: normal;
+  margin-bottom: 0.75rem;
 `;
 
 export const CheckDiv = styled.div`
@@ -90,25 +98,36 @@ export const CheckDiv = styled.div`
 `;
 
 export const ButtonBox = styled.div`
-  margin: 20px 0;
-  width: 90vw;
+  margin: 20px 0 2.5rem 0;
+  width: 100%;
   display: flex;
   justify-content: flex-end;
   align-items: center;
 `;
 
 export const RouteButton = styled.button`
-  width: 8vw;
-  height: 5vh;
-  background-color: #1f1f1f;
-  border: none;
-  color: #eeeeee;
-  font-size: 16px;
-  margin-right: 20px;
-  :hover {
-    cursor: pointer;
-  }
+  margin-top: 1.5rem;
+	margin-left: 0.5rem;
+	border-radius: 0.5rem;
+	background: #333;
+  color: #fff;
+	border: none;
+	padding: 0.75rem 1.5rem;
+	:hover {
+		cursor: pointer;
+	}
 `;
+
+export const Box = styled.div`
+	color: #000;
+	font-family: Spoqa Han Sans Neo;
+	font-size: 1.0625rem;
+	font-style: normal;
+	font-weight: 500;
+	line-height: normal;
+  margin-bottom: 1rem;
+`;
+
 
 export const TableTitleBox = styled.div`
   width: 100%;
@@ -118,30 +137,32 @@ export const TableTitleBox = styled.div`
 `;
 
 export const Table = styled.div`
-  width: 100%;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
+	width: 100%;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	border-radius: 0.25rem 0.25rem 0rem 0rem;
 `;
 
 export const TableHeaderRound = styled.div`
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  height: 3vh;
-  border-top: 2px solid #1f1f1f;
-  border-bottom: 2px solid #1f1f1f;
+	width: 100%;
+	display: flex;
+	border: 0.8px solid #dbdde1;
+	justify-content: space-around;
+	align-items: center;
+	height: 2.75rem;
+	background: #f7f8fa;
 `;
 
 export const TableRound = styled.div`
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  height: 6vh;
+	width: 100%;
+	display: flex;
+	border: 0.8px solid #dbdde1;
+	justify-content: space-around;
+	align-items: center;
+	height: 6vh;
 
-  border-bottom: 1px solid #dddddd;
+	border-bottom: 1px solid #dddddd;
 `;
 
 export const TableHeadLeft = styled.div`

@@ -977,1489 +977,1786 @@ export default function ClassPage() {
   }, [userData]);
 
   return (
-    <S.ClassWrapper>
-      <style>{`
+		<S.ClassWrapper>
+			<style>{`
             table {
               border-collapse: separate;
               border-spacing: 0;
+              border-radius: 0.125rem;
+              border: 1px solid #DBDDE1;
               width: 100%;
+            }
+            thead{
+              border-radius: 0.25rem 0.25rem 0rem 0rem;
+              background: #F7F8FA;
             }
             th,
             td {
-              padding: 6px 15px;
-            }
-            th {
-              background: #42444e;
-              color: #fff;
+              border: 0.8px solid #DBDDE1;
+              padding: 6px 1.5rem;
+              font-size: 0.875rem;
+              font-style: normal;
+              font-weight: 500;
+              line-height: normal;
               text-align: left;
             }
-            tr:first-child th:first-child {
-              border-top-left-radius: 6px;
-            }
-            tr:first-child th:last-child {
-              border-top-right-radius: 6px;
-            }
             td {
-              border-right: 1px solid #c6c9cc;
-              border-bottom: 1px solid #c6c9cc;
+              color: #333;
             }
-            td:first-child {
-              border-left: 1px solid #c6c9cc;
-            }
-            tr:nth-child(even) td {
-              background: #eaeaed;
-            }
-            tr:last-child td:first-child {
-              border-bottom-left-radius: 6px;
-            }
-            tr:last-child td:last-child {
-              border-bottom-right-radius: 6px;
-            }
+            
           `}</style>
-      <S.ClassTitle>수업 원생 추가</S.ClassTitle>
-      <S.SwitchDiv>
-        <S.SwitchFont>알람 소리</S.SwitchFont>
+			<S.ClassTitle>수업 관리</S.ClassTitle>
 
-        <Switch
-          defaultChecked={false}
-          onChange={(checked) => {
-            setIsSound(checked);
-          }}
-        ></Switch>
-        <S.SwitchFont>{isSound ? "On" : "Off"}</S.SwitchFont>
-      </S.SwitchDiv>
-      <S.ClassTitleLine></S.ClassTitleLine>
-      <S.ClassTopMenu>
-        <div>
-          <div style={{ display: "flex" }}>
-            <S.DateMoveButton onClick={onClickMoveDate(-1)}>
-              {"<"}
-            </S.DateMoveButton>
-            <S.ClassDate onClick={onClickCalendar}>
-              {dateToString(calendarDate)}
-            </S.ClassDate>
-            <S.DateMoveButton onClick={onClickMoveDate(+1)}>
-              {">"}
-            </S.DateMoveButton>
-          </div>
-          {isCalendar ? (
-            <Calendar
-              // calendarType="gregory"
-              onChange={onClickDate}
-              value={date}
-              locale="en-US"
-              tileClassName={tileClassName}
-            ></Calendar>
-          ) : (
-            <></>
-          )}
-        </div>
+			<S.ClassTopMenu>
+				<S.DateBox>
+					<S.DateMoveButton onClick={onClickMoveDate(-1)}>
+						{'<'}
+					</S.DateMoveButton>
+					<S.ClassDate onClick={onClickCalendar}>
+						{dateToString(calendarDate)}
+					</S.ClassDate>
+					<S.DateMoveButton onClick={onClickMoveDate(+1)}>
+						{'>'}
+					</S.DateMoveButton>
+					{isCalendar ? (
+						<Calendar
+							// calendarType="gregory"
+							onChange={onClickDate}
+							value={date}
+							locale="en-US"
+							tileClassName={tileClassName}
+						></Calendar>
+					) : (
+						<></>
+					)}
+				</S.DateBox>
+			</S.ClassTopMenu>
 
-        <div>
-          <S.ClassButton
-            onClick={() => {
-              setStudentToggle(true);
-            }}
-          >
-            수업 원생 추가
-          </S.ClassButton>
+			<S.ClassMiddleBox>
+				<S.ClassMiddleTag>
+					<S.CountNumber style={{ marginRight: '1.37rem' }}>
+						{'전체 ' +
+							(studentListData?.getLecturesByAcademyAndDateStudents?.length ??
+								0) +
+							'명'}
+					</S.CountNumber>
+					<S.ClassSmallGreenButton
+						onClick={() => {
+							setIsAttendance(true);
+							setIsLate(false);
+							setIsComplete(false);
+						}}
+					>
+						등원
+						<div
+							style={{
+								width: '0.5rem',
+								height: '0.5rem',
+								background: '#017D73',
+								marginLeft: '0.37rem',
+								borderRadius: '5rem',
+							}}
+						></div>
+					</S.ClassSmallGreenButton>
+					{isAttendance ? (
+						<>
+							<div
+								style={{
+									display: 'flex',
+								}}
+							>
+								<S.ClassSmallTimeInput
+									type="time"
+									onChange={(e) => {
+										setLateTime(e.target.value);
+									}}
+									defaultValue={dateToClock(date)}
+								></S.ClassSmallTimeInput>
 
-          <S.ClassButton
-            onClick={() => {
-              setClassToggle(true);
-              setAddClassType("once");
-              setIsMakeUp(false);
-            }}
-          >
-            수업 추가
-          </S.ClassButton>
-        </div>
-      </S.ClassTopMenu>
-      <S.ClassMiddleBox>
-        <S.ClassMiddleTag>
-          <S.CountNumber>
-            {(studentListData?.getLecturesByAcademyAndDateStudents?.length ??
-              0) + "명"}
-          </S.CountNumber>
-          <S.ClassSmallGreenButton
-            onClick={() => {
-              setIsAttendance(true);
-              setIsLate(false);
-              setIsComplete(false);
-            }}
-          >
-            등원
-          </S.ClassSmallGreenButton>
-          {isAttendance ? (
-            <>
-              <div
-                style={{
-                  display: "flex",
-                }}
-              >
-                <span>{"등원 시간"}</span>
-                <input
-                  type="time"
-                  onChange={(e) => {
-                    setLateTime(e.target.value);
-                  }}
-                  defaultValue={dateToClock(date)}
-                ></input>
+								<S.ClassSmallTimeBtn
+									onClick={() => {
+										onClickAttendance('attendance')();
+										setIsAttendance(false);
+									}}
+								>
+									확인
+								</S.ClassSmallTimeBtn>
+								<S.ClassSmallTimeBtn
+									onClick={() => {
+										setIsAttendance(false);
+									}}
+								>
+									취소
+								</S.ClassSmallTimeBtn>
+							</div>
+						</>
+					) : (
+						<></>
+					)}
 
-                <button
-                  onClick={() => {
-                    onClickAttendance("attendance")();
-                    setIsAttendance(false);
-                  }}
-                >
-                  확인
-                </button>
-                <button
-                  onClick={() => {
-                    setIsAttendance(false);
-                  }}
-                >
-                  취소
-                </button>
-              </div>
-            </>
-          ) : (
-            <></>
-          )}
+					<S.ClassSmallRedButton
+						onClick={() => {
+							setIsConfirm(true);
+							setConfirmState('결석');
+						}}
+						style={{ marginLeft: '0.75rem' }}
+					>
+						결석
+						<div
+							style={{
+								width: '0.5rem',
+								height: '0.5rem',
+								background: '#BD271E',
+								marginLeft: '0.37rem',
+								borderRadius: '5rem',
+							}}
+						></div>
+					</S.ClassSmallRedButton>
+					<S.ClassSmallBlueButton
+						onClick={() => {
+							setIsAttendance(false);
+							setIsLate(false);
+							setIsComplete(true);
+						}}
+						style={{ marginLeft: '0.75rem' }}
+					>
+						하원
+						<div
+							style={{
+								width: '0.5rem',
+								height: '0.5rem',
+								background: '#333',
+								marginLeft: '0.37rem',
+								borderRadius: '5rem',
+							}}
+						></div>
+					</S.ClassSmallBlueButton>
+					{isComplete ? (
+						<>
+							<div
+								style={{
+									display: 'flex',
+								}}
+							>
+								<S.ClassSmallTimeInput
+									type="time"
+									onChange={(e) => {
+										setLateTime(e.target.value);
+									}}
+									defaultValue={dateToClock(date)}
+								></S.ClassSmallTimeInput>
+								<S.ClassSmallTimeBtn
+									onClick={() => {
+										onClickAttendance('completed')();
+										setIsComplete(false);
+									}}
+								>
+									확인
+								</S.ClassSmallTimeBtn>
+								<S.ClassSmallTimeBtn
+									onClick={() => {
+										setIsComplete(false);
+									}}
+								>
+									취소
+								</S.ClassSmallTimeBtn>
+							</div>
+						</>
+					) : (
+						<></>
+					)}
+					<S.ClassSmallBlackButton
+						onClick={() => {
+							setIsAttendance(false);
+							setIsLate(true);
+							setIsComplete(false);
+						}}
+						style={{ marginLeft: '0.75rem' }}
+					>
+						지각
+						<div
+							style={{
+								width: '0.5rem',
+								height: '0.5rem',
+								background: '#F5A700',
+								marginLeft: '0.37rem',
+								borderRadius: '5rem',
+							}}
+						></div>
+					</S.ClassSmallBlackButton>
+					{isLate ? (
+						<>
+							<div
+								style={{
+									display: 'flex',
+								}}
+							>
+								<S.ClassSmallTimeInput
+									type="time"
+									onChange={(e) => {
+										setLateTime(e.target.value);
+									}}
+									defaultValue={dateToClock(date)}
+								></S.ClassSmallTimeInput>
+								<S.ClassSmallTimeBtn
+									onClick={() => {
+										onClickAttendance('late')();
+										setIsLate(false);
+									}}
+								>
+									확인
+								</S.ClassSmallTimeBtn>
+								<S.ClassSmallTimeBtn
+									onClick={() => {
+										setIsLate(false);
+									}}
+								>
+									취소
+								</S.ClassSmallTimeBtn>
+							</div>
+						</>
+					) : (
+						<></>
+					)}
+					<S.ClassSmallBlackButton
+						onClick={() => {
+							setIsConfirm(true);
+							setConfirmState('삭제');
+						}}
+						style={{ marginLeft: '0.75rem' }}
+					>
+						삭제
+						<div
+							style={{
+								width: '0.5rem',
+								height: '0.5rem',
+								background: 'purple',
+								marginLeft: '0.37rem',
+								borderRadius: '5rem',
+							}}
+						></div>
+					</S.ClassSmallBlackButton>
+				</S.ClassMiddleTag>
+				<S.ClassMiddleTag>
+					<S.ClassInput
+						type="text"
+						onChange={onChangeSearch}
+						placeholder="       원번 혹은 이름을 입력하세요."
+					></S.ClassInput>
 
-          <S.ClassSmallRedButton
-            onClick={() => {
-              setIsConfirm(true);
-              setConfirmState("결석");
-            }}
-          >
-            결석
-          </S.ClassSmallRedButton>
-          <S.ClassSmallBlueButton
-            onClick={() => {
-              setIsAttendance(false);
-              setIsLate(false);
-              setIsComplete(true);
-            }}
-          >
-            하원
-          </S.ClassSmallBlueButton>
-          {isComplete ? (
-            <>
-              <div
-                style={{
-                  display: "flex",
-                }}
-              >
-                <span>{"하원 시간 "}</span>
-                <input
-                  type="time"
-                  onChange={(e) => {
-                    setLateTime(e.target.value);
-                  }}
-                  defaultValue={dateToClock(date)}
-                ></input>
-                <button
-                  onClick={() => {
-                    onClickAttendance("completed")();
-                    setIsComplete(false);
-                  }}
-                >
-                  확인
-                </button>
-                <button
-                  onClick={() => {
-                    setIsComplete(false);
-                  }}
-                >
-                  취소
-                </button>
-              </div>
-            </>
-          ) : (
-            <></>
-          )}
-          <S.ClassSmallBlackButton
-            onClick={() => {
-              setIsAttendance(false);
-              setIsLate(true);
-              setIsComplete(false);
-            }}
-          >
-            지각
-          </S.ClassSmallBlackButton>
-          <S.ClassSmallBlackButton
-            onClick={() => {
-              setIsConfirm(true);
-              setConfirmState("삭제");
-            }}
-            style={{ backgroundColor: "purple" }}
-          >
-            삭제
-          </S.ClassSmallBlackButton>
+					<S.ClassButton
+						onClick={() => {
+							setStudentToggle(true);
+						}}
+					>
+						수업 관리
+					</S.ClassButton>
+					<S.ClassButton
+						onClick={() => {
+							setClassToggle(true);
+							setAddClassType('once');
+							setIsMakeUp(false);
+						}}
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 20 20"
+							fill="none"
+							style={{ marginRight: '0.25rem' }}
+						>
+							<path
+								d="M5 10H10M10 10H15M10 10V5M10 10V15"
+								stroke="#81858C"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						수업 추가
+					</S.ClassButton>
+					<S.SwitchDiv>
+						<S.SwitchFont>알람</S.SwitchFont>
+						<Switch
+							defaultChecked={false}
+							onChange={(checked) => {
+								setIsSound(checked);
+							}}
+							style={{ marginLeft: '1rem' }}
+						></Switch>
+					</S.SwitchDiv>
+				</S.ClassMiddleTag>
+			</S.ClassMiddleBox>
+			<table>
+				<thead>
+					<tr>
+						<th>
+							<input
+								type="checkbox"
+								style={{ width: '20px', height: '20px' }}
+								checked={
+									checkList.length !== 0 &&
+									studentArray.length === checkList.length
+								}
+								onChange={onChangeAllSelect}
+							></input>
+						</th>
+						<th>원생 번호</th>
+						<th>원생명</th>
+						<th>시작 시간</th>
+						<th>종료 시간</th>
+						<th>출결 상태</th>
+						<th>등원 시간</th>
+						<th>하원 시간</th>
+						<th>강의 정보</th>
+						<th>수업 준비</th>
+						<th>예약 도서</th>
+						<th>원생 정보</th>
+					</tr>
+				</thead>
+				<tbody>
+					{studentArray?.map((el) => {
+						return (
+							<tr key={el.id || uuidv4()}>
+								<td>
+									<input
+										type="checkbox"
+										onChange={(e) =>
+											onChangeEach(e, el.lecture.id, el.student.id)
+										}
+										checked={checkList.some((ele) => {
+											return (
+												Number(ele.studentId) === Number(el.student.id) &&
+												Number(ele.lectureId) === Number(el.lecture.id)
+											);
+										})}
+									></input>
+								</td>
+								<td>{el.student.origin}</td>
+								<td>{el.student.korName + '(' + el.student.engName + ')'}</td>
+								<td
+									style={
+										date.getDate() !== calendarDate.getDate() ||
+										checkDate.getHours() * 60 +
+											checkDate.getMinutes() -
+											Number(el.lecture.startTime.slice(0, 2)) * 60 -
+											Number(el.lecture.startTime.slice(3, 5)) <
+											0 ||
+										el?.attendanceStatus !== null
+											? {}
+											: { color: 'tomato' }
+									}
+								>
+									{timeToHour(el.lecture.startTime)}
+								</td>
+								<td
+									style={
+										checkDate.getHours() * 60 +
+											checkDate.getMinutes() -
+											Number(el.lecture.endTime.slice(0, 2)) * 60 -
+											Number(el.lecture.endTime.slice(3, 5)) <
+											0 ||
+										el?.attendanceStatus?.exitTime !== null ||
+										['결석 (보강)', '결석'].includes(
+											el?.attendanceStatus?.statusDisplay
+										)
+											? {}
+											: { color: 'tomato' }
+									}
+								>
+									{timeToHour(el.lecture.endTime)}
+								</td>
+								<td>{el?.attendanceStatus?.statusDisplay ?? ''}</td>
+								<td>
+									{el?.attendanceStatus?.entryTime
+										? timeToHour(
+												dateToClock(
+													dateToKoreanTime(el?.attendanceStatus?.entryTime)
+												)
+										  )
+										: ''}
+								</td>
+								<td>
+									{el?.attendanceStatus?.exitTime
+										? timeToHour(
+												dateToClock(
+													dateToKoreanTime(el?.attendanceStatus?.exitTime)
+												)
+										  )
+										: ''}
+								</td>
+								<td>
+									{el.lecture.lectureInfo.length > 25 ? (
+										<S.lectureInfo
+											onClick={() => {
+												setIsInfo(true);
+												setInfo(el.lecture.lectureInfo);
+											}}
+										>
+											{longWord(el.lecture.lectureInfo)}
+										</S.lectureInfo>
+									) : (
+										el.lecture.lectureInfo
+									)}
+								</td>
+								<td>
+									<BookOutlined
+										onClick={onClickBooks(el.student, el.lecture)}
+									></BookOutlined>
+								</td>
+								<td>{el.student.reservedBooksCount + '권'}</td>
+								<td>
+									<SearchOutlined
+										onClick={() => {
+											window.open(
+												'/' + router.query.branch + '/academy/' + el.student.id
+											);
+										}}
+									/>
+								</td>
+							</tr>
+						);
+					})}
+				</tbody>
+			</table>
 
-          {isLate ? (
-            <>
-              <div
-                style={{
-                  display: "flex",
-                }}
-              >
-                <span>{"지각 시간 "}</span>
-                <input
-                  type="time"
-                  onChange={(e) => {
-                    setLateTime(e.target.value);
-                  }}
-                  defaultValue={dateToClock(date)}
-                ></input>
-                <button
-                  onClick={() => {
-                    onClickAttendance("late")();
-                    setIsLate(false);
-                  }}
-                >
-                  확인
-                </button>
-                <button
-                  onClick={() => {
-                    setIsLate(false);
-                  }}
-                >
-                  취소
-                </button>
-              </div>
-            </>
-          ) : (
-            <></>
-          )}
-        </S.ClassMiddleTag>
-        <S.ClassMiddleTag>
-          <S.ClassInput
-            type="text"
-            onChange={onChangeSearch}
-            placeholder="원번 혹은 이름으로 검색해주세요."
-          ></S.ClassInput>
-        </S.ClassMiddleTag>
-      </S.ClassMiddleBox>
-      <table>
-        <thead>
-          <tr>
-            <th>
-              <input
-                type="checkbox"
-                style={{ width: "20px", height: "20px" }}
-                checked={
-                  checkList.length !== 0 &&
-                  studentArray.length === checkList.length
-                }
-                onChange={onChangeAllSelect}
-              ></input>
-            </th>
-            <th>원생 번호</th>
-            <th>원생명</th>
-            <th>시작 시간</th>
-            <th>종료 시간</th>
-            <th>출결 상태</th>
-            <th>등원 시간</th>
-            <th>하원 시간</th>
-            <th>강의 정보</th>
-            <th>수업 준비</th>
-            <th>예약 도서</th>
-            <th>원생 정보</th>
-          </tr>
-        </thead>
-        <tbody>
-          {studentArray?.map((el) => {
-            return (
-              <tr key={el.id || uuidv4()}>
-                <td>
-                  <input
-                    type="checkbox"
-                    onChange={(e) =>
-                      onChangeEach(e, el.lecture.id, el.student.id)
-                    }
-                    checked={checkList.some((ele) => {
-                      return (
-                        Number(ele.studentId) === Number(el.student.id) &&
-                        Number(ele.lectureId) === Number(el.lecture.id)
-                      );
-                    })}
-                  ></input>
-                </td>
-                <td>{el.student.origin}</td>
-                <td>{el.student.korName + "(" + el.student.engName + ")"}</td>
-                <td
-                  style={
-                    date.getDate() !== calendarDate.getDate() ||
-                    checkDate.getHours() * 60 +
-                      checkDate.getMinutes() -
-                      Number(el.lecture.startTime.slice(0, 2)) * 60 -
-                      Number(el.lecture.startTime.slice(3, 5)) <
-                      0 ||
-                    el?.attendanceStatus !== null
-                      ? {}
-                      : { color: "tomato" }
-                  }
-                >
-                  {timeToHour(el.lecture.startTime)}
-                </td>
-                <td
-                  style={
-                    checkDate.getHours() * 60 +
-                      checkDate.getMinutes() -
-                      Number(el.lecture.endTime.slice(0, 2)) * 60 -
-                      Number(el.lecture.endTime.slice(3, 5)) <
-                      0 ||
-                    el?.attendanceStatus?.exitTime !== null ||
-                    ["결석 (보강)", "결석"].includes(
-                      el?.attendanceStatus?.statusDisplay
-                    )
-                      ? {}
-                      : { color: "tomato" }
-                  }
-                >
-                  {timeToHour(el.lecture.endTime)}
-                </td>
-                <td>{el?.attendanceStatus?.statusDisplay ?? ""}</td>
-                <td>
-                  {el?.attendanceStatus?.entryTime
-                    ? timeToHour(
-                        dateToClock(
-                          dateToKoreanTime(el?.attendanceStatus?.entryTime)
-                        )
-                      )
-                    : ""}
-                </td>
-                <td>
-                  {el?.attendanceStatus?.exitTime
-                    ? timeToHour(
-                        dateToClock(
-                          dateToKoreanTime(el?.attendanceStatus?.exitTime)
-                        )
-                      )
-                    : ""}
-                </td>
-                <td>
-                  {el.lecture.lectureInfo.length > 25 ? (
-                    <S.lectureInfo
-                      onClick={() => {
-                        setIsInfo(true);
-                        setInfo(el.lecture.lectureInfo);
-                      }}
-                    >
-                      {longWord(el.lecture.lectureInfo)}
-                    </S.lectureInfo>
-                  ) : (
-                    el.lecture.lectureInfo
-                  )}
-                </td>
-                <td>
-                  <BookOutlined
-                    onClick={onClickBooks(el.student, el.lecture)}
-                  ></BookOutlined>
-                </td>
-                <td>{el.student.reservedBooksCount + "권"}</td>
-                <td>
-                  <SearchOutlined
-                    onClick={() => {
-                      window.open(
-                        "/" + router.query.branch + "/academy/" + el.student.id
-                      );
-                    }}
-                  />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+			<S.PageContainer>
+				{Array.from({ length: totalPages }, (_, i) => (
+					<S.PageBox
+						key={i}
+						style={
+							i + 1 === page
+								? { backgroundColor: 'purple', color: '#eeeeee' }
+								: {}
+						}
+						onClick={onClickPage(i + 1)}
+					>
+						{i + 1}
+					</S.PageBox>
+				))}
+			</S.PageContainer>
 
-      <S.PageContainer>
-        {Array.from({ length: totalPages }, (_, i) => (
-          <S.PageBox
-            key={i}
-            style={
-              i + 1 === page
-                ? { backgroundColor: "purple", color: "#eeeeee" }
-                : {}
-            }
-            onClick={onClickPage(i + 1)}
-          >
-            {i + 1}
-          </S.PageBox>
-        ))}
-      </S.PageContainer>
+			{classToggle ? (
+				<Modal
+					closable={false}
+					open={classToggle}
+					width={'55vw'}
+					height={'50vh'}
+					onCancel={() => {
+						setClassToggle(false);
+						setAddList([]);
+						setSelectDates([]);
+						setStudentPage(0);
+					}}
+					footer={null}
+				>
+					<S.ClassTitle>{isMakeUp ? '수업 보강' : '수업 추가'}</S.ClassTitle>
+					<S.ModalClassAddWrapper>
+						<S.ModalWrapper style={{ width: '48%', display: 'block' }}>
+							<div
+								style={{
+									fontSize: '0.875rem',
+									color: '#000',
+									marginBottom: '0.75rem',
+								}}
+							>
+								지점
+							</div>
+							<select
+								onChange={(event) => {
+									setTeacherId(event.target.value);
+								}}
+								style={{
+									borderRadius: '0.5rem',
+									border: '1px solid #DBDDE1',
+									width: '100%',
+									padding: '0.81rem 1.5rem',
+								}}
+								value={teacherId}
+							>
+								{userData?.allUsers
+									.filter((el) => el.userCategory === '선생님')
+									.map((el) => {
+										return (
+											<option key={uuidv4()} value={el.profile.id}>
+												{el.profile.korName}
+											</option>
+										);
+									})}
+							</select>
+							<div
+								style={{
+									fontSize: '0.875rem',
+									color: '#000',
+									marginBottom: '0.75rem',
+									marginTop: '1.25rem',
+								}}
+							>
+								수업 방식
+							</div>
+							{isMakeUp ? (
+								<></>
+							) : (
+								<S.ModalRadioBox>
+									<input
+										type="radio"
+										name="type"
+										defaultChecked={true}
+										value={'once'}
+										onClick={() => setAddClassType('once')}
+										style={{ width: '1.25rem', height: '1.25rem' }}
+									></input>
+									<div style={{ fontSize: '0.875rem', paddingLeft: '0.5rem' }}>
+										단일
+									</div>
+									<input
+										type="radio"
+										name="type"
+										value={'routine'}
+										style={{
+											width: '1.25rem',
+											height: '1.25rem',
+											marginLeft: '1.5rem',
+										}}
+										onClick={() => setAddClassType('routine')}
+									></input>
+									<div style={{ fontSize: '0.875rem', paddingLeft: '0.5rem' }}>
+										반복
+									</div>
+								</S.ModalRadioBox>
+							)}
+							{addClassType === 'once' ? (
+								<></>
+							) : (
+								<S.ModalRoutineInput>
+									<div
+										style={{
+											marginTop: '1.87rem',
+											width: '100%',
+											border: '1px solid #DBDDE1',
+											borderRadius: '0.5rem',
+										}}
+									>
+										<input
+											type="number"
+											onChange={onChangeRoutineCount}
+											style={{
+												paddingLeft: '5%',
+												paddingTop: '0.81rem',
+												paddingBottom: '0.81rem',
+												border: '0',
+												width: '85%',
+											}}
+										></input>
+										<span>주</span>
+									</div>
+									<S.ModalRoutineDates>
+										{week.map((el, index) => {
+											return (
+												<S.ModalRoutineDate
+													key={uuidv4()}
+													onClick={onClickDates(index)}
+													style={
+														selectDates.includes(index)
+															? {
+																	backgroundColor: '#333',
+																	color: '#eeeeee',
+															  }
+															: {}
+													}
+												>
+													{el}
+												</S.ModalRoutineDate>
+											);
+										})}
+									</S.ModalRoutineDates>
+								</S.ModalRoutineInput>
+							)}
+							<div>
+								<div style={{ marginTop: '1.87rem' }}>수업 날짜</div>
+							</div>
+							<S.InputInput
+								type="date"
+								defaultValue={dateToInput(date)}
+								style={{ width: '88%', height: '2.75rem', padding: '0 1.5rem' }}
+								onChange={(event) => {
+									setAddClassDate(event.target.value);
+								}}
+							></S.InputInput>
+							<div>
+								<div style={{ marginTop: '1.25rem', marginBottom: '0.75rem' }}>
+									수업 시간
+								</div>
+							</div>
+							<S.TimeBox style={{ width: '100%' }}>
+								<input
+									type="time"
+									style={{
+										width: '40%',
+										fontSize: '17px',
+										border: '1px solid #dddddd',
+										paddingLeft: '12px',
+										borderRadius: '5px',
+										height: '2.75rem',
+									}}
+									defaultValue={dateToClock(date)}
+									onChange={(event) => {
+										setAddClassStart(event.target.value);
+									}}
+								></input>
+								~
+								<input
+									type="time"
+									style={{
+										width: '40%',
+										fontSize: '17px',
+										border: '1px solid #dddddd',
+										paddingLeft: '12px',
+										borderRadius: '5px',
+										height: '2.75rem',
+									}}
+									defaultValue={dateToClockOneHour(date)}
+									onChange={(event) => {
+										setAddClassEnd(event.target.value);
+									}}
+								></input>
+							</S.TimeBox>
+							<S.ModalInputBox style={{ display: 'block' }}>
+								<div>
+									<div
+										style={{ marginTop: '1.25rem', marginBottom: '0.75rem' }}
+									>
+										메모
+									</div>
+								</div>
+								<S.ModalTextArea
+									onChange={(event) => {
+										setAddClassInfo(event.target.value);
+									}}
+									style={{
+										width: '100%',
+										borderRadius: '0.5rem',
+										border: '1px solid #DBDDE1',
+									}}
+								></S.ModalTextArea>
+							</S.ModalInputBox>
+						</S.ModalWrapper>
 
-      {classToggle ? (
-        <Modal
-          closable={false}
-          open={classToggle}
-          width={"55vw"}
-          height={"50vh"}
-          onCancel={() => {
-            setClassToggle(false);
-            setAddList([]);
-            setSelectDates([]);
-            setStudentPage(0);
-          }}
-          footer={null}
-        >
-          <S.ClassTitle>{isMakeUp ? "수업 보강" : "수업 추가"}</S.ClassTitle>
-          <S.ClassTitleLine></S.ClassTitleLine>
-          <S.ModalWrapper>
-            <select
-              onChange={(event) => {
-                setTeacherId(event.target.value);
-              }}
-              value={teacherId}
-            >
-              {userData?.allUsers
-                .filter((el) => el.userCategory === "선생님")
-                .map((el) => {
-                  return (
-                    <option key={uuidv4()} value={el.profile.id}>
-                      {el.profile.korName}
-                    </option>
-                  );
-                })}
-            </select>
-            {isMakeUp ? (
-              <></>
-            ) : (
-              <S.ModalRadioBox>
-                <input
-                  type="radio"
-                  name="type"
-                  defaultChecked={true}
-                  value={"once"}
-                  onClick={() => setAddClassType("once")}
-                ></input>
-                <div>단일</div>
-                <input
-                  type="radio"
-                  name="type"
-                  value={"routine"}
-                  onClick={() => setAddClassType("routine")}
-                ></input>
-                <div>반복</div>
-              </S.ModalRadioBox>
-            )}
-            <S.ModalInputBox>
-              <div>
-                <div>수업 날짜</div>
-              </div>
-              {addClassType === "once" ? (
-                <></>
-              ) : (
-                <S.ModalRoutineInput>
-                  <div>
-                    <input
-                      type="number"
-                      onChange={onChangeRoutineCount}
-                    ></input>
-                    <span>주</span>
-                  </div>
-                  <S.ModalRoutineDates>
-                    {week.map((el, index) => {
-                      return (
-                        <S.ModalRoutineDate
-                          key={uuidv4()}
-                          onClick={onClickDates(index)}
-                          style={
-                            selectDates.includes(index)
-                              ? { backgroundColor: "purple", color: "#eeeeee" }
-                              : {}
-                          }
-                        >
-                          {el}
-                        </S.ModalRoutineDate>
-                      );
-                    })}
-                  </S.ModalRoutineDates>
-                </S.ModalRoutineInput>
-              )}
-            </S.ModalInputBox>
-            <div
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "flex-end",
-              }}
-            >
-              <S.InputInput
-                type="date"
-                defaultValue={dateToInput(date)}
-                style={{ width: "50%" }}
-                onChange={(event) => {
-                  setAddClassDate(event.target.value);
-                }}
-              ></S.InputInput>
-            </div>
-            <S.ModalInputBox>
-              <div>
-                <div>수업 시간</div>
-              </div>
-              <S.TimeBox>
-                <input
-                  type="time"
-                  style={{
-                    width: "10vw",
-                    fontSize: "17px",
-                    border: "1px solid #dddddd",
-                    paddingLeft: "12px",
-                    borderRadius: "5px",
-                  }}
-                  defaultValue={dateToClock(date)}
-                  onChange={(event) => {
-                    setAddClassStart(event.target.value);
-                  }}
-                ></input>
-                ~
-                <input
-                  type="time"
-                  style={{
-                    width: "10vw",
-                    fontSize: "17px",
-                    border: "1px solid #dddddd",
-                    paddingLeft: "12px",
-                    borderRadius: "5px",
-                  }}
-                  defaultValue={dateToClockOneHour(date)}
-                  onChange={(event) => {
-                    setAddClassEnd(event.target.value);
-                  }}
-                ></input>
-              </S.TimeBox>
-            </S.ModalInputBox>
-            <S.ModalInputBox>
-              <div>
-                <div>메모</div>
-              </div>
-              <S.ModalTextArea
-                onChange={(event) => {
-                  setAddClassInfo(event.target.value);
-                }}
-              ></S.ModalTextArea>
-            </S.ModalInputBox>
-          </S.ModalWrapper>
+						{isMakeUp ? (
+							<></>
+						) : (
+							<div style={{ width: '50%' }}>
+								<div>
+									<div
+										style={{
+											marginRight: '5px',
+											fontSize: '0.875rem',
+											fontStyle: 'normal',
+											fontWeight: '500',
+											marginBottom: '0.75rem',
+										}}
+									>
+										원생 목록
+									</div>
+									<S.InputInput
+										onChange={(e) => {
+											setSearchStudents(e.target.value);
+										}}
+										style={{
+											borderRadius: '0.5rem',
+											border: '1px solid #DBDDE1',
+											padding: '0.81rem 1.25rem',
+											width: '80%',
+										}}
+										placeholder="원번 혹은 이름을 입력하세요."
+									></S.InputInput>
+								</div>{' '}
+								<S.ModalTable style={{ height: '40rem', overflow: 'scroll' }}>
+									<S.ModalTag style={{ position: 'sticky' }}>
+										<S.ModalHeadLeft
+											style={{
+												width: '30%',
+												color: '#000',
+												background: '#F7F8FA',
+												height: '2.75rem',
+												display: 'flex',
+												alignItems: 'center',
+											}}
+										>
+											원번
+										</S.ModalHeadLeft>
+										<S.ModalHeadMiddle
+											style={{
+												width: '30%',
+												color: '#000',
+												background: '#F7F8FA',
+												height: '2.75rem',
+												display: 'flex',
+												alignItems: 'center',
+											}}
+										>
+											이름
+										</S.ModalHeadMiddle>
+										<S.ModalHeadRight
+											style={{
+												width: '25%',
+												color: '#000',
+												background: '#F7F8FA',
+												height: '2.75rem',
+												display: 'flex',
+												alignItems: 'center',
+											}}
+										>
+											추가
+										</S.ModalHeadRight>
+									</S.ModalTag>
+									{allStudent?.map((el) => {
+										return (
+											<S.ModalTag key={uuidv4()} style={{ margin: 0 }}>
+												<S.ModalHeadLeft
+													style={{
+														width: '30%',
+														height: '2.75rem',
+														display: 'flex',
+														alignItems: 'center',
+													}}
+												>
+													{el?.origin}
+												</S.ModalHeadLeft>
+												<S.ModalHeadMiddle
+													style={{
+														width: '30%',
+														height: '2.75rem',
+														display: 'flex',
+														alignItems: 'center',
+													}}
+												>
+													{el?.korName}
+												</S.ModalHeadMiddle>
+												<S.ModalHeadRight
+													style={{
+														width: '25%',
+														height: '2.75rem',
+														display: 'flex',
+														alignItems: 'center',
+													}}
+												>
+													<input
+														type="checkbox"
+														onChange={onClickStudents(el?.id)}
+														checked={addList.includes(Number(el?.id))}
+													></input>
+												</S.ModalHeadRight>
+											</S.ModalTag>
+										);
+									})}
+								</S.ModalTable>
+								<S.PageContainer
+									style={{ marginBottom: '20px', justifyContent: 'center' }}
+								>
+									{Array.from({ length: studentMaxPage }, (_, i) => (
+										<S.PageBox
+											key={i}
+											style={
+												i === studentPage
+													? { backgroundColor: '#333', color: '#eeeeee' }
+													: {}
+											}
+											onClick={onClickStudentPage(i)}
+										>
+											{i + 1}
+										</S.PageBox>
+									))}
+								</S.PageContainer>
+							</div>
+						)}
+					</S.ModalClassAddWrapper>
+					<S.ModalButtonBox style={{ width: '100%', justifyContent: 'center' }}>
+						<S.ModalCancelButton
+							onClick={onClickCancel}
+							style={{ background: '#EBECEF', color: '#000' }}
+						>
+							취소
+						</S.ModalCancelButton>
+						<S.ModalOkButton
+							onClick={isMakeUp ? onClickMakeUpClass : onClickOk}
+						>
+							저장
+						</S.ModalOkButton>
+					</S.ModalButtonBox>
+				</Modal>
+			) : (
+				<></>
+			)}
+			{studentToggle ? (
+				<Modal
+					closable={false}
+					open={studentToggle}
+					footer={null}
+					width={'50vw'}
+					onCancel={() => {
+						setStudentToggle(false);
+						setAddList([]);
+						setAddLectureId('');
+						setSearchLecture(dateToInput(date));
+						setSearchStudents('');
+						setStudentPage(0);
+					}}
+				>
+					<S.ModalTitle style={{ marginBottom: '2rem' }}>
+						수업 관리
+					</S.ModalTitle>
+					<div style={{ marginBottom: '10px' }}>
+						<S.InputInput
+							type="date"
+							defaultValue={dateToInput(date)}
+							onChange={(e) => {
+								setSearchLecture(e.target.value);
+							}}
+							style={{ padding: '0.81rem 1.5rem' }}
+						></S.InputInput>
+					</div>
+					<S.ModalTable style={{ width: '100%', marginTop: '0' }}>
+						{searchLecture !== '' ? (
+							<S.ModalTag
+								style={{
+									width: '100%',
+									color: '#000',
+									borderRadius: '0.25rem 0.25rem 0rem 0rem',
+									background: '#F7F8FA',
+								}}
+							>
+								<S.ModalHeadLeft
+									style={{
+										width: '10%',
+										height: '2.75rem',
+										display: 'flex',
+										alignItems: 'center',
+									}}
+								>
+									강의번호
+								</S.ModalHeadLeft>
+								<S.ModalHeadMiddle
+									style={{
+										width: '20%',
+										height: '2.75rem',
+										display: 'flex',
+										alignItems: 'center',
+									}}
+								>
+									날짜
+								</S.ModalHeadMiddle>
+								<S.ModalHeadMiddle
+									style={{
+										width: '20%',
+										height: '2.75rem',
+										display: 'flex',
+										alignItems: 'center',
+									}}
+								>
+									강의시간
+								</S.ModalHeadMiddle>
+								<S.ModalHeadMiddle
+									style={{
+										width: '40%',
+										height: '2.75rem',
+										display: 'flex',
+										alignItems: 'center',
+									}}
+								>
+									강의 설명
+								</S.ModalHeadMiddle>
+								<S.ModalHeadRight
+									style={{
+										width: '10%',
+										height: '2.75rem',
+										display: 'flex',
+										alignItems: 'center',
+									}}
+								>
+									추가
+								</S.ModalHeadRight>
+							</S.ModalTag>
+						) : (
+							<></>
+						)}
+						{data?.allLectures
+							?.filter((el) => {
+								return el.date === searchLecture;
+							})
+							?.map((el) => {
+								return (
+									<S.ModalTag key={uuidv4()} style={{ margin: '0' }}>
+										<S.ModalHeadLeft
+											style={{
+												width: '10%',
+												height: '2.75rem',
+												display: 'flex',
+												alignItems: 'center',
+											}}
+										>
+											{el.id}
+										</S.ModalHeadLeft>
+										<S.ModalHeadMiddle
+											style={{
+												width: '20%',
+												height: '2.75rem',
+												display: 'flex',
+												alignItems: 'center',
+											}}
+										>
+											{el.date}
+										</S.ModalHeadMiddle>
 
-          {isMakeUp ? (
-            <></>
-          ) : (
-            <>
-              <div>
-                <span style={{ fontSize: "17px", marginRight: "5px" }}>
-                  원생
-                </span>
-                <S.InputInput
-                  onChange={(e) => {
-                    setSearchStudents(e.target.value);
-                  }}
-                  placeholder="원생 이름 혹은 번호"
-                ></S.InputInput>
-              </div>{" "}
-              <S.ModalTable>
-                <S.ModalTag>
-                  <S.ModalHeadLeft style={{ width: "30%" }}>
-                    원번
-                  </S.ModalHeadLeft>
-                  <S.ModalHeadMiddle style={{ width: "30%" }}>
-                    이름
-                  </S.ModalHeadMiddle>
-                  <S.ModalHeadRight style={{ width: "25%" }}>
-                    추가
-                  </S.ModalHeadRight>
-                </S.ModalTag>
-                {allStudent?.map((el) => {
-                  return (
-                    <S.ModalTag key={uuidv4()}>
-                      <S.ModalHeadLeft style={{ width: "30%" }}>
-                        {el?.origin}
-                      </S.ModalHeadLeft>
-                      <S.ModalHeadMiddle style={{ width: "30%" }}>
-                        {el?.korName}
-                      </S.ModalHeadMiddle>
-                      <S.ModalHeadRight style={{ width: "25%" }}>
-                        <input
-                          type="checkbox"
-                          onChange={onClickStudents(el?.id)}
-                          checked={addList.includes(Number(el?.id))}
-                        ></input>
-                      </S.ModalHeadRight>
-                    </S.ModalTag>
-                  );
-                })}
-              </S.ModalTable>
-              <S.PageContainer
-                style={{ marginBottom: "20px", justifyContent: "center" }}
-              >
-                {Array.from({ length: studentMaxPage }, (_, i) => (
-                  <S.PageBox
-                    key={i}
-                    style={
-                      i === studentPage
-                        ? { backgroundColor: "purple", color: "#eeeeee" }
-                        : {}
-                    }
-                    onClick={onClickStudentPage(i)}
-                  >
-                    {i + 1}
-                  </S.PageBox>
-                ))}
-              </S.PageContainer>
-            </>
-          )}
-          <S.ModalButtonBox>
-            <S.ModalCancelButton onClick={onClickCancel}>
-              취소
-            </S.ModalCancelButton>
-            <S.ModalOkButton
-              onClick={isMakeUp ? onClickMakeUpClass : onClickOk}
-            >
-              저장
-            </S.ModalOkButton>
-          </S.ModalButtonBox>
-        </Modal>
-      ) : (
-        <></>
-      )}
-      {studentToggle ? (
-        <Modal
-          closable={false}
-          open={studentToggle}
-          footer={null}
-          width={"50vw"}
-          onCancel={() => {
-            setStudentToggle(false);
-            setAddList([]);
-            setAddLectureId("");
-            setSearchLecture(dateToInput(date));
-            setSearchStudents("");
-            setStudentPage(0);
-          }}
-        >
-          <div style={{ marginBottom: "10px" }}>
-            <span style={{ fontSize: "17px", marginRight: "5px" }}>강의</span>
-            <S.InputInput
-              type="date"
-              defaultValue={dateToInput(date)}
-              onChange={(e) => {
-                setSearchLecture(e.target.value);
-              }}
-            ></S.InputInput>
-          </div>
-          <S.ModalTable style={{ width: "100%" }}>
-            {searchLecture !== "" ? (
-              <S.ModalTag style={{ width: "100%" }}>
-                <S.ModalHeadLeft
-                  style={{ width: "10%", background: "#42444e", color: "#fff" }}
-                >
-                  강의번호
-                </S.ModalHeadLeft>
-                <S.ModalHeadMiddle
-                  style={{ width: "20%", background: "#42444e", color: "#fff" }}
-                >
-                  날짜
-                </S.ModalHeadMiddle>
-                <S.ModalHeadMiddle
-                  style={{ width: "20%", background: "#42444e", color: "#fff" }}
-                >
-                  강의시간
-                </S.ModalHeadMiddle>
-                <S.ModalHeadMiddle
-                  style={{ width: "40%", background: "#42444e", color: "#fff" }}
-                >
-                  강의 설명
-                </S.ModalHeadMiddle>
-                <S.ModalHeadRight
-                  style={{ width: "10%", background: "#42444e", color: "#fff" }}
-                >
-                  추가
-                </S.ModalHeadRight>
-              </S.ModalTag>
-            ) : (
-              <></>
-            )}
-            {data?.allLectures
-              ?.filter((el) => {
-                return el.date === searchLecture;
-              })
-              ?.map((el) => {
-                return (
-                  <S.ModalTag key={uuidv4()}>
-                    <S.ModalHeadLeft style={{ width: "10%" }}>
-                      {el.id}
-                    </S.ModalHeadLeft>
-                    <S.ModalHeadMiddle style={{ width: "20%" }}>
-                      {el.date}
-                    </S.ModalHeadMiddle>
+										<S.ModalHeadMiddle
+											style={{
+												width: '20%',
+												height: '2.75rem',
+												display: 'flex',
+												alignItems: 'center',
+											}}
+										>
+											{el.startTime.slice(0, 5) + '~' + el.endTime.slice(0, 5)}
+										</S.ModalHeadMiddle>
+										<S.ModalHeadMiddle
+											style={{
+												width: '40%',
+												height: '2.75rem',
+												display: 'flex',
+												alignItems: 'center',
+											}}
+										>
+											{longWord(el.lectureInfo)}
+										</S.ModalHeadMiddle>
+										<S.ModalHeadRight
+											style={{
+												width: '10%',
+												height: '2.75rem',
+												display: 'flex',
+												alignItems: 'center',
+											}}
+										>
+											<input
+												type="radio"
+												name="addClass"
+												value={el.id}
+												checked={el.id === addLectureId}
+												onClick={onChangeLectureId}
+											></input>
+										</S.ModalHeadRight>
+									</S.ModalTag>
+								);
+							})}
+					</S.ModalTable>
+					<div style={{ marginBottom: '10px', marginTop: '20px' }}>
+						<S.InputInput
+							onChange={(e) => {
+								setSearchStudents(e.target.value);
+							}}
+							style={{
+								borderRadius: '0.5rem',
+								border: '1px solid #DBDDE1',
+								padding: '0.81rem 1.25rem',
+							}}
+							placeholder="원번 혹은 이름을 입력하세요."
+						></S.InputInput>
+					</div>
+					<S.ModalTable>
+						<S.ModalTag
+							style={{
+								margin: '0',
+								color: '#000',
+								borderRadius: '0.25rem 0.25rem 0rem 0rem',
+								background: '#F7F8FA',
+							}}
+						>
+							<S.ModalHeadLeft
+								style={{
+									width: '35%',
+									height: '2.75rem',
+									display: 'flex',
+									alignItems: 'center',
+								}}
+							>
+								원번
+							</S.ModalHeadLeft>
+							<S.ModalHeadMiddle
+								style={{
+									width: '35%',
+									height: '2.75rem',
+									display: 'flex',
+									alignItems: 'center',
+								}}
+							>
+								이름
+							</S.ModalHeadMiddle>
+							<S.ModalHeadRight
+								style={{
+									width: '30%',
+									height: '2.75rem',
+									display: 'flex',
+									alignItems: 'center',
+								}}
+							>
+								추가
+							</S.ModalHeadRight>
+						</S.ModalTag>
+						{allStudent
+							?.filter((el) => {
+								return (
+									el.origin
+										.toUpperCase()
+										.includes(searchStudents.toUpperCase()) ||
+									el.korName.includes(searchStudents)
+								);
+							})
+							?.map((el) => {
+								return (
+									<S.ModalTag key={uuidv4()} style={{ margin: '0' }}>
+										<S.ModalHeadLeft
+											style={{
+												width: '35%',
+												height: '2.75rem',
+												display: 'flex',
+												alignItems: 'center',
+											}}
+										>
+											{el?.origin}
+										</S.ModalHeadLeft>
+										<S.ModalHeadMiddle
+											style={{
+												width: '35%',
+												height: '2.75rem',
+												display: 'flex',
+												alignItems: 'center',
+											}}
+										>
+											{el?.korName}
+										</S.ModalHeadMiddle>
+										<S.ModalHeadRight
+											style={{
+												width: '30%',
+												height: '2.75rem',
+												display: 'flex',
+												alignItems: 'center',
+											}}
+										>
+											<input
+												type="checkbox"
+												onChange={onClickStudents(el?.id)}
+												checked={addList.includes(Number(el?.id))}
+											></input>
+										</S.ModalHeadRight>
+									</S.ModalTag>
+								);
+							})}
+					</S.ModalTable>
+					<S.PageContainer
+						style={{ marginBottom: '20px', justifyContent: 'center' }}
+					>
+						{Array.from({ length: studentMaxPage }, (_, i) => (
+							<S.PageBox
+								key={i}
+								style={
+									i === studentPage
+										? { backgroundColor: '#333', color: '#eeeeee' }
+										: {}
+								}
+								onClick={onClickStudentPage(i)}
+							>
+								{i + 1}
+							</S.PageBox>
+						))}
+					</S.PageContainer>
+					<div
+						style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+					>
+						<S.ModalCancelButton
+							onClick={() => {
+								setStudentToggle(false);
+								setAddList([]);
+								setAddLectureId('');
+								setSearchLecture(dateToInput(date));
+								setSearchStudents('');
+								setStudentPage(0);
+							}}
+							style={{ background: '#EBECEF', color: '#000' }}
+						>
+							취소
+						</S.ModalCancelButton>
+						<S.ModalOkButton onClick={onClickAddStudents}>추가</S.ModalOkButton>
+					</div>
+				</Modal>
+			) : (
+				<></>
+			)}
+			{isAlarm && lateList?.length > 0 && (
+				<Modal
+					open={isAlarm}
+					footer={null}
+					closeIcon={null}
+					width={'40%'}
+					onCancel={() => {
+						setIsAlarm(false);
+					}}
+				>
+					<S.AlarmDiv style={{ fontSize: '25px' }}>
+						{alarmType === 'start' ? '등원' : '하원'} 확인 명단
+					</S.AlarmDiv>
+					<S.AlarmDiv style={{ fontSize: '25px' }}>
+						{'예정 시간 : ' + alarmTime}
+					</S.AlarmDiv>
+					<div
+						style={{
+							display: 'flex',
+							flexDirection: 'column',
+							justifyContent: 'flex-start',
+							alignItems: 'flex-start',
+						}}
+					>
+						<S.AlarmDiv>원생 리스트</S.AlarmDiv>
+						<table>
+							<thead>
+								<tr>
+									<th>원번</th>
+									<th>이름</th>
+									<th>부모님 전화번호</th>
+								</tr>
+							</thead>
+							<tbody>
+								{lateList.map((student, index) => (
+									<tr>
+										<td key={index}>
+											{
+												studentData?.studentsInAcademy?.find(
+													(el) => Number(el.id) === Number(student.id)
+												)?.origin
+											}
+										</td>
+										<td key={index}>
+											{
+												studentData?.studentsInAcademy?.find(
+													(el) => Number(el.id) === Number(student.id)
+												)?.korName
+											}
+										</td>
+										<td key={index}>
+											{
+												studentData?.studentsInAcademy?.find(
+													(el) => Number(el.id) === Number(student.id)
+												)?.pmobileno
+											}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+					<S.AlarmButton
+						style={{ marginTop: '30px' }}
+						onClick={() => {
+							setIsAlarm(false);
+						}}
+					>
+						닫기
+					</S.AlarmButton>
+				</Modal>
+			)}
+			{isBook ? (
+				<Modal
+					open={isBook}
+					footer={null}
+					closeIcon={null}
+					width={'80%'}
+					onCancel={() => {
+						setIsBook(false);
+						refetchBook({ minBl: 0, maxBl: 0 });
+						setSelectBookData([]);
+						setSelectBooks([]);
+					}}
+				>
+					<S.ModalTitle>
+						{'수업준비 - ' + selectChild.korName + ' 도서 예약'}
+					</S.ModalTitle>
+					<S.ModalButtonBox>
+						<S.ModalReturnButton onClick={onClickTotalReturn}>
+							일괄 반납
+						</S.ModalReturnButton>
+						<S.ModalCancelButton
+							onClick={() => {
+								setIsBook(false);
+								refetchBook({ minBl: 0, maxBl: 0 });
+								setBookSearchWord('');
+							}}
+						>
+							취소
+						</S.ModalCancelButton>
+					</S.ModalButtonBox>
 
-                    <S.ModalHeadMiddle style={{ width: "20%" }}>
-                      {el.startTime.slice(0, 5) + "~" + el.endTime.slice(0, 5)}
-                    </S.ModalHeadMiddle>
-                    <S.ModalHeadMiddle style={{ width: "40%" }}>
-                      {longWord(el.lectureInfo)}
-                    </S.ModalHeadMiddle>
-                    <S.ModalHeadRight style={{ width: "10%" }}>
-                      <input
-                        type="radio"
-                        name="addClass"
-                        value={el.id}
-                        checked={el.id === addLectureId}
-                        onClick={onChangeLectureId}
-                      ></input>
-                    </S.ModalHeadRight>
-                  </S.ModalTag>
-                );
-              })}
-          </S.ModalTable>
-          <div style={{ marginBottom: "10px", marginTop: "20px" }}>
-            <span style={{ fontSize: "17px", marginRight: "5px" }}>원생</span>
-            <S.InputInput
-              onChange={(e) => {
-                setSearchStudents(e.target.value);
-              }}
-              placeholder="원생 이름 혹은 번호"
-            ></S.InputInput>
-          </div>
-          <S.ModalTable>
-            <S.ModalTag>
-              <S.ModalHeadLeft
-                style={{ width: "35%", background: "#42444e", color: "#fff" }}
-              >
-                원번
-              </S.ModalHeadLeft>
-              <S.ModalHeadMiddle
-                style={{ width: "35%", background: "#42444e", color: "#fff" }}
-              >
-                이름
-              </S.ModalHeadMiddle>
-              <S.ModalHeadRight
-                style={{ width: "30%", background: "#42444e", color: "#fff" }}
-              >
-                추가
-              </S.ModalHeadRight>
-            </S.ModalTag>
-            {allStudent
-              ?.filter((el) => {
-                return (
-                  el.origin
-                    .toUpperCase()
-                    .includes(searchStudents.toUpperCase()) ||
-                  el.korName.includes(searchStudents)
-                );
-              })
-              ?.map((el) => {
-                return (
-                  <S.ModalTag key={uuidv4()}>
-                    <S.ModalHeadLeft style={{ width: "35%" }}>
-                      {el?.origin}
-                    </S.ModalHeadLeft>
-                    <S.ModalHeadMiddle style={{ width: "35%" }}>
-                      {el?.korName}
-                    </S.ModalHeadMiddle>
-                    <S.ModalHeadRight style={{ width: "30%" }}>
-                      <input
-                        type="checkbox"
-                        onChange={onClickStudents(el?.id)}
-                        checked={addList.includes(Number(el?.id))}
-                      ></input>
-                    </S.ModalHeadRight>
-                  </S.ModalTag>
-                );
-              })}
-          </S.ModalTable>
-          <S.PageContainer
-            style={{ marginBottom: "20px", justifyContent: "center" }}
-          >
-            {Array.from({ length: studentMaxPage }, (_, i) => (
-              <S.PageBox
-                key={i}
-                style={
-                  i === studentPage
-                    ? { backgroundColor: "purple", color: "#eeeeee" }
-                    : {}
-                }
-                onClick={onClickStudentPage(i)}
-              >
-                {i + 1}
-              </S.PageBox>
-            ))}
-          </S.PageContainer>
-          <S.ModalCancelButton
-            onClick={() => {
-              setStudentToggle(false);
-              setAddList([]);
-              setAddLectureId("");
-              setSearchLecture(dateToInput(date));
-              setSearchStudents("");
-              setStudentPage(0);
-            }}
-          >
-            취소
-          </S.ModalCancelButton>
-          <S.ModalOkButton onClick={onClickAddStudents}>추가</S.ModalOkButton>
-        </Modal>
-      ) : (
-        <></>
-      )}
-      {isAlarm && lateList?.length > 0 && (
-        <Modal
-          open={isAlarm}
-          footer={null}
-          closeIcon={null}
-          width={"40%"}
-          onCancel={() => {
-            setIsAlarm(false);
-          }}
-        >
-          <S.AlarmDiv style={{ fontSize: "25px" }}>
-            {alarmType === "start" ? "등원" : "하원"} 확인 명단
-          </S.AlarmDiv>
-          <S.AlarmDiv style={{ fontSize: "25px" }}>
-            {"예정 시간 : " + alarmTime}
-          </S.AlarmDiv>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "flex-start",
-              alignItems: "flex-start",
-            }}
-          >
-            <S.AlarmDiv>원생 리스트</S.AlarmDiv>
-            <table>
-              <thead>
-                <tr>
-                  <th>원번</th>
-                  <th>이름</th>
-                  <th>부모님 전화번호</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lateList.map((student, index) => (
-                  <tr>
-                    <td key={index}>
-                      {
-                        studentData?.studentsInAcademy?.find(
-                          (el) => Number(el.id) === Number(student.id)
-                        )?.origin
-                      }
-                    </td>
-                    <td key={index}>
-                      {
-                        studentData?.studentsInAcademy?.find(
-                          (el) => Number(el.id) === Number(student.id)
-                        )?.korName
-                      }
-                    </td>
-                    <td key={index}>
-                      {
-                        studentData?.studentsInAcademy?.find(
-                          (el) => Number(el.id) === Number(student.id)
-                        )?.pmobileno
-                      }
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <S.AlarmButton
-            style={{ marginTop: "30px" }}
-            onClick={() => {
-              setIsAlarm(false);
-            }}
-          >
-            닫기
-          </S.AlarmButton>
-        </Modal>
-      )}
-      {isBook ? (
-        <Modal
-          open={isBook}
-          footer={null}
-          closeIcon={null}
-          width={"80%"}
-          onCancel={() => {
-            setIsBook(false);
-            refetchBook({ minBl: 0, maxBl: 0 });
-            setSelectBookData([]);
-            setSelectBooks([]);
-          }}
-        >
-          <S.ModalButtonBox>
-            <S.ModalReturnButton onClick={onClickTotalReturn}>
-              일괄 반납
-            </S.ModalReturnButton>
-            {/* <S.ModalOkButton onClick={onClickBookingBooks}>
-              예약
-            </S.ModalOkButton> */}
-            <S.ModalCancelButton
-              onClick={() => {
-                setIsBook(false);
-                refetchBook({ minBl: 0, maxBl: 0 });
-                setBookSearchWord("");
-              }}
-            >
-              취소
-            </S.ModalCancelButton>
-          </S.ModalButtonBox>
-          <S.ModalTag>{selectChild.korName + " 도서 예약"}</S.ModalTag>
-          <table>
-            {reservationBookData?.studentReservedBooks.length === 0 ? (
-              <></>
-            ) : (
-              <thead>
-                <tr>
-                  <th>도서 제목</th>
-                  <th>저자</th>
-                  <th>AR QUIZ No.</th>
-                  <th>AR점수</th>
-                  <th>Lexile</th>
-                  <th>Word Count</th>
-                  <th>도서 위치</th>
-                  <th>반납</th>
-                </tr>
-              </thead>
-            )}
-            <tbody>
-              {reservationBookData?.studentReservedBooks?.map((el) => {
-                return (
-                  <tr>
-                    <></>
-                    <td>{longWord(el.booktitle)}</td>
-                    <td>{el.book.authorAr}</td>
-                    <td>{el.book.arQuiz}</td>
-                    <td>{el.book.bl}</td>
-                    <td>
-                      {el.book.lexileLex ? el.book.lexileAr : el.book.lexileLex}
-                    </td>
-                    <td>{el.book.wcAr}</td>
-                    <td>{el.place === null ? "null" : el.place}</td>
-                    <td>
-                      <button onClick={onClickReturnBook(Number(el.id))}>
-                        반납
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {selectBookData.length === 0 ? (
-            <></>
-          ) : (
-            <>
-              <S.ModalTag style={{ marginTop: "20px" }}>
-                {"예약 예정 도서 리스트"}
-              </S.ModalTag>
-              <S.ModalTag>
-                <S.ModalHeadLeft
-                  style={{
-                    width: "40%",
-                    background: "#42444e",
-                    color: "#fff",
-                    textAlign: "left",
-                    fontSize: "medium",
-                  }}
-                >
-                  도서 제목
-                </S.ModalHeadLeft>
-                <S.ModalHeadMiddle
-                  style={{
-                    width: "30%",
-                    background: "#42444e",
-                    color: "#fff",
-                    textAlign: "left",
-                    fontSize: "medium",
-                  }}
-                >
-                  AR
-                </S.ModalHeadMiddle>
+					<table>
+						{reservationBookData?.studentReservedBooks.length === 0 ? (
+							<></>
+						) : (
+							<thead style={{ height: '2.75rem' }}>
+								<tr>
+									<th>도서 제목</th>
+									<th>저자</th>
+									<th>AR QUIZ No.</th>
+									<th>AR점수</th>
+									<th>Lexile</th>
+									<th>Word Count</th>
+									<th>도서 위치</th>
+									<th>반납</th>
+								</tr>
+							</thead>
+						)}
+						<tbody>
+							{reservationBookData?.studentReservedBooks?.map((el) => {
+								return (
+									<tr style={{ height: '2.75rem' }}>
+										<></>
+										<td>{longWord(el.booktitle)}</td>
+										<td>{el.book.authorAr}</td>
+										<td>{el.book.arQuiz}</td>
+										<td>{el.book.bl}</td>
+										<td>
+											{el.book.lexileLex ? el.book.lexileAr : el.book.lexileLex}
+										</td>
+										<td>{el.book.wcAr}</td>
+										<td>{el.place === null ? 'null' : el.place}</td>
+										<td>
+											<button onClick={onClickReturnBook(Number(el.id))}>
+												반납
+											</button>
+										</td>
+									</tr>
+								);
+							})}
+						</tbody>
+					</table>
+					{selectBookData.length === 0 ? (
+						<></>
+					) : (
+						<>
+							<S.ModalTag style={{ marginTop: '20px' }}>
+								{'예약 예정 도서 리스트'}
+							</S.ModalTag>
+							<S.ModalTag>
+								<S.ModalHeadLeft
+									style={{
+										width: '40%',
+										background: '#42444e',
+										color: '#fff',
+										textAlign: 'left',
+										fontSize: 'medium',
+									}}
+								>
+									도서 제목
+								</S.ModalHeadLeft>
+								<S.ModalHeadMiddle
+									style={{
+										width: '30%',
+										background: '#42444e',
+										color: '#fff',
+										textAlign: 'left',
+										fontSize: 'medium',
+									}}
+								>
+									AR
+								</S.ModalHeadMiddle>
 
-                <S.ModalHeadRight
-                  style={{
-                    width: "25%",
-                    background: "#42444e",
-                    color: "#fff",
-                    textAlign: "left",
-                    fontSize: "small",
-                  }}
-                >
-                  AR QUIZ No.
-                </S.ModalHeadRight>
-                <S.ModalHeadRight
-                  style={{
-                    width: "25%",
-                    background: "#42444e",
-                    color: "#fff",
-                    textAlign: "left",
-                    fontSize: "small",
-                  }}
-                >
-                  동작
-                </S.ModalHeadRight>
-              </S.ModalTag>
-            </>
-          )}
-          {selectBookData?.map((el) => {
-            return (
-              <S.ModalTag key={uuidv4()}>
-                <S.ModalHeadLeft style={{ width: "40%" }}>
-                  {el.titleAr}
-                </S.ModalHeadLeft>
-                <S.ModalHeadMiddle style={{ width: "30%" }}>
-                  {el.bl}
-                </S.ModalHeadMiddle>
-                <S.ModalHeadRight style={{ width: "25%" }}>
-                  {el.arQuiz}
-                </S.ModalHeadRight>
-                <S.ModalHeadRight style={{ width: "25%" }}>
-                  <S.ModalIcon
-                    onClick={onClickBookDelete(Number(el.books[0].id))}
-                  >
-                    삭제
-                  </S.ModalIcon>
-                </S.ModalHeadRight>
-              </S.ModalTag>
-            );
-          })}
-          <S.ModalWrapper
-            style={{
-              border: "1px solid #dedede",
-              padding: "15px",
-              borderRadius: "9px",
-              marginBottom: "20px",
-              marginTop: "20px",
-            }}
-          >
-            <S.ModalTag>도서 검색</S.ModalTag>
-            <S.ModalButtonBox
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-start",
-                alignItems: "flex-start",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginTop: "20px",
-                }}
-              >
-                <div
-                  style={{
-                    boxShadow: "2px 2px 2px 1px rgba(0, 0, 0, 0.2)",
-                    padding: "20px",
-                    display: "flex",
-                    height: "100px",
-                    backgroundColor: "#5AB0FF",
-                    color: "white",
-                    fontSize: "15px",
-                    fontWeight: "bold",
-                    borderRadius: "20px",
-                    flexDirection: "column",
-                  }}
-                >
-                  <div>ar점수</div>
-                  <div>
-                    최소
-                    <S.InputInput
-                      type="number"
-                      style={{ marginLeft: "10px", marginTop: "10px" }}
-                      onChange={(e) => {
-                        setMinScore(e.target.value);
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                          refetchBook({
-                            minBl: Number(minScore),
-                            maxBl: Number(maxScore),
-                          });
-                        }
-                      }}
-                    ></S.InputInput>
-                  </div>
-                  <div>
-                    최대
-                    <S.InputInput
-                      type="number"
-                      style={{ marginLeft: "10px", marginTop: "10px" }}
-                      onChange={(e) => {
-                        setMaxScore(e.target.value);
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                          refetchBook({
-                            minBl: Number(minScore),
-                            maxBl: Number(maxScore),
-                          });
-                        }
-                      }}
-                    ></S.InputInput>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    boxShadow: "2px 2px 2px 1px rgba(0, 0, 0, 0.2)",
-                    padding: "20px",
-                    display: "flex",
-                    height: "100px",
-                    backgroundColor: "#FEA910",
-                    color: "white",
-                    fontSize: "15px",
-                    fontWeight: "bold",
-                    borderRadius: "20px",
-                    flexDirection: "column",
-                    margin: "0 0 0 15px",
-                  }}
-                >
-                  <div>Word Count</div>
-                  <div>
-                    최소
-                    <S.InputInput
-                      type="number"
-                      style={{ marginLeft: "10px", marginTop: "10px" }}
-                      onChange={(e) => {
-                        setMinWc(Number(e.target.value));
-                      }}
-                    ></S.InputInput>
-                  </div>
-                  <div>
-                    최대
-                    <S.InputInput
-                      type="number"
-                      style={{ marginLeft: "10px", marginTop: "10px" }}
-                      onChange={(e) => {
-                        setMaxWc(
-                          Number(
-                            e.target.value === "" ? 100000000 : e.target.value
-                          )
-                        );
-                      }}
-                    ></S.InputInput>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    boxShadow: "2px 2px 2px 1px rgba(0, 0, 0, 0.2)",
-                    padding: "20px",
-                    display: "flex",
-                    height: "100px",
-                    backgroundColor: "#772481",
-                    color: "white",
-                    fontSize: "15px",
-                    fontWeight: "bold",
-                    borderRadius: "20px",
-                    flexDirection: "column",
-                    margin: "0 0 0 15px",
-                  }}
-                >
-                  <div>PLBN</div>
-                  <div>
-                    검색
-                    <S.InputInput
-                      type="text"
-                      style={{ marginLeft: "10px", marginTop: "10px" }}
-                      onChange={(e) => {
-                        setInputPlbn(e.target.value);
-                      }}
-                    ></S.InputInput>
-                  </div>
-                </div>
-                <S.ModalAddButton onClick={onClickSearchBooks}>
-                  검색
-                </S.ModalAddButton>
-              </div>
-            </S.ModalButtonBox>
-          </S.ModalWrapper>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <div
-              style={{
-                display: "inline-block",
-                textAlign: "right",
-                fontWeight: "bold",
-                width: "100%",
-              }}
-            >
-              검색
-              <S.InputInput
-                style={{
-                  marginLeft: "10px",
-                  marginTop: "10px",
-                  marginBottom: "10px",
-                }}
-                onChange={(e) => {
-                  setBookSearchWord(e.target.value);
-                }}
-              ></S.InputInput>
-            </div>
-          </div>
+								<S.ModalHeadRight
+									style={{
+										width: '25%',
+										background: '#42444e',
+										color: '#fff',
+										textAlign: 'left',
+										fontSize: 'small',
+									}}
+								>
+									AR QUIZ No.
+								</S.ModalHeadRight>
+								<S.ModalHeadRight
+									style={{
+										width: '25%',
+										background: '#42444e',
+										color: '#fff',
+										textAlign: 'left',
+										fontSize: 'small',
+									}}
+								>
+									동작
+								</S.ModalHeadRight>
+							</S.ModalTag>
+						</>
+					)}
+					{selectBookData?.map((el) => {
+						return (
+							<S.ModalTag key={uuidv4()}>
+								<S.ModalHeadLeft style={{ width: '40%' }}>
+									{el.titleAr}
+								</S.ModalHeadLeft>
+								<S.ModalHeadMiddle style={{ width: '30%' }}>
+									{el.bl}
+								</S.ModalHeadMiddle>
+								<S.ModalHeadRight style={{ width: '25%' }}>
+									{el.arQuiz}
+								</S.ModalHeadRight>
+								<S.ModalHeadRight style={{ width: '25%' }}>
+									<S.ModalIcon
+										onClick={onClickBookDelete(Number(el.books[0].id))}
+									>
+										삭제
+									</S.ModalIcon>
+								</S.ModalHeadRight>
+							</S.ModalTag>
+						);
+					})}
+					<S.ModalTag>도서 검색</S.ModalTag>
+					<S.ModalWrapper
+						style={{
+							borderRadius: '0.25rem 0.25rem 0rem 0rem',
+							background: '#F7F8FA',
+							padding: '1.5rem',
+							borderRadius: '9px',
+							marginTop: '1.25rem',
+						}}
+					>
+						<S.ModalButtonBox
+							style={{
+								display: 'flex',
+								flexDirection: 'column',
+								justifyContent: 'flex-start',
+								alignItems: 'flex-start',
+							}}
+						>
+							<div
+								style={{
+									display: 'flex',
+									justifyContent: 'center',
+									alignItems: 'center',
+								}}
+							>
+								<div
+									style={{
+										display: 'flex',
+										color: '#000',
+										fontSize: '15px',
+										fontWeight: 'bold',
+										flexDirection: 'column',
+										marginRight: '1.87rem',
+									}}
+								>
+									<div>AR 점수</div>
+									<div>
+										최소
+										<S.InputInput
+											type="number"
+											style={{ marginLeft: '10px', marginTop: '10px' }}
+											onChange={(e) => {
+												setMinScore(e.target.value);
+											}}
+											onKeyPress={(e) => {
+												if (e.key === 'Enter') {
+													refetchBook({
+														minBl: Number(minScore),
+														maxBl: Number(maxScore),
+													});
+												}
+											}}
+										></S.InputInput>
+									</div>
+									<div>
+										최대
+										<S.InputInput
+											type="number"
+											style={{ marginLeft: '10px', marginTop: '10px' }}
+											onChange={(e) => {
+												setMaxScore(e.target.value);
+											}}
+											onKeyPress={(e) => {
+												if (e.key === 'Enter') {
+													refetchBook({
+														minBl: Number(minScore),
+														maxBl: Number(maxScore),
+													});
+												}
+											}}
+										></S.InputInput>
+									</div>
+								</div>
+								<div
+									style={{
+										display: 'flex',
+										color: '#000',
+										fontSize: '15px',
+										fontWeight: 'bold',
+										flexDirection: 'column',
+										marginRight: '1.87rem',
+									}}
+								>
+									<div>Word Count</div>
+									<div>
+										최소
+										<S.InputInput
+											type="number"
+											style={{ marginLeft: '10px', marginTop: '10px' }}
+											onChange={(e) => {
+												setMinWc(Number(e.target.value));
+											}}
+										></S.InputInput>
+									</div>
+									<div>
+										최대
+										<S.InputInput
+											type="number"
+											style={{ marginLeft: '10px', marginTop: '10px' }}
+											onChange={(e) => {
+												setMaxWc(
+													Number(
+														e.target.value === '' ? 100000000 : e.target.value
+													)
+												);
+											}}
+										></S.InputInput>
+									</div>
+								</div>
+								<div
+									style={{
+										display: 'flex',
+										color: '#000',
+										fontSize: '15px',
+										fontWeight: 'bold',
+										flexDirection: 'column',
+										float: 'left',
+										height: '100px',
+										marginRight: '1.87rem',
+									}}
+								>
+									<div>PLBN</div>
+									<div>
+										검색
+										<S.InputInput
+											type="text"
+											style={{ marginLeft: '10px', marginTop: '10px' }}
+											onChange={(e) => {
+												setInputPlbn(e.target.value);
+											}}
+										></S.InputInput>
+									</div>
+								</div>
+								<S.ModalAddButton
+									onClick={onClickSearchBooks}
+									style={{
+										borderRadius: '0.5rem',
+										background: '#333',
+										height: '2.75rem',
+									}}
+								>
+									검색
+								</S.ModalAddButton>
+							</div>
+						</S.ModalButtonBox>
+					</S.ModalWrapper>
+					<div
+						style={{
+							display: 'flex',
+							flexDirection: 'column',
+						}}
+					>
+						<div
+							style={{
+								display: 'inline-block',
+								textAlign: 'right',
+								fontWeight: 'bold',
+								width: '100%',
+							}}
+						>
+							검색
+							<S.InputInput
+								style={{
+									marginLeft: '10px',
+									marginTop: '10px',
+									marginBottom: '10px',
+								}}
+								onChange={(e) => {
+									setBookSearchWord(e.target.value);
+								}}
+							></S.InputInput>
+						</div>
+					</div>
 
-          <table>
-            {bookData?.getBooksByBl.length === 0 || bookData === undefined ? (
-              <></>
-            ) : (
-              <thead>
-                <tr>
-                  <th>도서 제목</th>
-                  <th>저자</th>
-                  <th>AR QUIZ No.</th>
-                  <th>AR</th>
-                  <th>Lexile</th>
-                  <th>Word Count</th>
-                  <th>도서 위치</th>
-                  <th>예약</th>
-                </tr>
-              </thead>
-            )}
-            <tbody>
-              {bookArray
-                ?.filter((el) => {
-                  return (
-                    reservationBookData?.studentReservedBooks.filter((ele) => {
-                      return ele.titleAr === el.titleAr;
-                    }).length === 0
-                  );
-                })
-                ?.map((el) => {
-                  return (
-                    <tr>
-                      <></>
-                      <td>{longWord(el.titleAr)}</td>
-                      <td>{el.authorAr}</td>
-                      <td>{el.arQuiz}</td>
-                      <td>{el.bl}</td>
-                      <td>
-                        {el.lexileLex === null ? el.lexileAr : el.lexileLex}
-                      </td>
-                      <td>{el.wcAr}</td>
-                      <td>
-                        {el.books[0].place === null
-                          ? "null"
-                          : el.books[0].place}
-                      </td>
-                      <td>
-                        <button
-                          onClick={onClickBookingBooks(
-                            Number(el.id),
-                            el.titleAr
-                          )}
-                        >
-                          예약
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-            </tbody>
-          </table>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginTop: "20px",
-            }}
-          >
-            {bookData === undefined || bookData?.getBooksByBl.length === 0 ? (
-              <></>
-            ) : (
-              <>
-                <button
-                  onClick={() => {
-                    if (bookPage - 10 > 0) {
-                      setBookPage(bookPage - 10);
-                    }
-                  }}
-                >
-                  {"<<"}
-                </button>
-                <button
-                  onClick={() => {
-                    if (bookPage > 1) {
-                      setBookPage(bookPage - 1);
-                    }
-                  }}
-                >
-                  {"<"}
-                </button>
-              </>
-            )}
-            {Array.from({ length: bookMaxPage }).map((_, index) => {
-              if (
-                index === 0 ||
-                index === bookMaxPage - 1 ||
-                (index + 3 >= bookPage && index - 1 <= bookPage)
-              ) {
-                return (
-                  <>
-                    {bookPage > 4 && bookPage === index + 3 ? (
-                      <span
-                        style={{
-                          width: "17px",
-                          color: "black",
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                      >
-                        ...
-                      </span>
-                    ) : (
-                      <></>
-                    )}
-                    <span
-                      onClick={() => {
-                        setBookPage(index + 1);
-                      }}
-                      style={
-                        index + 1 + bookPageList * 10 === bookPage
-                          ? {
-                              width: "27px",
-                              color: "white",
-                              backgroundColor: "purple",
-                              border: "1px solid black",
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                            }
-                          : {
-                              width: "27px",
-                              color: "black",
-                              border: "1px solid black",
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                            }
-                      }
-                    >
-                      {index + 1}
-                    </span>
-                    {bookPage < bookMaxPage - 3 && bookPage === index - 1 ? (
-                      <span
-                        style={{
-                          width: "17px",
-                          color: "black",
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                      >
-                        ...
-                      </span>
-                    ) : (
-                      <></>
-                    )}
-                  </>
-                );
-              }
-            })}
-            {bookData === undefined || bookData?.getBooksByBl.length === 0 ? (
-              <></>
-            ) : (
-              <>
-                <button
-                  onClick={() => {
-                    if (bookPage < bookMaxPage) {
-                      setBookPage(bookPage + 1);
-                    }
-                  }}
-                >
-                  {">"}
-                </button>
-                <button
-                  onClick={() => {
-                    if (bookPage + 10 < bookMaxPage) {
-                      setBookPage(bookPage + 10);
-                    }
-                  }}
-                >
-                  {">>"}
-                </button>
-              </>
-            )}
-          </div>
-        </Modal>
-      ) : (
-        <></>
-      )}
-      {isConfirm ? (
-        <Modal
-          open={isConfirm}
-          onCancel={() => {
-            setIsConfirm(false);
-          }}
-          footer={null}
-          closable={false}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "27px",
-                marginBottom: "30px",
-                width: "100%",
-                fontWeight: "700",
-              }}
-            >
-              {confirmState + " 처리 하시겠습니까?"}
-            </div>
-            <div>
-              <S.DeleteButton
-                onClick={
-                  confirmState === "삭제"
-                    ? () => {
-                        onClickDelete()();
-                        setIsConfirm(false);
-                      }
-                    : () => {
-                        onClickAttendance("absent")();
-                        setIsConfirm(false);
-                      }
-                }
-                style={{ backgroundColor: "purple", color: "#e1e1e1" }}
-              >
-                확인
-              </S.DeleteButton>
-              <S.DeleteButton
-                onClick={() => {
-                  setIsConfirm(false);
-                }}
-                style={{ backgroundColor: "#c2c2c2", color: "#1e1e1e" }}
-              >
-                취소
-              </S.DeleteButton>
-            </div>
-          </div>
-        </Modal>
-      ) : (
-        <></>
-      )}
-      <Modal
-        open={isInfo}
-        onCancel={() => {
-          setIsInfo(false);
-        }}
-        closable={false}
-        footer={null}
-      >
-        <S.lectureModalInfo>{"수업 정보: " + info}</S.lectureModalInfo>
-      </Modal>
-    </S.ClassWrapper>
-  );
+					<table>
+						{bookData?.getBooksByBl.length === 0 || bookData === undefined ? (
+							<></>
+						) : (
+							<thead style={{ height: '2.75rem' }}>
+								<tr>
+									<th>도서 제목</th>
+									<th>저자</th>
+									<th>AR QUIZ No.</th>
+									<th>AR</th>
+									<th>Lexile</th>
+									<th>Word Count</th>
+									<th>도서 위치</th>
+									<th>예약</th>
+								</tr>
+							</thead>
+						)}
+						<tbody>
+							{bookArray
+								?.filter((el) => {
+									return (
+										reservationBookData?.studentReservedBooks.filter((ele) => {
+											return ele.titleAr === el.titleAr;
+										}).length === 0
+									);
+								})
+								?.map((el) => {
+									return (
+										<tr style={{ height: '2.75rem' }}>
+											<></>
+											<td>{longWord(el.titleAr)}</td>
+											<td>{el.authorAr}</td>
+											<td>{el.arQuiz}</td>
+											<td>{el.bl}</td>
+											<td>
+												{el.lexileLex === null ? el.lexileAr : el.lexileLex}
+											</td>
+											<td>{el.wcAr}</td>
+											<td>
+												{el.books[0].place === null
+													? 'null'
+													: el.books[0].place}
+											</td>
+											<td>
+												<button
+													onClick={onClickBookingBooks(
+														Number(el.id),
+														el.titleAr
+													)}
+												>
+													예약
+												</button>
+											</td>
+										</tr>
+									);
+								})}
+						</tbody>
+					</table>
+					<div
+						style={{
+							display: 'flex',
+							justifyContent: 'center',
+							marginTop: '20px',
+						}}
+					>
+						{bookData === undefined || bookData?.getBooksByBl.length === 0 ? (
+							<></>
+						) : (
+							<>
+								<button
+									onClick={() => {
+										if (bookPage - 10 > 0) {
+											setBookPage(bookPage - 10);
+										}
+									}}
+								>
+									{'<<'}
+								</button>
+								<button
+									onClick={() => {
+										if (bookPage > 1) {
+											setBookPage(bookPage - 1);
+										}
+									}}
+								>
+									{'<'}
+								</button>
+							</>
+						)}
+						{Array.from({ length: bookMaxPage }).map((_, index) => {
+							if (
+								index === 0 ||
+								index === bookMaxPage - 1 ||
+								(index + 3 >= bookPage && index - 1 <= bookPage)
+							) {
+								return (
+									<>
+										{bookPage > 4 && bookPage === index + 3 ? (
+											<span
+												style={{
+													width: '17px',
+													color: 'black',
+													display: 'flex',
+													justifyContent: 'center',
+													alignItems: 'center',
+												}}
+											>
+												...
+											</span>
+										) : (
+											<></>
+										)}
+										<span
+											onClick={() => {
+												setBookPage(index + 1);
+											}}
+											style={
+												index + 1 + bookPageList * 10 === bookPage
+													? {
+															width: '27px',
+															color: 'white',
+															backgroundColor: 'purple',
+															border: '1px solid black',
+															display: 'flex',
+															justifyContent: 'center',
+															alignItems: 'center',
+													  }
+													: {
+															width: '27px',
+															color: 'black',
+															border: '1px solid black',
+															display: 'flex',
+															justifyContent: 'center',
+															alignItems: 'center',
+													  }
+											}
+										>
+											{index + 1}
+										</span>
+										{bookPage < bookMaxPage - 3 && bookPage === index - 1 ? (
+											<span
+												style={{
+													width: '17px',
+													color: 'black',
+													display: 'flex',
+													justifyContent: 'center',
+													alignItems: 'center',
+												}}
+											>
+												...
+											</span>
+										) : (
+											<></>
+										)}
+									</>
+								);
+							}
+						})}
+						{bookData === undefined || bookData?.getBooksByBl.length === 0 ? (
+							<></>
+						) : (
+							<>
+								<button
+									onClick={() => {
+										if (bookPage < bookMaxPage) {
+											setBookPage(bookPage + 1);
+										}
+									}}
+								>
+									{'>'}
+								</button>
+								<button
+									onClick={() => {
+										if (bookPage + 10 < bookMaxPage) {
+											setBookPage(bookPage + 10);
+										}
+									}}
+								>
+									{'>>'}
+								</button>
+							</>
+						)}
+					</div>
+				</Modal>
+			) : (
+				<></>
+			)}
+			{isConfirm ? (
+				<Modal
+					open={isConfirm}
+					onCancel={() => {
+						setIsConfirm(false);
+					}}
+					footer={null}
+					closable={false}
+				>
+					<div
+						style={{
+							display: 'flex',
+							flexDirection: 'column',
+							alignItems: 'center',
+							padding: '3rem 3rem',
+						}}
+					>
+						<div
+							style={{
+								color: '#000',
+								fontSize: '2.125rem',
+								fontStyle: 'normal',
+								fontWeight: 500,
+								lineHeight: '2.5rem',
+								marginBottom: '1.5rem',
+							}}
+						>
+							{confirmState + ' 처리 하시겠습니까?'}
+						</div>
+						<div style={{ marginBottom: '3.5rem' }}>
+							{confirmState === '결석'
+								? '원생의 출결 상태를 결석으로 변경합니다.'
+								: '원생을 해당 일자/수업에서 삭제합니다.'}
+						</div>
+						<div>
+							<S.DeleteButton
+								onClick={() => {
+									setIsConfirm(false);
+								}}
+								style={{
+									backgroundColor: 'background: #EBECEF;',
+									color: '#1e1e1e',
+									height: '2.75rem',
+								}}
+							>
+								취소
+							</S.DeleteButton>
+							<S.DeleteButton
+								onClick={
+									confirmState === '삭제'
+										? () => {
+												onClickDelete()();
+												setIsConfirm(false);
+										  }
+										: () => {
+												onClickAttendance('absent')();
+												setIsConfirm(false);
+										  }
+								}
+								style={{
+									backgroundColor: '#333',
+									color: '#FFF',
+									height: '2.75rem',
+								}}
+							>
+								확인
+							</S.DeleteButton>
+						</div>
+					</div>
+				</Modal>
+			) : (
+				<></>
+			)}
+			<Modal
+				open={isInfo}
+				onCancel={() => {
+					setIsInfo(false);
+				}}
+				closable={false}
+				footer={null}
+			>
+				<S.lectureModalInfo>{'수업 정보: ' + info}</S.lectureModalInfo>
+			</Modal>
+		</S.ClassWrapper>
+	);
 }

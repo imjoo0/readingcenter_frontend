@@ -59,7 +59,6 @@ export default function ClassListPage() {
   return (
     <S.ClassWrapper>
       <S.ClassTitle>수업 목록</S.ClassTitle>
-      <S.ClassTitleLine></S.ClassTitleLine>
       <input
         type="date"
         defaultValue={dateToInput(date)}

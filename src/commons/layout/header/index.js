@@ -21,29 +21,34 @@ export default function Header() {
   };
 
   return (
-    <S.HeaderWrapper>
-      {menuList.map((el) => {
-        return (
-          <S.HeaderTag
-            key={uuidv4()}
-            style={
-              router.asPath === "/" + el[1]
-                ? { backgroundColor: "#efefef", color: "#1e1e1e" }
-                : {}
-            }
-            onClick={onClickMenu(el[1])}
-          >
-            <S.HeaderText>{el[0]}</S.HeaderText>
-          </S.HeaderTag>
-        );
-      })}
-      <S.logout
-        onClick={() => {
-          router.push("/");
-        }}
-      >
-        로그아웃
-      </S.logout>
-    </S.HeaderWrapper>
-  );
+		<S.HeaderWrapper>
+			<S.MenuDiv>
+				<S.logoHorizentalImage></S.logoHorizentalImage>
+				{menuList.map((el) => {
+					return (
+						<S.HeaderTag
+							key={uuidv4()}
+							style={
+								router.asPath.split('/')[
+									router.asPath.split('/').length - 1
+								] === el[1]
+									? { color: '#000' }
+									: {}
+							}
+							onClick={onClickMenu(el[1])}
+						>
+							<S.HeaderText>{el[0]}</S.HeaderText>
+						</S.HeaderTag>
+					);
+				})}
+			</S.MenuDiv>
+			<S.logout
+				onClick={() => {
+					router.push('/');
+				}}
+			>
+				로그아웃
+			</S.logout>
+		</S.HeaderWrapper>
+	);
 }

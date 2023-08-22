@@ -1,24 +1,22 @@
 import styled from "@emotion/styled";
 
 export const ClassWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  margin-top: 20px;
-  padding: 0px 30px 0px 30px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: flex-start;
+	margin-top: 10rem;
+	padding: 0 8.4% 0 8.4%;
 `;
 
 export const ClassTitle = styled.div`
-  font-size: 35px;
-  font-weight: 600;
+	font-size: 2.5rem;
+	font-style: normal;
+	font-weight: 500;
+	line-height: 3.5rem;
+  margin-bottom: 2.5rem;
 `;
 
-export const ClassTitleLine = styled.div`
-  border-top: 2px solid;
-  width: 100%;
-  margin: 3vh 0;
-`;
 
 export const ClassTable = styled.div`
   width: 80%;

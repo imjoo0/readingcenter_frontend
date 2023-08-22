@@ -23,22 +23,14 @@ export const Wrapper = styled.div`
 `;
 
 export const LoginBox = styled.div`
-	width: 50vw;
-	height: 55vh;
+	width: 100vw;
+	height: 100vh;
 	display: flex;
 	align-items: center;
-	border-radius: 20px;
 	background-color: white;
-	box-shadow: 3px 3px 3px 3px rgba(0, 0, 0, 0.2);
-	${(props) =>
-		props.active &&
-		`
-   animation: ${boxFade} 2s 1s infinite linear alternate;
-  `}
 `;
 export const LoginBoxRight = styled.div`
-  width: 28vw;
-  height: 55vh;
+  margin-left: 6.25rem;
   display: flex;
   flex-direction: column;
   justify-content: space-around;
@@ -46,39 +38,38 @@ export const LoginBoxRight = styled.div`
 `;
 
 export const LoginBoxLeft = styled.div`
-  width: 22vw;
-  height: 55vh;
-  background-color: purple;
-  border-radius: 20px 0 0 20px;
+  width: 64vw;
+  height: 100vh;
+  background: #791285;
   position: relative;
 `;
 export const logoImage = styled.div`
 	position: absolute;
-	top: 50%;
+	top: 44%;
 	left: 50%;
 	transform: translate(-50%, -50%);
-	width: 190px;
-	height: 100px;
+	width: 20.5rem;
+  height: 9.1875rem;
+  flex-shrink: 0;
 	background-image: url('/logo.svg');
 	background-repeat: no-repeat;
 `;
 
 export const LoginTitle = styled.div`
-  font-size: 27px;
-  font-weight: 600;
+  color: #333;
+  text-align: center;
+  font-family: Spoqa Han Sans Neo;
+  margin-bottom: 4rem;
+  font-size: 2.5rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 3rem; /* 120% */
   display: flex;
   justify-content: center;
 `;
 
-export const LoginLine = styled.div`
-  width: 10vw;
-  border-top: 3px solid purple;
-`;
 export const InputTag = styled.div`
-  width: 15vw;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
+  
 `;
 
 export const LoginInputTitle = styled.div`
@@ -87,18 +78,25 @@ export const LoginInputTitle = styled.div`
 `;
 
 export const LoginInput = styled.input`
-  width: 8vw;
-  font-size: 20px;
-  height: 30px;
-  border: 2px solid #e3e3e3;
-  border-radius: 8px;
-  
+	width: 20.5rem;
+	height: 1.5rem;
+	flex-shrink: 0;
+	border-radius: 3.375rem;
+	border: 0;
+	background: #f7f8fa;
+	padding: 0.75rem 0 0.75rem 1.5rem;
+	font-family: Spoqa Han Sans Neo;
+	font-size: 0.875rem;
+	font-style: normal;
+	font-weight: 500;
+	line-height: 1.25rem; /* 142.857% */
+  margin-bottom: 0.75rem;
 `;
 export const LoginSelect = styled.select`
   font-size: 20px;
   width: 13.5vw;
   border: 1px solid #e3e3e3;
-  border-radius: 5px;
+  border-radius: 5px ;
   font-weight: 600;
 `;
 export const LoginOption = styled.option`
@@ -106,18 +104,19 @@ export const LoginOption = styled.option`
 `;
 
 export const LoginButton = styled.button`
-	width: 12vw;
-	height: 5vh;
-	font-size: 20px;
+  margin-top: 2.75rem;
+	width: 20.5rem;
+	height: 2.75rem;
+	flex-shrink: 0;
+	border-radius: 3.375rem;
+	background: #791285;
+	border: 0;
+	color: #fff;
+	text-align: center;
+	font-family: Spoqa Han Sans Neo;
+	font-size: 1.125rem;
+	font-style: normal;
 	font-weight: 500;
-	border: none;
-	border-radius: 10px;
-	background-color: purple;
-	color: #fefefe;
-	&:hover {
-		box-shadow: 200px 0 0 0 rgba(0, 0, 0, 0.15) inset,
-			-200px 0 0 0 rgba(0, 0, 0, 0.15) inset;
-		color: #fff;
-	}
+	line-height: 1.5rem; /* 133.333% */
 `;
 
