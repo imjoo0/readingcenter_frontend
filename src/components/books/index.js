@@ -286,458 +286,444 @@ export default function BookPage() {
     return <Spin></Spin>;
   } else {
     return (
-      <S.BooksWrapper>
-        <S.BooksTitle>도서 관리</S.BooksTitle>
-        <S.BooksTitleLine></S.BooksTitleLine>
-        <S.SearchBox style={{ width: "95%", paddingRight: "20px" }}>
-          <S.SearchTitle>도서 검색</S.SearchTitle>
-          <S.SearchTag
-            style={{
-              flexDirection: "row",
-              justifyContent: "flex-start",
-              alignItems: "flex-end",
-            }}
-          >
-            <div
-              style={{
-                boxShadow: "2px 2px 2px 1px rgba(0, 0, 0, 0.2)",
-                padding: "20px",
-                display: "flex",
-                height: "100px",
-                backgroundColor: "#5AB0FF",
-                color: "white",
-                fontSize: "15px",
-                fontWeight: "bold",
-                borderRadius: "20px",
-                flexDirection: "column",
-              }}
-            >
-              <div style={{ marginBottom: "5px" }}>AR 점수</div>
-              <div style={{ marginBottom: "5px" }}>
-                <span>최소</span>
-                <S.InputInput
-                  style={{ marginLeft: "10px", marginTop: "10px" }}
-                  type="number"
-                  onChange={(e) => {
-                    setMinBl(Number(e.target.value));
-                  }}
-                  onKeyPress={async (e) => {
-                    if (e.key === "Enter") {
-                      onClickSearch();
-                    }
-                  }}
-                  defaultValue={minBl}
-                ></S.InputInput>
-              </div>
-              <div style={{ marginBottom: "5px" }}>
-                <span>최대</span>
-                <S.InputInput
-                  style={{ marginLeft: "10px", marginTop: "10px" }}
-                  type="number"
-                  onChange={(e) => {
-                    setMaxBl(Number(e.target.value));
-                  }}
-                  onKeyPress={async (e) => {
-                    if (e.key === "Enter") {
-                      onClickSearch();
-                    }
-                  }}
-                  defaultValue={maxBl}
-                ></S.InputInput>
-              </div>
-            </div>
-            <div
-              style={{
-                boxShadow: "2px 2px 2px 1px rgba(0, 0, 0, 0.2)",
-                padding: "20px",
-                display: "flex",
-                height: "100px",
-                backgroundColor: "#FEA910",
-                color: "white",
-                fontSize: "15px",
-                fontWeight: "bold",
-                borderRadius: "20px",
-                flexDirection: "column",
-                margin: "0 0 0 15px",
-              }}
-            >
-              <div style={{ marginBottom: "5px" }}>Word Count</div>
-              <div>
-                최소
-                <S.InputInput
-                  type="number"
-                  style={{ marginLeft: "10px", marginTop: "10px" }}
-                  onChange={(e) => {
-                    setMinWc(Number(e.target.value));
-                  }}
-                  defaultValue={minWc}
-                ></S.InputInput>
-              </div>
-              <div>
-                최대
-                <S.InputInput
-                  type="number"
-                  style={{ marginLeft: "10px", marginTop: "10px" }}
-                  onChange={(e) => {
-                    setMaxWc(Number(e.target.value));
-                  }}
-                  defaultValue={maxWc}
-                ></S.InputInput>
-              </div>
-            </div>
-            <div
-              style={{
-                boxShadow: "2px 2px 2px 1px rgba(0, 0, 0, 0.2)",
-                padding: "20px",
-                display: "flex",
-                height: "100px",
-                backgroundColor: "#772481",
-                color: "white",
-                fontSize: "15px",
-                fontWeight: "bold",
-                borderRadius: "20px",
-                flexDirection: "column",
-                margin: "0 0 0 15px",
-              }}
-            >
-              <div>Lexile 점수</div>
-              <div>
-                <div>
-                  최소
-                  <S.InputInput
-                    type="number"
-                    style={{ marginLeft: "10px", marginTop: "10px" }}
-                    onChange={(e) => {
-                      setMinLex(Number(e.target.value));
-                      console.log(Number(e.target.value));
-                    }}
-                    defaultValue={minLex}
-                  ></S.InputInput>
-                </div>
-                <div>
-                  최대
-                  <S.InputInput
-                    type="number"
-                    style={{ marginLeft: "10px", marginTop: "10px" }}
-                    onChange={(e) => {
-                      setMaxLex(Number(e.target.value));
-                    }}
-                    defaultValue={maxLex}
-                  ></S.InputInput>
-                </div>
-              </div>
-            </div>
-            <S.ModalAddButton
-              onClick={onClickSearch}
-              style={{ width: "50px", position: "absolute", right: "150px" }}
-            >
-              검색
-            </S.ModalAddButton>
-          </S.SearchTag>
-          <S.SearchTag style={{ marginTop: "30px" }}>
-            <div>
-              <S.SearchInput
-                type="text"
-                placeholder="도서 제목, 바코드, 저자 등으로 검색해주세요."
-                onChange={(e) => {
-                  setBookSearchWord(e.target.value);
-                }}
-              />
-            </div>
-          </S.SearchTag>
-        </S.SearchBox>
-        <S.CountNumber
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            width: "100%",
-            marginBottom: "10px",
-          }}
-        >
-          {(data?.getBooksByBl !== undefined &&
-            data?.getBooksByBl?.filter((el) => {
-              return (
-                el?.titleAr
-                  .toUpperCase()
-                  .includes(bookSearchWord.toUpperCase()) ||
-                String(el?.books[0]?.isbn)
-                  .toUpperCase()
-                  .includes(bookSearchWord.toUpperCase()) ||
-                el?.authorAr
-                  .toUpperCase()
-                  .includes(bookSearchWord.toUpperCase()) ||
-                String(el?.kplbn)
-                  .toUpperCase()
-                  .includes(bookSearchWord.toUpperCase())
-              );
-            }).length !== 0) ||
-          undefined
-            ? data?.getBooksByBl?.filter((el) => {
-                return (
-                  el?.titleAr
-                    .toUpperCase()
-                    .includes(bookSearchWord.toUpperCase()) ||
-                  String(el?.books[0]?.isbn)
-                    .toUpperCase()
-                    .includes(bookSearchWord.toUpperCase()) ||
-                  el?.authorAr
-                    .toUpperCase()
-                    .includes(bookSearchWord.toUpperCase()) ||
-                  String(el?.kplbn)
-                    .toUpperCase()
-                    .includes(bookSearchWord.toUpperCase())
-                );
-              }).length + "권"
-            : ""}
-        </S.CountNumber>
-        <style>{`
+			<S.BooksWrapper>
+				<S.BooksTitle>도서 관리</S.BooksTitle>
+				<S.SearchBox
+					style={{
+						borderRadius: '0.25rem 0.25rem 0rem 0rem',
+						background: '#F7F8FA',
+						padding: '1.5rem',
+						borderRadius: '9px',
+						marginTop: '1.25rem',
+						width: '95%',
+					}}
+				>
+					<S.SearchTag
+						style={{
+							flexDirection: 'row',
+							justifyContent: 'flex-start',
+							alignItems: 'flex-end',
+						}}
+					>
+						<div
+							style={{
+								display: 'flex',
+								color: '#000',
+								fontSize: '15px',
+								fontWeight: 'bold',
+								flexDirection: 'column',
+								marginRight: '1.87rem',
+							}}
+						>
+							<div style={{ marginBottom: '5px' }}>AR 점수</div>
+							<div>
+								<span>최소</span>
+								<S.InputInput
+									style={{ marginLeft: '10px', marginTop: '10px' }}
+									type="number"
+									onChange={(e) => {
+										setMinBl(Number(e.target.value));
+									}}
+									onKeyPress={async (e) => {
+										if (e.key === 'Enter') {
+											onClickSearch();
+										}
+									}}
+									defaultValue={minBl}
+								></S.InputInput>
+							</div>
+							<div>
+								<span>최대</span>
+								<S.InputInput
+									style={{ marginLeft: '10px', marginTop: '10px' }}
+									type="number"
+									onChange={(e) => {
+										setMaxBl(Number(e.target.value));
+									}}
+									onKeyPress={async (e) => {
+										if (e.key === 'Enter') {
+											onClickSearch();
+										}
+									}}
+									defaultValue={maxBl}
+								></S.InputInput>
+							</div>
+						</div>
+						<div
+							style={{
+								display: 'flex',
+								color: '#000',
+								fontSize: '15px',
+								fontWeight: 'bold',
+								flexDirection: 'column',
+								marginRight: '1.87rem',
+							}}
+						>
+							<div style={{ marginBottom: '5px' }}>Word Count</div>
+							<div>
+								최소
+								<S.InputInput
+									type="number"
+									style={{ marginLeft: '10px', marginTop: '10px' }}
+									onChange={(e) => {
+										setMinWc(Number(e.target.value));
+									}}
+									defaultValue={minWc}
+								></S.InputInput>
+							</div>
+							<div>
+								최대
+								<S.InputInput
+									type="number"
+									style={{ marginLeft: '10px', marginTop: '10px' }}
+									onChange={(e) => {
+										setMaxWc(Number(e.target.value));
+									}}
+									defaultValue={maxWc}
+								></S.InputInput>
+							</div>
+						</div>
+						<div
+							style={{
+								display: 'flex',
+								color: '#000',
+								fontSize: '15px',
+								fontWeight: 'bold',
+								flexDirection: 'column',
+								marginRight: '1.87rem',
+							}}
+						>
+							<div>Lexile 점수</div>
+							<div>
+								<div>
+									최소
+									<S.InputInput
+										type="number"
+										style={{ marginLeft: '10px', marginTop: '10px' }}
+										onChange={(e) => {
+											setMinLex(Number(e.target.value));
+											console.log(Number(e.target.value));
+										}}
+										defaultValue={minLex}
+									></S.InputInput>
+								</div>
+								<div>
+									최대
+									<S.InputInput
+										type="number"
+										style={{ marginLeft: '10px', marginTop: '10px' }}
+										onChange={(e) => {
+											setMaxLex(Number(e.target.value));
+										}}
+										defaultValue={maxLex}
+									></S.InputInput>
+								</div>
+							</div>
+						</div>
+						<S.ModalAddButton
+							onClick={onClickSearch}
+							style={{
+								borderRadius: '0.5rem',
+								background: '#333',
+								height: '2.75rem',
+							}}
+						>
+							검색
+						</S.ModalAddButton>
+					</S.SearchTag>
+					<S.SearchTag style={{ marginTop: '30px' }}>
+						<div>
+							<S.SearchInput
+								type="text"
+								placeholder="도서 제목, 바코드, 저자 등으로 검색해주세요."
+								onChange={(e) => {
+									setBookSearchWord(e.target.value);
+								}}
+							/>
+						</div>
+					</S.SearchTag>
+				</S.SearchBox>
+				<S.CountNumber
+					style={{
+						display: 'flex',
+						justifyContent: 'space-between',
+						width: '100%',
+						marginBottom: '10px',
+					}}
+				>
+					{(data?.getBooksByBl !== undefined &&
+						data?.getBooksByBl?.filter((el) => {
+							return (
+								el?.titleAr
+									.toUpperCase()
+									.includes(bookSearchWord.toUpperCase()) ||
+								String(el?.books[0]?.isbn)
+									.toUpperCase()
+									.includes(bookSearchWord.toUpperCase()) ||
+								el?.authorAr
+									.toUpperCase()
+									.includes(bookSearchWord.toUpperCase()) ||
+								String(el?.kplbn)
+									.toUpperCase()
+									.includes(bookSearchWord.toUpperCase())
+							);
+						}).length !== 0) ||
+					undefined
+						? data?.getBooksByBl?.filter((el) => {
+								return (
+									el?.titleAr
+										.toUpperCase()
+										.includes(bookSearchWord.toUpperCase()) ||
+									String(el?.books[0]?.isbn)
+										.toUpperCase()
+										.includes(bookSearchWord.toUpperCase()) ||
+									el?.authorAr
+										.toUpperCase()
+										.includes(bookSearchWord.toUpperCase()) ||
+									String(el?.kplbn)
+										.toUpperCase()
+										.includes(bookSearchWord.toUpperCase())
+								);
+						  }).length + '권'
+						: ''}
+				</S.CountNumber>
+				<style>{`
               table {
-                border-collapse: separate;
-                border-spacing: 0;
-                width: 100%;
-              }
-              th,
-              td {
-                padding: 6px 15px;
-              }
-              th {
-                background: #42444e;
-                color: #fff;
-                text-align: left;
-              }
-              tr:first-child th:first-child {
-                border-top-left-radius: 6px;
-              }
-              tr:first-child th:last-child {
-                border-top-right-radius: 6px;
-              }
-              td {
-                border-right: 1px solid #c6c9cc;
-                border-bottom: 1px solid #c6c9cc;
-              }
-              td:first-child {
-                border-left: 1px solid #c6c9cc;
-              }
-              tr:nth-child(even) td {
-                background: #eaeaed;
-              }
-              tr:last-child td:first-child {
-                border-bottom-left-radius: 6px;
-              }
-              tr:last-child td:last-child {
-                border-bottom-right-radius: 6px;
-              }
+              border-collapse: separate;
+              border-spacing: 0;
+              border-radius: 0.125rem;
+              border: 1px solid #DBDDE1;
+              width: 100%;
+            }
+            thead{
+              border-radius: 0.25rem 0.25rem 0rem 0rem;
+              background: #F7F8FA;
+            }
+            th,
+            td {
+              border: 0.8px solid #DBDDE1;
+              padding: 6px 1.5rem;
+              font-size: 0.875rem;
+              font-style: normal;
+              font-weight: 500;
+              line-height: normal;
+              text-align: left;
+            }
+            td {
+              color: #333;
+            }
             `}</style>
-        <table>
-          {bookArray.length === 0 ? (
-            <></>
-          ) : (
-            <thead>
-              <tr>
-                <th>바코드</th>
-                <th>도서 제목</th>
-                <th>저자</th>
-                <th>AR QUIZ No.</th>
-                <th>AR</th>
-                <th>Lexile</th>
-                <th>Word Count</th>
-                <th>도서 권수</th>
-                <th>상세 보기</th>
-              </tr>
-            </thead>
-          )}
-          <tbody>
-            {bookArray?.map((el) => {
-              return (
-                <tr>
-                  <td>{el.books[0].isbn}</td>
-                  <td>{longWord(el.titleAr)}</td>
-                  <td>{el.authorAr}</td>
-                  <td>{el.arQuiz}</td>
-                  <td>{el.bl}</td>
-                  <td>{el.lexileLex ?? el.lexileAr}</td>
-                  <td>{el.wcAr}</td>
-                  <td>{el.books.length + "권"}</td>
-                  <td>
-                    <BookOutlined onClick={onClickSelectBook(el)} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            marginTop: "20px",
-            width: "100%",
-          }}
-        >
-          {data === undefined || data?.getBooksByBl.length === 0 ? (
-            <></>
-          ) : (
-            <>
-              <button
-                onClick={() => {
-                  console.log(bookPageList);
-                  if (bookPage - 10 > 0) {
-                    setBookPage(bookPage - 10);
-                  }
-                }}
-              >
-                {"<<"}
-              </button>
-              <button
-                onClick={() => {
-                  if (bookPage > 1) {
-                    setBookPage(bookPage - 1);
-                  }
-                }}
-              >
-                {"<"}
-              </button>
-            </>
-          )}
-          {Array.from({ length: bookMaxPage })
-            // .filter((_, index) => {
-            //   return (
-            //     index === 0 ||
-            //     index === bookMaxPage ||
-            //     (index >= bookPage && index <= bookPage + 1)
-            //   );
-            // })
-            .map((_, index) => {
-              if (
-                index === 0 ||
-                index === bookMaxPage - 1 ||
-                (index + 3 >= bookPage && index - 1 <= bookPage)
-              ) {
-                return (
-                  <>
-                    {bookPage > 4 && bookPage === index + 3 ? (
-                      <span
-                        style={{
-                          width: "17px",
-                          color: "black",
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                      >
-                        ...
-                      </span>
-                    ) : (
-                      <></>
-                    )}
-                    <span
-                      onClick={() => {
-                        setBookPage(index + 1);
-                      }}
-                      style={
-                        index + 1 + bookPageList * 10 === bookPage
-                          ? {
-                              width: "27px",
-                              color: "white",
-                              backgroundColor: "purple",
-                              border: "1px solid black",
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                            }
-                          : {
-                              width: "27px",
-                              color: "black",
-                              border: "1px solid black",
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                            }
-                      }
-                    >
-                      {index + 1}
-                    </span>
-                    {bookPage < bookMaxPage - 3 && bookPage === index - 1 ? (
-                      <span
-                        style={{
-                          width: "17px",
-                          color: "black",
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                      >
-                        ...
-                      </span>
-                    ) : (
-                      <></>
-                    )}
-                  </>
-                );
-              }
-            })}
-          {data === undefined || data?.getBooksByBl.length === 0 ? (
-            <></>
-          ) : (
-            <>
-              <button
-                onClick={() => {
-                  if (bookPage < bookMaxPage) {
-                    setBookPage(bookPage + 1);
-                  }
-                }}
-              >
-                {">"}
-              </button>
-              <button
-                onClick={() => {
-                  console.log(bookPageList);
-                  if (bookPage + 10 < bookMaxPage) {
-                    setBookPage(bookPage + 10);
-                  }
-                }}
-              >
-                {">>"}
-              </button>
-            </>
-          )}
-        </div>
-        {/* <button
+				<table>
+					{bookArray.length === 0 ? (
+						<></>
+					) : (
+						<thead>
+							<tr>
+								<th>바코드</th>
+								<th>도서 제목</th>
+								<th>저자</th>
+								<th>AR QUIZ No.</th>
+								<th>AR</th>
+								<th>Lexile</th>
+								<th>Word Count</th>
+								<th>도서 권수</th>
+								<th>상세 보기</th>
+							</tr>
+						</thead>
+					)}
+					<tbody>
+						{bookArray?.map((el) => {
+							return (
+								<tr>
+									<td>{el.books[0].isbn}</td>
+									<td>{longWord(el.titleAr)}</td>
+									<td>{el.authorAr}</td>
+									<td>{el.arQuiz}</td>
+									<td>{el.bl}</td>
+									<td>{el.lexileLex ?? el.lexileAr}</td>
+									<td>{el.wcAr}</td>
+									<td>{el.books.length + '권'}</td>
+									<td>
+										<BookOutlined onClick={onClickSelectBook(el)} />
+									</td>
+								</tr>
+							);
+						})}
+					</tbody>
+				</table>
+				<div
+					style={{
+						display: 'flex',
+						justifyContent: 'center',
+						marginTop: '20px',
+						marginBottom: '20px',
+						width: '100%',
+					}}
+				>
+					{data === undefined || data?.getBooksByBl.length === 0 ? (
+						<></>
+					) : (
+						<>
+							<button
+								onClick={() => {
+									console.log(bookPageList);
+									if (bookPage - 10 > 0) {
+										setBookPage(bookPage - 10);
+									}
+								}}
+							>
+								{'<<'}
+							</button>
+							<button
+								onClick={() => {
+									if (bookPage > 1) {
+										setBookPage(bookPage - 1);
+									}
+								}}
+							>
+								{'<'}
+							</button>
+						</>
+					)}
+					{Array.from({ length: bookMaxPage })
+						// .filter((_, index) => {
+						//   return (
+						//     index === 0 ||
+						//     index === bookMaxPage ||
+						//     (index >= bookPage && index <= bookPage + 1)
+						//   );
+						// })
+						.map((_, index) => {
+							if (
+								index === 0 ||
+								index === bookMaxPage - 1 ||
+								(index + 3 >= bookPage && index - 1 <= bookPage)
+							) {
+								return (
+									<>
+										{bookPage > 4 && bookPage === index + 3 ? (
+											<span
+												style={{
+													width: '17px',
+													color: 'black',
+													display: 'flex',
+													justifyContent: 'center',
+													alignItems: 'center',
+												}}
+											>
+												...
+											</span>
+										) : (
+											<></>
+										)}
+										<span
+											onClick={() => {
+												setBookPage(index + 1);
+											}}
+											style={
+												index + 1 + bookPageList * 10 === bookPage
+													? {
+															width: '27px',
+															color: 'white',
+															backgroundColor: '#333',
+															border: '1px solid black',
+															display: 'flex',
+															justifyContent: 'center',
+															alignItems: 'center',
+													  }
+													: {
+															width: '27px',
+															color: 'black',
+															border: '1px solid black',
+															display: 'flex',
+															justifyContent: 'center',
+															alignItems: 'center',
+													  }
+											}
+										>
+											{index + 1}
+										</span>
+										{bookPage < bookMaxPage - 3 && bookPage === index - 1 ? (
+											<span
+												style={{
+													width: '17px',
+													color: 'black',
+													display: 'flex',
+													justifyContent: 'center',
+													alignItems: 'center',
+												}}
+											>
+												...
+											</span>
+										) : (
+											<></>
+										)}
+									</>
+								);
+							}
+						})}
+					{data === undefined || data?.getBooksByBl.length === 0 ? (
+						<></>
+					) : (
+						<>
+							<button
+								onClick={() => {
+									if (bookPage < bookMaxPage) {
+										setBookPage(bookPage + 1);
+									}
+								}}
+							>
+								{'>'}
+							</button>
+							<button
+								onClick={() => {
+									console.log(bookPageList);
+									if (bookPage + 10 < bookMaxPage) {
+										setBookPage(bookPage + 10);
+									}
+								}}
+							>
+								{'>>'}
+							</button>
+						</>
+					)}
+				</div>
+				{/* <button
           onClick={() => {
             setIsAddBook(true);
           }}
         >
           도서 등록
         </button> */}
-        {isAddBook ? (
-          <Modal
-            open={isAddBook}
-            onCancel={() => {
-              setIsAddBook(false);
-              setInputFile([]);
-            }}
-            footer={null}
-            closable={false}
-          >
-            <button onClick={onClickFileRef}>첨부</button>
-            <div className="App">
-              <div
-                className={`drop-box ${dragging ? "dragging" : ""}`}
-                onDragEnter={handleDragEnter}
-                onDragLeave={handleDragLeave}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                style={{
-                  border: "1px solid #2d2d2d",
-                  width: "450px",
-                  height: "300px",
-                }}
-              >
-                {/* {dragging ? "Drop here" : "Drag and drop files here"} */}
-              </div>
+				{isAddBook ? (
+					<Modal
+						open={isAddBook}
+						onCancel={() => {
+							setIsAddBook(false);
+							setInputFile([]);
+						}}
+						footer={null}
+						closable={false}
+					>
+						<button onClick={onClickFileRef}>첨부</button>
+						<div className="App">
+							<div
+								className={`drop-box ${dragging ? 'dragging' : ''}`}
+								onDragEnter={handleDragEnter}
+								onDragLeave={handleDragLeave}
+								onDragOver={handleDragOver}
+								onDrop={handleDrop}
+								style={{
+									border: '1px solid #2d2d2d',
+									width: '450px',
+									height: '300px',
+								}}
+							>
+								{/* {dragging ? "Drop here" : "Drag and drop files here"} */}
+							</div>
 
-              <div className="file-list" style={{ margin: "10px 0" }}>
-                {/* <div>
+							<div className="file-list" style={{ margin: '10px 0' }}>
+								{/* <div>
                   {inputFile.map((file, index) => (
                     <div
                       key={index}
@@ -752,61 +738,61 @@ export default function BookPage() {
                     </div>
                   ))}
                 </div> */}
-                <div>{inputFile.name}</div>
-              </div>
-            </div>
-            <input
-              type="file"
-              onChange={onChangeAddBooks}
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              multiple={false}
-              // accept="application/vnd.ms-excel"
-            ></input>
-            <button onClick={onClickAddList}>등록</button>
-            <button
-              onClick={() => {
-                setIsAddBook(false);
-                setInputFile([]);
-              }}
-            >
-              취소
-            </button>
-          </Modal>
-        ) : (
-          <></>
-        )}
-        {detailToggle ? (
-          <Modal
-            open={detailToggle}
-            width={"55vw"}
-            height={"50vh"}
-            footer={null}
-            closable={false}
-            onCancel={() => {
-              setDetailToggle(false);
-              setInputPlace([]);
-            }}
-          >
-            <S.BooksTitle>도서 정보</S.BooksTitle>
-            <S.BooksTitleLine></S.BooksTitleLine>
-            <S.ModalWrapper>
-              <S.ModalInputBox>
-                <S.EditTitleFont>도서 제목</S.EditTitleFont>
+								<div>{inputFile.name}</div>
+							</div>
+						</div>
+						<input
+							type="file"
+							onChange={onChangeAddBooks}
+							ref={fileInputRef}
+							style={{ display: 'none' }}
+							multiple={false}
+							// accept="application/vnd.ms-excel"
+						></input>
+						<button onClick={onClickAddList}>등록</button>
+						<button
+							onClick={() => {
+								setIsAddBook(false);
+								setInputFile([]);
+							}}
+						>
+							취소
+						</button>
+					</Modal>
+				) : (
+					<></>
+				)}
+				{detailToggle ? (
+					<Modal
+						open={detailToggle}
+						width={'55vw'}
+						height={'50vh'}
+						footer={null}
+						closable={false}
+						onCancel={() => {
+							setDetailToggle(false);
+							setInputPlace([]);
+						}}
+					>
+						<S.BooksTitle>도서 정보</S.BooksTitle>
+						<S.BooksTitleLine></S.BooksTitleLine>
+						<S.ModalWrapper>
+							<S.ModalInputBox>
+								<S.EditTitleFont>도서 제목</S.EditTitleFont>
 
-                <S.EditTagFont>{selectBook.titleAr}</S.EditTagFont>
-              </S.ModalInputBox>
-              <S.ModalInputBox>
-                <S.EditTitleFont>저자</S.EditTitleFont>
+								<S.EditTagFont>{selectBook.titleAr}</S.EditTagFont>
+							</S.ModalInputBox>
+							<S.ModalInputBox>
+								<S.EditTitleFont>저자</S.EditTitleFont>
 
-                <S.EditTagFont>{selectBook.authorAr}</S.EditTagFont>
-              </S.ModalInputBox>
-              <S.ModalInputBox>
-                <S.EditTitleFont>바코드</S.EditTitleFont>
+								<S.EditTagFont>{selectBook.authorAr}</S.EditTagFont>
+							</S.ModalInputBox>
+							<S.ModalInputBox>
+								<S.EditTitleFont>바코드</S.EditTitleFont>
 
-                <S.EditTagFont>{selectBook.books[0].isbn}</S.EditTagFont>
-              </S.ModalInputBox>
-              {/* <S.ModalInputBox>
+								<S.EditTagFont>{selectBook.books[0].isbn}</S.EditTagFont>
+							</S.ModalInputBox>
+							{/* <S.ModalInputBox>
                 <div>F/NF</div>
                 <S.InputInput
                   type="text"
@@ -814,68 +800,68 @@ export default function BookPage() {
                   defaultValue={"Fiction"}
                 ></S.InputInput>
               </S.ModalInputBox> */}
-              <S.ModalInputBox>
-                <S.EditTitleFont>AR Quiz No.</S.EditTitleFont>
-                <S.EditTagFont>{selectBook.arQuiz}</S.EditTagFont>
-              </S.ModalInputBox>
-              <S.ModalInputBox>
-                <S.EditTitleFont>AR</S.EditTitleFont>
-                <S.EditTagFont>{selectBook.bl}</S.EditTagFont>
-              </S.ModalInputBox>
-              <S.ModalInputBox>
-                <S.EditTitleFont>Lexile</S.EditTitleFont>
-                <S.EditTagFont>
-                  {selectBook.lexileLex ?? selectBook.lexileAr}
-                </S.EditTagFont>
-              </S.ModalInputBox>
-              <S.ModalInputBox>
-                <S.EditTitleFont>Word Count</S.EditTitleFont>
-                <S.EditTagFont>{selectBook.wcAr}</S.EditTagFont>
-              </S.ModalInputBox>
-              <S.BooksTitle>재고 정보</S.BooksTitle>
-              <S.BooksTitleLine></S.BooksTitleLine>
-              {selectBook.books.map((el, index) => {
-                return (
-                  <S.ModalInputBox>
-                    <div style={{ width: "250px" }}>
-                      {"도서 위치(" + el.plbn + ")"}
-                    </div>
-                    <div
-                      style={{
-                        width: "81%",
-                        display: "flex",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <S.InputInput
-                        type="text"
-                        style={{ width: "90%" }}
-                        defaultValue={el.place}
-                        onChange={onChangeInputPlace(index)}
-                      ></S.InputInput>
-                      <button onClick={editPlace(Number(el.id), index)}>
-                        변경
-                      </button>
-                    </div>
-                  </S.ModalInputBox>
-                );
-              })}
-            </S.ModalWrapper>
-            <S.ModalButtonBox>
-              <S.ModalCancelButton
-                onClick={() => {
-                  setDetailToggle(false);
-                  setInputPlace([]);
-                }}
-              >
-                닫기
-              </S.ModalCancelButton>
-            </S.ModalButtonBox>
-          </Modal>
-        ) : (
-          <></>
-        )}
-      </S.BooksWrapper>
-    );
+							<S.ModalInputBox>
+								<S.EditTitleFont>AR Quiz No.</S.EditTitleFont>
+								<S.EditTagFont>{selectBook.arQuiz}</S.EditTagFont>
+							</S.ModalInputBox>
+							<S.ModalInputBox>
+								<S.EditTitleFont>AR</S.EditTitleFont>
+								<S.EditTagFont>{selectBook.bl}</S.EditTagFont>
+							</S.ModalInputBox>
+							<S.ModalInputBox>
+								<S.EditTitleFont>Lexile</S.EditTitleFont>
+								<S.EditTagFont>
+									{selectBook.lexileLex ?? selectBook.lexileAr}
+								</S.EditTagFont>
+							</S.ModalInputBox>
+							<S.ModalInputBox>
+								<S.EditTitleFont>Word Count</S.EditTitleFont>
+								<S.EditTagFont>{selectBook.wcAr}</S.EditTagFont>
+							</S.ModalInputBox>
+							<S.BooksTitle>재고 정보</S.BooksTitle>
+							<S.BooksTitleLine></S.BooksTitleLine>
+							{selectBook.books.map((el, index) => {
+								return (
+									<S.ModalInputBox>
+										<div style={{ width: '250px' }}>
+											{'도서 위치(' + el.plbn + ')'}
+										</div>
+										<div
+											style={{
+												width: '81%',
+												display: 'flex',
+												justifyContent: 'space-between',
+											}}
+										>
+											<S.InputInput
+												type="text"
+												style={{ width: '90%' }}
+												defaultValue={el.place}
+												onChange={onChangeInputPlace(index)}
+											></S.InputInput>
+											<button onClick={editPlace(Number(el.id), index)}>
+												변경
+											</button>
+										</div>
+									</S.ModalInputBox>
+								);
+							})}
+						</S.ModalWrapper>
+						<S.ModalButtonBox>
+							<S.ModalCancelButton
+								onClick={() => {
+									setDetailToggle(false);
+									setInputPlace([]);
+								}}
+							>
+								닫기
+							</S.ModalCancelButton>
+						</S.ModalButtonBox>
+					</Modal>
+				) : (
+					<></>
+				)}
+			</S.BooksWrapper>
+		);
   }
 }

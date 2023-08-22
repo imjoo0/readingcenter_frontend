@@ -386,6 +386,9 @@ export default function AcademyPage() {
 						<S.TableHeadRight style={{ width: '30%' }}>
 							상세 보기
 						</S.TableHeadRight>
+						<S.TableHeadRight style={{ width: '30%' }}>
+							리딩 이력
+						</S.TableHeadRight>
 						<S.TableHeadRight style={{ width: '30%' }}>휴원</S.TableHeadRight>
 					</S.TableHeaderRound>
 					{array?.map((el) => {
@@ -417,6 +420,16 @@ export default function AcademyPage() {
 											);
 										}}
 									></SearchOutlined>
+								</S.TableHeadRight>
+								<S.TableHeadRight style={{ width: '30%' }}>
+									<BookOutlined
+										onClick={() => {
+											window.open(
+												'/' + router.query.branch + '/report/' + el.id,
+												'_blank'
+											);
+										}}
+									></BookOutlined>
 								</S.TableHeadRight>
 								<S.TableHeadRight style={{ width: '30%' }}>
 									<button

@@ -57,211 +57,223 @@ export default function ClassListPage() {
   }, [data]);
   console.log(data, "data");
   return (
-    <S.ClassWrapper>
-      <S.ClassTitle>수업 목록</S.ClassTitle>
-      <input
-        type="date"
-        defaultValue={dateToInput(date)}
-        onChange={onChangeDate}
-        style={{
-          fontSize: "20px",
-          padding: "10px",
-          marginBottom: "20px",
-          border: "1px solid",
-        }}
-      ></input>
+		<S.ClassWrapper>
+			<S.ClassTitle>수업 목록</S.ClassTitle>
+			<S.ClassSearchBox>
+				<S.ClassSearchInput
+					type="date"
+					defaultValue={dateToInput(date)}
+					onChange={onChangeDate}
+				></S.ClassSearchInput>
+			</S.ClassSearchBox>
 
-      <S.ClassTable style={{ width: "95%" }}>
-        <S.ClassHeaderLeft
-          style={{
-            width: "10%",
-            background: "#42444e",
-            color: "#fff",
-            textAlign: "left",
-          }}
-        >
-          수업 번호
-        </S.ClassHeaderLeft>
-        <S.ClassHeader
-          style={{
-            width: "25%",
-            background: "#42444e",
-            color: "#fff",
-            textAlign: "left",
-          }}
-        >
-          수업 날짜
-        </S.ClassHeader>
-        <S.ClassHeader
-          style={{
-            width: "15%",
-            background: "#42444e",
-            color: "#fff",
-            textAlign: "left",
-          }}
-        >
-          수업 시작 시간
-        </S.ClassHeader>
-        <S.ClassHeader
-          style={{
-            width: "15%",
-            background: "#42444e",
-            color: "#fff",
-            textAlign: "left",
-          }}
-        >
-          수업 마감 시간
-        </S.ClassHeader>
-        <S.ClassHeader
-          style={{
-            width: "50%",
-            background: "#42444e",
-            color: "#fff",
-            textAlign: "left",
-          }}
-        >
-          수업 정보
-        </S.ClassHeader>
-        <S.ClassHeader
-          style={{
-            width: "15%",
-            background: "#42444e",
-            color: "#fff",
-            textAlign: "left",
-          }}
-        >
-          담담 선생님
-        </S.ClassHeader>
-        <S.ClassHeader
-          style={{
-            width: "10%",
-            background: "#42444e",
-            color: "#fff",
-            textAlign: "left",
-          }}
-        >
-          수강 인원
-        </S.ClassHeader>
-        <S.ClassHeader
-          style={{
-            width: "10%",
-            background: "#42444e",
-            color: "#fff",
-            textAlign: "left",
-          }}
-        >
-          수업 삭제
-        </S.ClassHeader>
-      </S.ClassTable>
+			<S.ClassTable style={{ width: '100%' }}>
+				<S.ClassHeaderLeft
+					style={{
+						width: '10%',
+						color: '#000',
+						background: '#F7F8FA',
+						height: '2.75rem',
+						display: 'flex',
+						alignItems: 'center',
+					}}
+				>
+					수업 번호
+				</S.ClassHeaderLeft>
+				<S.ClassHeader
+					style={{
+						width: '25%',
+						color: '#000',
+						background: '#F7F8FA',
+						height: '2.75rem',
+						display: 'flex',
+						alignItems: 'center',
+					}}
+				>
+					수업 날짜
+				</S.ClassHeader>
+				<S.ClassHeader
+					style={{
+						width: '15%',
+						color: '#000',
+						background: '#F7F8FA',
+						height: '2.75rem',
+						display: 'flex',
+						alignItems: 'center',
+					}}
+				>
+					수업 시작 시간
+				</S.ClassHeader>
+				<S.ClassHeader
+					style={{
+						width: '15%',
+						color: '#000',
+						background: '#F7F8FA',
+						height: '2.75rem',
+						display: 'flex',
+						alignItems: 'center',
+					}}
+				>
+					수업 마감 시간
+				</S.ClassHeader>
+				<S.ClassHeader
+					style={{
+						width: '50%',
+						color: '#000',
+						background: '#F7F8FA',
+						height: '2.75rem',
+						display: 'flex',
+						alignItems: 'center',
+					}}
+				>
+					수업 정보
+				</S.ClassHeader>
+				<S.ClassHeader
+					style={{
+						width: '15%',
+						color: '#000',
+						background: '#F7F8FA',
+						height: '2.75rem',
+						display: 'flex',
+						alignItems: 'center',
+					}}
+				>
+					담담 선생님
+				</S.ClassHeader>
+				<S.ClassHeader
+					style={{
+						width: '10%',
+						color: '#000',
+						background: '#F7F8FA',
+						height: '2.75rem',
+						display: 'flex',
+						alignItems: 'center',
+					}}
+				>
+					수강 인원
+				</S.ClassHeader>
+				<S.ClassHeader
+					style={{
+						width: '10%',
+						color: '#000',
+						background: '#F7F8FA',
+						height: '2.75rem',
+						display: 'flex',
+						alignItems: 'center',
+					}}
+				>
+					수업 삭제
+				</S.ClassHeader>
+			</S.ClassTable>
 
-      {lecture?.allLectures
-        ?.filter((el) => {
-          return el.date === dateToInput(date);
-        })
-        ?.map((el) => {
-          return (
-            <S.ClassTable style={{ width: "95%" }}>
-              <S.ClassBodyLeft style={{ width: "10%" }}>
-                {el.id}
-              </S.ClassBodyLeft>
-              <S.ClassBody style={{ width: "25%" }}>{el.date}</S.ClassBody>
-              <S.ClassBody style={{ width: "15%" }}>
-                {el.startTime.slice(0, 5)}
-              </S.ClassBody>
-              <S.ClassBody style={{ width: "15%" }}>
-                {el.endTime.slice(0, 5)}
-              </S.ClassBody>
-              <S.ClassBody style={{ width: "50%" }}>
-                {longWord(el.lectureInfo)}
-              </S.ClassBody>
-              <S.ClassBody style={{ width: "15%" }}>
-                {el?.teacher?.korName}
-              </S.ClassBody>
-              <S.ClassBody style={{ width: "10%" }}>
-                {el?.students?.length + "명"}
-                {/* <PlusOutlined onClick={onClickViewStudents(el.students)} /> */}
-              </S.ClassBody>
-              <S.ClassBody style={{ width: "10%" }}>
-                <DeleteOutlined onClick={onClickDeleteModal(Number(el.id))} />
-              </S.ClassBody>
-            </S.ClassTable>
-          );
-        })}
-      {isViewStudents ? (
-        <Modal
-          open={isViewStudents}
-          onCancel={() => {
-            setIsViewStudents(false);
-          }}
-          footer={null}
-          closable={false}
-        >
-          {studentList.map((el) => {
-            return (
-              <div>
-                <div>{el.korName}</div>
-              </div>
-            );
-          })}
-          <S.DeleteButton
-            onClick={() => {
-              setIsViewStudents(false);
-            }}
-            style={{ backgroundColor: "#c2c2c2", color: "#1e1e1e" }}
-          >
-            닫기
-          </S.DeleteButton>
-        </Modal>
-      ) : (
-        <></>
-      )}
-      {isDelete ? (
-        <Modal
-          open={isDelete}
-          onCancel={() => {
-            setIsDelete(false);
-          }}
-          footer={null}
-          closable={false}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "27px",
-                marginBottom: "30px",
-                width: "100%",
-                fontWeight: "700",
-              }}
-            >
-              수업을 삭제하시겠습니까?
-            </div>
-            <div>
-              <S.DeleteButton
-                onClick={onClickDeleteLecture}
-                style={{ backgroundColor: "purple", color: "#e1e1e1" }}
-              >
-                삭제
-              </S.DeleteButton>
-              <S.DeleteButton
-                onClick={() => {
-                  setIsDelete(false);
-                }}
-                style={{ backgroundColor: "#c2c2c2", color: "#1e1e1e" }}
-              >
-                취소
-              </S.DeleteButton>
-            </div>
-          </div>
-        </Modal>
-      ) : (
-        <></>
-      )}
-    </S.ClassWrapper>
-  );
+			{lecture?.allLectures
+				?.filter((el) => {
+					return el.date === dateToInput(date);
+				})
+				?.map((el) => {
+					return (
+						<S.ClassTable style={{ width: '100%' }}>
+							<S.ClassBodyLeft style={{ width: '10%' }}>
+								{el.id}
+							</S.ClassBodyLeft>
+							<S.ClassBody style={{ width: '25%' }}>{el.date}</S.ClassBody>
+							<S.ClassBody style={{ width: '15%' }}>
+								{el.startTime.slice(0, 5)}
+							</S.ClassBody>
+							<S.ClassBody style={{ width: '15%' }}>
+								{el.endTime.slice(0, 5)}
+							</S.ClassBody>
+							<S.ClassBody style={{ width: '50%' }}>
+								{longWord(el.lectureInfo)}
+							</S.ClassBody>
+							<S.ClassBody style={{ width: '15%' }}>
+								{el?.teacher?.korName}
+							</S.ClassBody>
+							<S.ClassBody style={{ width: '10%' }}>
+								{el?.students?.length + '명'}
+								{/* <PlusOutlined onClick={onClickViewStudents(el.students)} /> */}
+							</S.ClassBody>
+							<S.ClassBody style={{ width: '10%' }}>
+								<DeleteOutlined onClick={onClickDeleteModal(Number(el.id))} />
+							</S.ClassBody>
+						</S.ClassTable>
+					);
+				})}
+			{isViewStudents ? (
+				<Modal
+					open={isViewStudents}
+					onCancel={() => {
+						setIsViewStudents(false);
+					}}
+					footer={null}
+					closable={false}
+				>
+					{studentList.map((el) => {
+						return (
+							<div>
+								<div>{el.korName}</div>
+							</div>
+						);
+					})}
+					<S.DeleteButton
+						onClick={() => {
+							setIsViewStudents(false);
+						}}
+						style={{ backgroundColor: '#c2c2c2', color: '#1e1e1e' }}
+					>
+						닫기
+					</S.DeleteButton>
+				</Modal>
+			) : (
+				<></>
+			)}
+			{isDelete ? (
+				<Modal
+					open={isDelete}
+					onCancel={() => {
+						setIsDelete(false);
+					}}
+					footer={null}
+					closable={false}
+				>
+					<div
+						style={{
+							display: 'flex',
+							flexDirection: 'column',
+							alignItems: 'flex-end',
+						}}
+					>
+						<div
+							style={{
+								fontSize: '27px',
+								marginBottom: '30px',
+								width: '100%',
+								fontWeight: '700',
+							}}
+						>
+							수업을 삭제하시겠습니까?
+						</div>
+						<div>
+							<S.DeleteButton
+								onClick={onClickDeleteLecture}
+								style={{ backgroundColor: 'purple', color: '#e1e1e1' }}
+							>
+								삭제
+							</S.DeleteButton>
+							<S.DeleteButton
+								onClick={() => {
+									setIsDelete(false);
+								}}
+								style={{ backgroundColor: '#c2c2c2', color: '#1e1e1e' }}
+							>
+								취소
+							</S.DeleteButton>
+						</div>
+					</div>
+				</Modal>
+			) : (
+				<></>
+			)}
+		</S.ClassWrapper>
+	);
 }

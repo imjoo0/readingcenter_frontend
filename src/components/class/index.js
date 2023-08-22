@@ -2580,16 +2580,29 @@ export default function ClassPage() {
 										marginRight: '1.87rem',
 									}}
 								>
-									<div>PLBN</div>
+									<div>Lexile 점수</div>
 									<div>
-										검색
-										<S.InputInput
-											type="text"
-											style={{ marginLeft: '10px', marginTop: '10px' }}
-											onChange={(e) => {
-												setInputPlbn(e.target.value);
-											}}
-										></S.InputInput>
+										<div>
+											최소
+											<S.InputInput
+												type="number"
+												style={{ marginLeft: '10px', marginTop: '10px' }}
+												onChange={(e) => {
+													setMinLex(Number(e.target.value));
+													console.log(Number(e.target.value));
+												}}
+											></S.InputInput>
+										</div>
+										<div>
+											최대
+											<S.InputInput
+												type="number"
+												style={{ marginLeft: '10px', marginTop: '10px' }}
+												onChange={(e) => {
+													setMaxLex(Number(e.target.value));
+												}}
+											></S.InputInput>
+										</div>
 									</div>
 								</div>
 								<S.ModalAddButton
