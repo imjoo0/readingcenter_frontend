@@ -28,9 +28,6 @@ export const GET_BOOKS = gql`
       titleAr
       titleLex
       bl
-      ilStatus
-      litproStatus
-      fnfStatus
       arQuiz
       id
       kplbn
@@ -56,20 +53,6 @@ export const GET_BOOKS = gql`
     }
   }
 `;
-
-export const EDIT_BOOK_PLACE = gql`
-  mutation bookInventoryUpdate($id: ID!, $newPlace: String!) {
-    bookInventoryUpdate(id: $id, newPlace: $newPlace) {
-      bookInfo {
-        id
-        kplbn
-        titleAr
-        authorAr
-      }
-    }
-  }
-`;
-
 export const GET_ME = gql`
   query {
     me {
@@ -116,63 +99,6 @@ export const GET_ME = gql`
           }
         }
       }
-    }
-  }
-`;
-
-export const UPDATE_BOOK_INVENTORY = gql`
-  mutation bookInventoryUpdate(
-    $id: ID!
-    $academyId: ID
-    $newBoxNumber: String
-    $bookStatus: Int
-  ) {
-    bookInventoryUpdate(
-      id: $id
-      academyId: $academyId
-      newBoxNumber: $newBoxNumber
-      bookStatus: $bookStatus
-    ) {
-      result {
-        id
-        plbn
-        academy {
-          name
-        }
-        boxNumber
-        isbn
-        bookStatus
-        academy {
-          id
-        }
-        # ... 필요한 다른 필드들 ...
-      }
-    }
-  }
-`;
-
-export const ADD_BOOK = gql`
-  mutation addBookInventory($bookId: ID!, $academyId: ID!, $boxNum: String) {
-    addBookInventory(bookId: $bookId, academyId: $academyId, boxNum: $boxNum) {
-      result {
-        id
-        plbn
-        academy {
-          name
-        }
-        boxNumber
-        isbn
-        bookStatus
-        # ... 필요한 다른 필드들 ...
-      }
-    }
-  }
-`;
-
-export const DELETE_BOOK = gql`
-  mutation deleteBookInventory($bookInvenId: ID!) {
-    deleteBookInventory(bookInvenId: $bookInvenId) {
-      success
     }
   }
 `;

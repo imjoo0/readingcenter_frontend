@@ -1,48 +1,51 @@
 import { gql } from "@apollo/client";
 
-export const GET_CLASS = gql`
-  query getLecturesByAcademyAndDate($academyId: Int!, $date: Date!) {
-    getLecturesByAcademyAndDate(academyId: $academyId, date: $date) {
-      id
-      date
-      startTime
-      endTime
-      lectureInfo
-      repeatDay
-      teacher {
-        id
-        korName
-        engName
-      }
-      bookReservations {
-        student {
-          id
-        }
-      }
-      students {
-        # 여기에서 학생들의 정보를 가져옵니다.
-        id
-        korName
-        engName
-        origin
-        pmobileno
-        mobileno
-        birthDate
-        gender
-        reservedBooksCount
-        attendances {
-          lecture {
-            id
-          }
-          status
-          statusDisplay
-          entryTime
-          exitTime
-        }
-      }
-    }
-  }
-`;
+// export const GET_CLASS = gql`
+//   query getLecturesByAcademyAndDate($academyId: Int!, $date: Date!) {
+//     getLecturesByAcademyAndDate(academyId: $academyId, date: $date) {
+//       id
+//       date
+//       startTime
+//       endTime
+//       # lectureInfo {
+//       #   about
+//       #   repeatDay
+//       #   repeatWeeks
+//       # }
+//       bookReservations {
+//         student {
+//           id
+//         }
+//       }
+//       teacher {
+//         id
+//         korName
+//         engName
+//       }
+//       students {
+//         # 여기에서 학생들의 정보를 가져옵니다.
+//         id
+//         korName
+//         engName
+//         origin
+//         pmobileno
+//         mobileno
+//         birthDate
+//         gender
+//         reservedBooksCount
+//         attendances {
+//           lecture {
+//             id
+//           }
+//           status
+//           statusDisplay
+//           entryTime
+//           exitTime
+//         }
+//       }
+//     }
+//   }
+// `;
 
 export const GET_CLASSES = gql`
   query allLectures($academyId: Int!) {
@@ -51,8 +54,9 @@ export const GET_CLASSES = gql`
       date
       startTime
       endTime
-      lectureInfo
-      repeatDay
+      lectureInfo {
+        about
+      }
       teacher {
         id
         korName
@@ -104,8 +108,9 @@ export const GET_BOOKS = gql`
     $maxLex: Int
     $minLex: Int
     $studentId: ID
-    $academyId: Int!
+    $academyIds: [ID]!
     $lectureDate: Date!
+    $arQn: Int
   ) {
     getBooksByBl(
       minBl: $minBl
@@ -114,9 +119,10 @@ export const GET_BOOKS = gql`
       minWc: $minWc
       maxLex: $maxLex
       minLex: $minLex
-      academyId: $academyId
+      academyIds: $academyIds
       lectureDate: $lectureDate
       studentId: $studentId
+      arQn: $arQn
     ) {
       titleAr
       titleLex
@@ -125,14 +131,16 @@ export const GET_BOOKS = gql`
       id
       kplbn
       authorAr
+      lexileAr
       lexileLex
       wcAr
       arPts
-      books {
+      books(academyIds: $academyIds) {
         isbn
         id
         place
         plbn
+        bookStatus
       }
     }
   }
@@ -189,20 +197,24 @@ export const CREATE_CLASS = gql`
     $date: Date!
     $startTime: Time!
     $endTime: Time!
-    $lectureInfo: String!
+    $lectureMemo: String!
+    $about: String!
     $teacherId: Int!
-    $repeatDays: [Int]!
+    $repeatDays: String!
     $repeatWeeks: Int!
+    $autoAdd: Boolean!
   ) {
     createLecture(
       academyId: $academyId
       date: $date
       startTime: $startTime
       endTime: $endTime
-      lectureInfo: $lectureInfo
+      about: $about
       teacherId: $teacherId
       repeatDays: $repeatDays
       repeatWeeks: $repeatWeeks
+      autoAdd: $autoAdd
+      lectureMemo: $lectureMemo
     ) {
       lectureIds
     }
@@ -236,11 +248,6 @@ export const DELETE_STUDENT_FROM_LECTURE = gql`
     removeStudentFromLecture(lectureId: $lectureId, studentIds: $studentIds) {
       lecture {
         id
-        students {
-          id
-          korName
-          engName
-        }
       }
     }
   }
@@ -334,16 +341,20 @@ export const GET_STUDENTS_BY_DATE = gql`
       }
       lecture {
         id
+        date
         startTime
         endTime
-        lectureInfo
-        date
+        lectureMemo
+        lectureInfo {
+          about
+        }
       }
       attendanceStatus {
         id
         entryTime
         exitTime
         statusDisplay
+        memo
       }
     }
   }
@@ -356,8 +367,10 @@ export const GET_ALL_LECTURES = gql`
       date
       startTime
       endTime
-      lectureInfo
-      repeatDay
+      lectureInfo {
+        about
+      }
+      # repeatDay
       teacher {
         id
         korName
@@ -463,6 +476,167 @@ export const GET_CUSTOM_ATTENDANCE = gql`
     ) {
       id
       korName
+    }
+  }
+`;
+
+export const GET_MEMO = gql`
+  query getStudentLectureHistory($academyId: Int!, $studentId: Int!) {
+    getStudentLectureHistory(academyId: $academyId, studentId: $studentId) {
+      lecture {
+        teacher {
+          korName
+        }
+        date
+        id
+      }
+      statusDisplay
+      memo
+    }
+  }
+`;
+
+export const CREATE_MEMO = gql`
+  mutation createLectureMemo(
+    $lectureId: Int!
+    $studentId: Int!
+    $memo: String!
+  ) {
+    createLectureMemo(
+      lectureId: $lectureId
+      studentId: $studentId
+      memo: $memo
+    ) {
+      attendance {
+        id
+        lecture {
+          id
+        }
+        student {
+          id
+        }
+        status
+        memo
+      }
+    }
+  }
+`;
+
+export const GET_ME = gql`
+  query {
+    me {
+      id
+      username
+      userCategory
+      profile {
+        ... on StudentType {
+          id
+          korName
+          engName
+          registerDate
+          origin
+          pmobileno
+          birthDate
+          academies {
+            id
+            name
+            location
+          }
+        }
+        ... on TeacherType {
+          id
+          korName
+          engName
+          registerDate
+          birthDate
+          academy {
+            id
+            name
+            location
+          }
+        }
+        ... on ManagerType {
+          id
+          korName
+          engName
+          registerDate
+          birthDate
+          academies {
+            id
+            name
+            location
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const UPDATE_LECTURE = gql`
+  mutation updateLectureStudents(
+    $lectureId: Int!
+    $date: Date!
+    $studentId: ID!
+    $startTime: Time!
+    $endTime: Time!
+    $academyId: Int!
+    $teacherId: Int!
+    $lectureMemo: String
+  ) {
+    updateLectureStudents(
+      lectureId: $lectureId
+      date: $date
+      studentId: $studentId
+      startTime: $startTime
+      endTime: $endTime
+      academyId: $academyId
+      teacherId: $teacherId
+      lectureMemo: $lectureMemo
+    ) {
+      success
+      message
+    }
+  }
+`;
+
+export const GET_MONTH_CLASS = gql`
+  query getLecturesByAcademyAndMonth($academyId: Int!, $month: Int!) {
+    getLecturesByAcademyAndMonth(academyId: $academyId, month: $month) {
+      id
+      date
+      startTime
+      endTime
+      lectureInfo {
+        about
+        repeatDay
+        repeatWeeks
+      }
+      teacher {
+        id
+        korName
+        engName
+      }
+      students {
+        # 여기에서 학생들의 정보를 가져옵니다.
+        id
+        korName
+        engName
+        origin
+        pmobileno
+        mobileno
+        birthDate
+        gender
+        reservedBooksCount
+        attendances {
+          lecture {
+            id
+          }
+          status
+          statusDisplay
+          entryTime
+          exitTime
+        }
+      }
     }
   }
 `;

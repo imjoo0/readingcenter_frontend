@@ -59,6 +59,12 @@ export default function ApolloSetting(props) {
   const client = new ApolloClient({
     link: ApolloLink.from([errorLink, uploadLink]),
     cache: GLOBAL_STATE,
+    // onError: ({ networkError }) => {
+    //   if (networkError && networkError.statusCode === 200) {
+    //     // HTTP 상태 코드가 200인 경우 여기서 처리합니다.
+    //     console.error("HTTP Status Code 200 with GraphQL Error");
+    //   }
+    // },
     defaultOptions: {
       watchQuery: {
         fetchPolicy: "network-only",

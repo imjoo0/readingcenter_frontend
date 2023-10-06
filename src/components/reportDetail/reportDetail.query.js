@@ -50,23 +50,6 @@ export const GET_STUDENT = gql`
           birthDate
           gender
           registerDate
-          lectures(academyId: $academyId) {
-            id
-            date
-            startTime
-            endTime
-            lectureInfo
-            attendanceStatus(studentId: $userId) {
-              id
-              entryTime
-              exitTime
-              statusDisplay
-            }
-            teacher {
-              korName
-              engName
-            }
-          }
         }
       }
     }

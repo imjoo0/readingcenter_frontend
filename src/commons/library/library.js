@@ -7,7 +7,27 @@ export const longWord = (word) => {
   }
 };
 
+export const longTitle = (word) => {
+  if (word.length > 40) {
+    return word.slice(0, 40) + "...";
+  } else {
+    return word;
+  }
+};
+
+export const longAuthor = (word) => {
+  if (word.length > 15) {
+    return word.slice(0, 15) + "...";
+  } else {
+    return word;
+  }
+};
+
 export const addComma = (number) => {
+  if (number === null || undefined) {
+    return undefined;
+  }
+
   return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
@@ -87,12 +107,32 @@ export const dateToInput = (date) => {
 };
 
 export const dateToKoreanTime = (date) => {
+  if (date === undefined || date === null) {
+    return;
+  }
   let koreanDate = new Date(date);
-  koreanDate.setHours(koreanDate.getHours() + 9 * 1000 * 60 * 60);
+  koreanDate.setHours(koreanDate.getHours());
   return koreanDate;
 };
 
+export const customAlarm = (date, start, end) => {
+  if (date === undefined || date === null) {
+    return;
+  }
+  let customDate = new Date(date);
+  customDate.setHours(
+    customDate.getHours() + Number(end.slice(0, 2)) - Number(start.slice(0, 2)),
+    customDate.getMinutes() +
+      Number(end.slice(3, 5)) -
+      Number(start.slice(3, 5))
+  );
+  return customDate;
+};
+
 export const dateToClock = (date) => {
+  if (date === undefined || date === null) {
+    return;
+  }
   let result = ":";
   if (date.getHours() < 10) {
     result = "0" + date.getHours() + result;
@@ -125,5 +165,62 @@ export const dateToClockOneHour = (date) => {
 export const timeToHour = (string) => {
   if (string !== undefined) {
     return string.slice(0, 2) + "시 " + string.slice(3, 5) + "분";
+  }
+};
+
+export const kplbnFrame = (int) => {
+  if (Number(int)) {
+    let result = String(int);
+    while (result.length < 7) {
+      result = "0" + result;
+    }
+    return "PE" + result;
+  }
+};
+
+export const lexileFrame = (int) => {
+  if (int === undefined || int === null) {
+    return null;
+  }
+  let result = String(int);
+  if (int < 0) {
+    result = String(int * -1);
+    result = "BR" + result;
+  }
+  return result + "L";
+};
+
+export const arFrame = (int) => {
+  if (int === undefined) {
+    return;
+  }
+  if (int == Math.floor(int)) {
+    return int + ".0";
+  } else {
+    return int;
+  }
+};
+
+export const getMonthInfo = (year, month) => {
+  const startDay = new Date(year, month - 1, 1).getDay();
+  const endDate = new Date(year, month, 0).getDate();
+  const weekNumber = Math.ceil((startDay + endDate) / 7);
+
+  return { startDay, endDate, weekNumber };
+};
+
+export const getMonthZero = (date) => {
+  if (date.getMonth() + 1 < 10) {
+    return "0" + (date.getMonth() + 1);
+  } else {
+    return String(date.getMonth() + 1);
+  }
+};
+
+export const getNumberZero = (number) => {
+  if (number < 10) {
+    return "0" + number;
+  } else {
+    return String(number);
   }
 };

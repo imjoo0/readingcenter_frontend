@@ -7,8 +7,10 @@ export const GET_ALL_LECTURES = gql`
       date
       startTime
       endTime
-      lectureInfo
-      repeatDay
+      lectureInfo {
+        about
+        repeatDay
+      }
       teacher {
         id
         korName
@@ -35,8 +37,11 @@ export const GET_CLASS = gql`
       date
       startTime
       endTime
-      lectureInfo
-      repeatDay
+      lectureInfo {
+        about
+        repeatDay
+      }
+
       teacher {
         id
         korName
@@ -76,6 +81,58 @@ export const DELETE_LECTURE = gql`
   mutation deleteLecture($id: ID!) {
     deleteLecture(id: $id) {
       success
+    }
+  }
+`;
+
+export const GET_MEMO = gql`
+  query getLectureMemo($lectureId: ID!) {
+    getLectureMemo(lectureId: $lectureId) {
+      lecture {
+        id
+        teacher {
+          korName
+        }
+        students {
+          id
+          korName
+        }
+        date
+      }
+      student {
+        id
+        origin
+        korName
+        engName
+      }
+      statusDisplay
+      memo
+    }
+  }
+`;
+
+export const CREATE_MEMO = gql`
+  mutation createLectureMemo(
+    $lectureId: Int!
+    $studentId: Int!
+    $memo: String!
+  ) {
+    createLectureMemo(
+      lectureId: $lectureId
+      studentId: $studentId
+      memo: $memo
+    ) {
+      attendance {
+        id
+        lecture {
+          id
+        }
+        student {
+          id
+        }
+        status
+        memo
+      }
     }
   }
 `;

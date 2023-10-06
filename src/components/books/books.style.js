@@ -1,17 +1,30 @@
 import styled from "@emotion/styled";
 
 export const BooksWrapper = styled.div`
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: flex-start;
-	margin-top: 10rem;
-	padding: 0 8.4% 0 8.4%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 10rem;
+  padding: 0 8.4% 0 8.4%;
 `;
 
 export const BooksTitle = styled.div`
-  font-size: 35px;
+  font-size: 34px;
   font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+export const BooksModalTitle = styled.div`
+  font-size: 34px;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  :hover {
+    cursor: pointer;
+  }
 `;
 
 export const BooksTitleLine = styled.div`
@@ -42,7 +55,7 @@ export const SearchTag = styled.div`
 
 export const SearchInput = styled.input`
   margin-left: 9px;
-  width: 45vw;
+  width: 18vw;
   height: 25px;
   font-size: 16px;
   padding: 4px;
@@ -145,8 +158,9 @@ export const ModalTextArea = styled.textarea`
 export const ModalButtonBox = styled.div`
   width: 100%;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
+  margin-top: 20px;
 `;
 
 export const ModalOkButton = styled.button`
@@ -165,14 +179,14 @@ export const ModalOkButton = styled.button`
 `;
 
 export const ModalCancelButton = styled.button`
-  width: 8vw;
-  height: 5vh;
-  background-color: tomato;
+  width: 78px;
+  height: 44px;
+  background-color: #333333;
   border: none;
-  color: #eeeeee;
+  color: #ffffff;
   font-size: 16px;
-  border-radius: 10px;
-  font-weight: 600;
+  border-radius: 8px;
+  font-family: Spoqa Han Sans Neo;
   :hover {
     cursor: pointer;
   }
@@ -207,11 +221,11 @@ export const ModalRadioBox = styled.div`
 `;
 
 export const ModalInputBox = styled.div`
-  width: 100%;
+  width: 90%;
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  margin: 10px 0;
+  border-bottom: 1px solid #dbdde1;
 `;
 export const ModalAddButton = styled.button`
   width: 100px;
@@ -231,12 +245,22 @@ export const ModalAddButton = styled.button`
 `;
 
 export const EditTitleFont = styled.div`
-  width: 250px;
-  font-weight: 600;
-  font-size: 22px;
+  width: 145px;
+  height: 44px;
+  font-weight: 500;
+  font-size: 14px;
+  font-family: Spoqa Han Sans Neo;
+  background-color: #f7f8fa;
+  display: flex;
+  align-items: center;
+  padding-left: 20px;
 `;
 
 export const EditTagFont = styled.div`
-  font-weight: 600;
-  font-size: 22px;
+  font-weight: 400;
+  font-size: 14px;
+  font-family: Spoqa Han Sans Neo;
+  display: flex;
+  align-items: center;
+  padding-left: 20px;
 `;

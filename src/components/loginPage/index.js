@@ -97,9 +97,21 @@ export default function LoginPageComponent() {
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
       console.log(response);
-      router.push(
-        "/" + response?.data?.login?.userInfo?.profile?.academy?.id + "/class"
-      );
+      if (
+        response?.data?.login?.userInfo?.profile?.academies !== null &&
+        response?.data?.login?.userInfo?.profile?.academies !== undefined &&
+        response?.data?.login?.userInfo?.profile?.academies?.length !== 0
+      ) {
+        router.push(
+          "/" +
+            response?.data?.login?.userInfo?.profile?.academies?.[0]?.id +
+            "/class"
+        );
+      } else {
+        router.push(
+          "/" + response?.data?.login?.userInfo?.profile?.academy?.id + "/class"
+        );
+      }
     } catch (error) {
       console.error("로그인 오류:", error);
       alert("로그인에 실패했습니다.");
@@ -117,33 +129,33 @@ export default function LoginPageComponent() {
   };
 
   return (
-		<S.Wrapper>
-			<S.LoginBox>
-				<S.LoginBoxLeft>
-					<S.logoImage></S.logoImage>
-				</S.LoginBoxLeft>
+    <S.Wrapper>
+      <S.LoginBox>
+        <S.LoginBoxLeft>
+          <S.logoImage></S.logoImage>
+        </S.LoginBoxLeft>
 
-				<S.LoginBoxRight>
-					<S.LoginTitle>Sign in</S.LoginTitle>
-					<S.InputTag>
-						<S.LoginInput
-							type="text"
-							onChange={onChangeId}
-							onKeyPress={handleKeyPress}
-							placeholder="아이디를 입력해주세요."
-						/>
-					</S.InputTag>
-					<S.InputTag>
-						<S.LoginInput
-							type="password"
-							onChange={onChangePassword}
-							onKeyPress={handleKeyPress}
-							placeholder="비밀번호를 입력해주세요."
-						/>
-					</S.InputTag>
-					<S.LoginButton onClick={onClickLogin}>Sign in</S.LoginButton>
-				</S.LoginBoxRight>
-			</S.LoginBox>
-		</S.Wrapper>
-	);
+        <S.LoginBoxRight>
+          <S.LoginTitle>Sign in</S.LoginTitle>
+          <S.InputTag>
+            <S.LoginInput
+              type="text"
+              onChange={onChangeId}
+              onKeyPress={handleKeyPress}
+              placeholder="아이디를 입력해주세요."
+            />
+          </S.InputTag>
+          <S.InputTag>
+            <S.LoginInput
+              type="password"
+              onChange={onChangePassword}
+              onKeyPress={handleKeyPress}
+              placeholder="비밀번호를 입력해주세요."
+            />
+          </S.InputTag>
+          <S.LoginButton onClick={onClickLogin}>Sign in</S.LoginButton>
+        </S.LoginBoxRight>
+      </S.LoginBox>
+    </S.Wrapper>
+  );
 }

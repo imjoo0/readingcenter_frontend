@@ -30,7 +30,11 @@ export const GET_STUDENT = gql`
             date
             startTime
             endTime
-            lectureInfo
+            lectureMemo
+            lectureInfo {
+              id
+              about
+            }
             attendanceStatus(studentId: $userId) {
               id
               entryTime
@@ -197,6 +201,178 @@ export const GET_STUDENTS_BY_DATE = gql`
         entryTime
         exitTime
         statusDisplay
+      }
+    }
+  }
+`;
+
+export const GET_MEMO = gql`
+  query getStudentLectureHistory($academyId: Int!, $studentId: Int!) {
+    getStudentLectureHistory(academyId: $academyId, studentId: $studentId) {
+      lecture {
+        teacher {
+          korName
+        }
+        date
+        id
+        lectureInfo {
+          about
+        }
+      }
+      statusDisplay
+      memo
+    }
+  }
+`;
+
+export const CREATE_MEMO = gql`
+  mutation createLectureMemo(
+    $lectureId: Int!
+    $studentId: Int!
+    $memo: String!
+  ) {
+    createLectureMemo(
+      lectureId: $lectureId
+      studentId: $studentId
+      memo: $memo
+    ) {
+      attendance {
+        id
+        lecture {
+          id
+        }
+        student {
+          id
+        }
+        status
+        memo
+      }
+    }
+  }
+`;
+
+export const STOP_ACADEMY = gql`
+  mutation updateUser($userId: ID!) {
+    updateUser(userId: $userId) {
+      user {
+        id
+        username
+        email
+        userCategory
+        isStaff
+        isActive
+        memos {
+          memo
+          academy {
+            id
+          }
+        }
+        profile {
+          ... on StudentType {
+            korName
+            engName
+            origin
+            pmobileno
+            mobileno
+            birthDate
+            gender
+            registerDate
+            lectures {
+              id
+              date
+              startTime
+              endTime
+              attendanceStatus {
+                id
+                lectureId
+                entryTime
+                exitTime
+                statusDisplay
+              }
+              teacher {
+                korName
+                engName
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const UPDATE_LECTURE = gql`
+  mutation updateLectureStudents(
+    $lectureId: Int!
+    $date: Date!
+    $studentId: ID!
+    $startTime: Time!
+    $endTime: Time!
+    $academyId: Int!
+    $teacherId: Int!
+    $lectureMemo: String
+  ) {
+    updateLectureStudents(
+      lectureId: $lectureId
+      date: $date
+      studentId: $studentId
+      startTime: $startTime
+      endTime: $endTime
+      academyId: $academyId
+      teacherId: $teacherId
+      lectureMemo: $lectureMemo
+    ) {
+      success
+      message
+    }
+  }
+`;
+
+export const GET_ME = gql`
+  query {
+    me {
+      id
+      username
+      userCategory
+      profile {
+        ... on StudentType {
+          id
+          korName
+          engName
+          registerDate
+          origin
+          pmobileno
+          birthDate
+          academies {
+            id
+            name
+            location
+          }
+        }
+        ... on TeacherType {
+          id
+          korName
+          engName
+          registerDate
+          birthDate
+          academy {
+            id
+            name
+            location
+          }
+        }
+        ... on ManagerType {
+          id
+          korName
+          engName
+          registerDate
+          birthDate
+          academies {
+            id
+            name
+            location
+          }
+        }
       }
     }
   }
