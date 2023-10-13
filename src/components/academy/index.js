@@ -426,7 +426,7 @@ export default function AcademyPage() {
             <S.TableHeadRight style={{ width: "30%" }}>
               리딩 이력
             </S.TableHeadRight>
-            <S.TableHeadRight style={{ width: "30%" }}>휴원</S.TableHeadRight>
+            <S.TableHeadRight style={{ width: "30%" }}>상태</S.TableHeadRight>
           </S.TableHeaderRound>
           {array?.map((el) => {
             return (
@@ -496,7 +496,7 @@ export default function AcademyPage() {
                     }}
                     onClick={onClickCheck(el.id, el.user.isActive)}
                   >
-                    {el.user.isActive ? "휴원 처리" : "비휴원 처리"}
+                    {el.user.isActive ? "재원 " : "휴원"}
                   </button>
                 </S.TableHeadRight>
               </S.TableRound>
