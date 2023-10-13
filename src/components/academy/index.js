@@ -220,6 +220,7 @@ export default function AcademyPage() {
           })
         );
       }
+      // git test
       if (sortType === "originReverse") {
         setArray(
           newArray?.sort((a, b) => {
