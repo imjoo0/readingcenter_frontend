@@ -84,6 +84,7 @@ export const GET_RESERVATION_BOOKS = gql`
       id
       plbn
       place
+
       book {
         arQuiz
         arPts
@@ -94,6 +95,9 @@ export const GET_RESERVATION_BOOKS = gql`
         titleAr
         authorAr
         bl
+        ilStatus
+        litproStatus
+        fnfStatus
       }
     }
   }
@@ -135,12 +139,16 @@ export const GET_BOOKS = gql`
       lexileLex
       wcAr
       arPts
+      ilStatus
+      litproStatus
+      fnfStatus
       books(academyIds: $academyIds) {
         isbn
         id
         place
         plbn
         bookStatus
+        boxNumber
       }
     }
   }
@@ -576,7 +584,7 @@ export const UPDATE_LECTURE = gql`
   mutation updateLectureStudents(
     $lectureId: Int!
     $date: Date!
-    $studentId: ID!
+    $studentIds: [Int]!
     $startTime: Time!
     $endTime: Time!
     $academyId: Int!
@@ -586,7 +594,7 @@ export const UPDATE_LECTURE = gql`
     updateLectureStudents(
       lectureId: $lectureId
       date: $date
-      studentId: $studentId
+      studentIds: $studentIds
       startTime: $startTime
       endTime: $endTime
       academyId: $academyId
@@ -610,6 +618,7 @@ export const GET_MONTH_CLASS = gql`
         about
         repeatDay
         repeatWeeks
+        autoAdd
       }
       teacher {
         id
@@ -635,6 +644,156 @@ export const GET_MONTH_CLASS = gql`
           statusDisplay
           entryTime
           exitTime
+        }
+      }
+    }
+  }
+`;
+
+export const GET_FICTION_RECOMMEND = gql`
+  query getRecommendBooks($studentId: ID!, $academyId: ID!, $fNf: String!) {
+    getRecommendBooks(studentId: $studentId, academyId: $academyId, fNf: $fNf) {
+      boxNumber
+      booktitle
+      id
+      inventoryNum
+      plbn
+      place
+      book {
+        ilStatus
+        litproStatus
+        fnfStatus
+        arQuiz
+        arPts
+        lexileAr
+        lexileLex
+        wcAr
+        wcLex
+        titleAr
+        authorAr
+        bl
+      }
+    }
+  }
+`;
+
+export const GET_NONFICTION_RECOMMEND = gql`
+  query getRecommendNfBooks($studentId: ID!, $academyId: ID!) {
+    getRecommendNfBooks(studentId: $studentId, academyId: $academyId) {
+      boxNumber
+      booktitle
+      id
+      plbn
+      place
+      book {
+        arQuiz
+        arPts
+        lexileAr
+        lexileLex
+        wcAr
+        wcLex
+        titleAr
+        authorAr
+      }
+    }
+  }
+`;
+
+export const CHANGE_RECOMMEND_BY_PERIOD = gql`
+  mutation recommendBookByPeriod(
+    $studentId: Int!
+    $academyId: Int!
+    $fNf: String!
+  ) {
+    recommendBookByPeriod(
+      studentId: $studentId
+      academyId: $academyId
+      fNf: $fNf
+    ) {
+      selectedBooksInventory {
+        boxNumber
+      }
+    }
+  }
+`;
+
+export const CHANGE_RECOMMEND_BY_RECORD = gql`
+  mutation (
+    $studentId: Int!
+    $academyId: Int!
+    $fNf: String!
+    $bookRecordIds: [ID]!
+  ) {
+    recommendBookByRecord(
+      studentId: $studentId
+      academyId: $academyId
+      fNf: $fNf
+      bookRecordIds: $bookRecordIds
+    ) {
+      selectedBooksInventory {
+        boxNumber
+        booktitle
+        id
+        plbn
+        place
+        book {
+          arQuiz
+          arPts
+          lexileAr
+          lexileLex
+          wcAr
+          wcLex
+          titleAr
+          authorAr
+        }
+      }
+    }
+  }
+`;
+
+export const GET_READING_RECORD = gql`
+  query studentBookRecord($studentId: Int!) {
+    studentBookRecord(studentId: $studentId) {
+      id
+      book {
+        id
+        kplbn
+        arQuiz
+        arPts
+        lexileAr
+        lexileLex
+        wcAr
+        wcLex
+        titleAr
+        authorAr
+        fnfStatus
+        bl
+      }
+      student {
+        korName
+        engName
+        origin
+      }
+      month
+      arDate
+      litDate
+      arCorrect
+      litCorrect
+    }
+  }
+`;
+
+export const GET_PACKAGE_DATE = gql`
+  query studentBookRecordWithPkg($studentId: Int!, $fNf: String!) {
+    studentBookRecordWithPkg(studentId: $studentId, fNf: $fNf) {
+      bookPkg {
+        ... on RecommendFictionType {
+          pkg
+          createdAt
+        }
+        ... on RecommendNonFictionType {
+          pkg
+          createdAt
         }
       }
     }

@@ -7,7 +7,7 @@ import {
   GET_SUMMARY_REPORT,
 } from "./studentReport.query";
 import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import {
   ComposedChart,
   Line,
@@ -120,6 +120,13 @@ export default function StudentReportPage() {
       WCPerBooks: 2101,
     },
   ]);
+  const [memoData, setMemoDate] = useState([
+    { date: "2023-07-21", memo: "메모1" },
+    { date: "2023-07-24", memo: "메모2" },
+    { date: "2023-07-25", memo: "7월 25일 특이사항(예시)" },
+    { date: "2023-08-03", memo: "8월 3일 특이사항(예시)" },
+    { date: "2023-08-05", memo: "8월 5일 특이사항(예시)" },
+  ]);
 
   const { data: userData } = useQuery(GET_STUDENT, {
     variables: {
@@ -141,14 +148,6 @@ export default function StudentReportPage() {
       studentId: Number(router.query.id),
     },
   });
-
-  const memoData = [
-    { date: "2023-07-21", memo: "메모1" },
-    { date: "2023-07-24", memo: "메모2" },
-    { date: "2023-07-25", memo: "7월 25일 특이사항(예시)" },
-    { date: "2023-08-03", memo: "8월 3일 특이사항(예시)" },
-    { date: "2023-08-05", memo: "8월 5일 특이사항(예시)" },
-  ];
 
   const CustomTooltip1 = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -384,6 +383,11 @@ export default function StudentReportPage() {
     setMaxWCPerBooks(Math.ceil(wcPerBooks * 1.1));
     setMaxCorrects(Math.ceil(corrects * 1.1));
   }, [halfYearData]);
+
+  useEffect(() => {
+    if (Array.isArray(userMemoData?.getStudentLectureHistory)) {
+    }
+  }, [userMemoData]);
 
   console.log(userMemoData);
 

@@ -322,7 +322,7 @@ export default function AcademyDetailPage() {
         variables: {
           lectureId: Number(lectureId),
           date: editDate,
-          studentId: Number(router.query.id),
+          studentIds: [Number(router.query.id)],
           startTime: editStartTime,
           endTime: editEndTime,
           academyId: editAcademy,

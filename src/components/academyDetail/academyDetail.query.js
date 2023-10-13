@@ -305,7 +305,7 @@ export const UPDATE_LECTURE = gql`
   mutation updateLectureStudents(
     $lectureId: Int!
     $date: Date!
-    $studentId: ID!
+    $studentIds: [Int]!
     $startTime: Time!
     $endTime: Time!
     $academyId: Int!
@@ -315,7 +315,7 @@ export const UPDATE_LECTURE = gql`
     updateLectureStudents(
       lectureId: $lectureId
       date: $date
-      studentId: $studentId
+      studentIds: $studentIds
       startTime: $startTime
       endTime: $endTime
       academyId: $academyId

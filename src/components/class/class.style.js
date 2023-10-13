@@ -333,6 +333,7 @@ export const ModalWrapper = styled.div`
   justify-content: space-around;
   align-items: flex-start;
   position: relative;
+  width: 89rem;
 `;
 
 export const ModalRadioBox = styled.div`
@@ -373,7 +374,7 @@ export const ModalTitle = styled.div`
 `;
 
 export const ModalButtonBox = styled.div`
-  width: 100%;
+  width: 92rem;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -392,7 +393,7 @@ export const ModalReturnButton = styled.button`
   line-height: normal;
   :hover {
     cursor: pointer;
-    filter: brightness(180%);
+    filter: brightness(120%);
   }
 `;
 

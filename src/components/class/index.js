@@ -22,9 +22,12 @@ import {
   getMonthZero,
   getNumberZero,
   longAuthor,
+  shortWord,
+  longTitle,
 } from "../../commons/library/library";
 import { Modal, Spin, Switch } from "antd";
 import {
+  CloseOutlined,
   DownOutlined,
   SearchOutlined,
   SettingOutlined,
@@ -59,6 +62,12 @@ import {
   GET_ME,
   UPDATE_LECTURE,
   GET_MONTH_CLASS,
+  GET_FICTION_RECOMMEND,
+  GET_NONFICTION_RECOMMEND,
+  CHANGE_RECOMMEND_BY_PERIOD,
+  CHANGE_RECOMMEND_BY_RECORD,
+  GET_READING_RECORD,
+  GET_PACKAGE_DATE,
 } from "./class.query";
 
 const week = ["월", "화", "수", "목", "금", "토", "일"];
@@ -105,23 +114,57 @@ export default function ClassPage() {
   const [memoLecture, setMemoLecture] = useState("");
   const [memoContents, setMemoContents] = useState();
   const [memoText, setMemoText] = useState("");
-  const [reserveType, setReserveType] = useState("search");
+  const [reserveType, setReserveType] = useState("recommend");
   const [barcode, setBarcode] = useState("");
   const [confirmReserve, setConfirmReserve] = useState(false);
-  const [viewType, setViewType] = useState("class");
+  const [viewType, setViewType] = useState("student");
   const [isViewMore, setIsViewMore] = useState(false);
   const [viewMorePosition, setViewMorePosition] = useState([0, 0]);
   const [viewModalList, setViewModalList] = useState([]);
   const [viewTitle, setViewTitle] = useState("");
   const [isViewTitle, setIsViewTitle] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [fNf, setFNf] = useState("0");
+  const [isPeriod, setIsPeriod] = useState(true);
+  const [isChange, setIsChange] = useState(false);
+  const [searchReading, setSearchReading] = useState("");
+  const [readingList, setReadingList] = useState([]);
+  const [isAlert, setIsAlert] = useState(false);
   const { data: myData } = useQuery(GET_ME);
-  // const { data: lectureData, refetch: refetchLecture } = useQuery(GET_CLASS, {
-  //   variables: {
-  //     academyId: Number(router.query.branch),
-  //     date: dateToInput(date),
-  //   },
-  // });
+  const { data: fictionData, refetch: refetchFiction } = useQuery(
+    GET_FICTION_RECOMMEND,
+    {
+      variables: {
+        studentId: 22,
+        academyId: Number(router.query.branch),
+        fNf: "1",
+      },
+    }
+  );
+  const { data: nonFictionData, refetch: refetchNonFiction } = useQuery(
+    GET_FICTION_RECOMMEND,
+    {
+      variables: {
+        studentId: 22,
+        academyId: Number(router.query.branch),
+        fNf: "2",
+      },
+    }
+  );
+
+  const { data: packageData, refetch: refetchPackage } = useQuery(
+    GET_PACKAGE_DATE,
+    { variables: { studentId: 0, fNf: "1" } }
+  );
+
+  const { data: recordingData, refetch: refetchRecord } = useQuery(
+    GET_READING_RECORD,
+    { variables: { studentId: 0 } }
+  );
+
+  const [changeRecommendPeriod] = useMutation(CHANGE_RECOMMEND_BY_PERIOD);
+  const [changeRecommendRecord] = useMutation(CHANGE_RECOMMEND_BY_RECORD);
+
   const { data: bookData, refetch: refetchBook } = useQuery(GET_BOOKS, {
     variables: {
       minBl: 0,
@@ -240,6 +283,10 @@ export default function ClassPage() {
   const [viewEndTime, setViewEndTime] = useState("");
   const [viewDate, setViewDate] = useState("");
   const [viewRepeat, setViewRepeat] = useState(false);
+  const [viewAuto, setViewAuto] = useState(false);
+  const [viewWeek, setViewWeek] = useState([]);
+
+  //원생 기준 State들
 
   const onClickCancel = () => {
     setClassToggle(false);
@@ -666,7 +713,14 @@ export default function ClassPage() {
   const onClickBooks = (el, ele) => async () => {
     setSelectChild(el);
     setSelectLecture(ele);
+    try {
+      await refetchFiction({ studentId: Number(el.id) });
+    } catch (err) {}
+    try {
+      await refetchNonFiction({ studentId: Number(el.id) });
+    } catch (err) {}
     await refetchReservation({ studentId: Number(el.id) });
+    refetchRecord({ studentId: Number(el.id) });
     setIsBook(true);
   };
 
@@ -875,6 +929,100 @@ export default function ClassPage() {
     setIsLoading(false);
   };
 
+  const onClickConfirmRecord = async () => {
+    if (readingList.length < 10) {
+      setIsAlert(true);
+    } else {
+      try {
+        await changeRecommendRecord({
+          variables: {
+            studentId: Number(selectChild.id),
+            academyId: Number(router.query.branch),
+            fNf: fNf,
+            bookRecordIds: readingList,
+          },
+        });
+        setIsChange(false);
+        refetchFiction();
+        refetchNonFiction();
+        setReadingList([]);
+        setSearchReading("");
+      } catch (err) {
+        alert(err);
+        setIsChange(false);
+        setReadingList([]);
+        setSearchReading("");
+      }
+    }
+  };
+
+  const onClickAlertRecord = async () => {
+    try {
+      await changeRecommendRecord({
+        variables: {
+          studentId: Number(selectChild.id),
+          academyId: Number(router.query.branch),
+          fNf: fNf,
+          bookRecordIds: readingList,
+        },
+      });
+      setIsChange(false);
+      refetchFiction();
+      refetchNonFiction();
+      setReadingList([]);
+      setSearchReading("");
+      setIsAlert(false);
+    } catch (err) {
+      alert(err);
+      setIsChange(false);
+      setReadingList([]);
+      setSearchReading("");
+      setIsAlert(false);
+    }
+  };
+
+  const onClickChangePeriod = (fnf) => async () => {
+    setFNf(fnf);
+    setIsChange(true);
+    setIsPeriod(true);
+    try {
+      const result = await refetchPackage({
+        studentId: Number(selectChild.id),
+        fNf: fnf,
+      });
+      console.log(result);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const onClickConfirmPeriod = async () => {
+    try {
+      await changeRecommendPeriod({
+        variables: {
+          studentId: Number(selectChild.id),
+          academyId: Number(router.query.branch),
+          fNf: fNf,
+        },
+      });
+      setIsChange(false);
+      refetchFiction();
+      refetchNonFiction();
+    } catch (err) {
+      alert(err);
+      setIsChange(false);
+    }
+  };
+
+  const onClickFetch = (fnf) => async () => {
+    if (fnf === "1") {
+      await refetchFiction();
+    }
+    if (fnf === "2") {
+      await refetchNonFiction();
+    }
+  };
+
   const onClickBookingBooks = (id, title) => async () => {
     if (
       reservationBookData?.studentReservedBooks?.filter((el) => {
@@ -894,6 +1042,8 @@ export default function ClassPage() {
         refetchStudentList();
         refetchMonth();
         refetchReservation();
+        refetchFiction();
+        refetchNonFiction();
         refetchCount();
       } catch (err) {
         alert(err);
@@ -923,6 +1073,15 @@ export default function ClassPage() {
     } else {
       newDates.push(index);
       setSelectDates(newDates);
+    }
+  };
+  const onClickViewDates = (index) => () => {
+    const newDates = [...viewWeek];
+    if (newDates.includes(index)) {
+      setViewWeek(newDates.filter((el) => index !== el));
+    } else {
+      newDates.push(index);
+      setViewWeek(newDates);
     }
   };
 
@@ -976,23 +1135,25 @@ export default function ClassPage() {
   // 수업 수정
   const onClickUpdateLecture = () => {
     const newList = [...checkList];
+    const updateList = {};
 
-    checkList.map(async (el) => {
-      // console.log(
-      //   el.lectureId,
-      //   [el.studentId],
-      //   editAcademy,
-      //   editDate,
-      //   editStartTime,
-      //   editEndTime,
-      //   Number(teacherId)
-      // );
+    newList.forEach((el) => {
+      const key = el.lectureId;
+      if (!updateList[key]) {
+        updateList[key] = { lectureId: key, studentIds: [] };
+      }
+      updateList[key].studentIds.push(Number(el.studentId));
+    });
+    const updateArray = Object.values(updateList);
+    console.log(updateArray);
+
+    updateArray.map(async (el) => {
       try {
         const result = await updateLecture({
           variables: {
             lectureId: Number(el.lectureId),
             date: editDate,
-            studentId: el.studentId,
+            studentIds: el.studentIds,
             startTime: editStartTime,
             endTime: editEndTime,
             academyId: editAcademy,
@@ -1009,6 +1170,7 @@ export default function ClassPage() {
         setEditStartTime(dateToClock(date));
         setEditEndTime(dateToClockOneHour(date));
         setEditInfo("");
+        setCheckList([]);
         setEditAcademy(Number(router.query.branch));
         setTeacherId(
           userData?.allUsers
@@ -1924,7 +2086,7 @@ export default function ClassPage() {
   }, [myData]);
 
   //프레젠터 시작
-  console.log(studentListData);
+  // console.log(monthClassData);
 
   return (
     <S.ClassWrapper>
@@ -2478,10 +2640,11 @@ export default function ClassPage() {
                   onChange={(e) => {
                     setViewType(e.target.value);
                     setViewLecture("");
+                    setViewDate("");
                   }}
                 >
-                  <option value={"class"}>수업 기준</option>
                   <option value={"student"}>원생 기준</option>
+                  <option value={"class"}>수업 기준</option>
                 </S.CalendarLeftSelect>
               </div>
               <div style={{ marginBottom: "5rem" }}>
@@ -2496,7 +2659,7 @@ export default function ClassPage() {
                     return (
                       <div
                         style={{
-                          width: "9.125rem",
+                          width: "7rem",
                           height: "2.75rem",
                           color: index === 0 ? "tomato" : "black",
                           display: "flex",
@@ -2517,7 +2680,7 @@ export default function ClassPage() {
                         return (
                           <div
                             style={{
-                              width: "9.125rem",
+                              width: "7rem",
                               height: "9.5rem",
                               borderBottom: "0.4px solid #DBDDE1",
                               color:
@@ -2564,7 +2727,28 @@ export default function ClassPage() {
 
                             {viewType === "student" ? (
                               <>
-                                <S.CalendarLecture>
+                                <S.CalendarLecture
+                                  onClick={() => {
+                                    setViewDate(
+                                      calendarDate.getFullYear() +
+                                        "-" +
+                                        getMonthZero(calendarDate) +
+                                        "-" +
+                                        getNumberZero(ele)
+                                    );
+                                    const newDate = new Date(
+                                      calendarDate.getFullYear() +
+                                        "-" +
+                                        getMonthZero(calendarDate) +
+                                        "-" +
+                                        getNumberZero(ele)
+                                    );
+                                    refetchStudentList({
+                                      date: dateToInput(newDate),
+                                    });
+                                    setCalendarDate(newDate);
+                                  }}
+                                >
                                   {monthClassData?.getLecturesByAcademyAndMonth
                                     ?.filter((lecture) => {
                                       return (
@@ -2633,7 +2817,32 @@ export default function ClassPage() {
                                             setViewStartTime(
                                               lecture?.startTime
                                             );
-                                            setViewRepeat(false);
+                                            setViewAuto(
+                                              lecture?.lectureInfo?.autoAdd
+                                            );
+                                            if (
+                                              lecture?.lectureInfo?.repeatDay?.includes(
+                                                -1
+                                              )
+                                            ) {
+                                              setViewRepeat(false);
+                                            } else {
+                                              setViewRepeat(true);
+                                            }
+                                            if (
+                                              lecture?.lectureInfo?.repeatDay?.includes(
+                                                -1
+                                              )
+                                            ) {
+                                              setViewWeek([]);
+                                            } else {
+                                              setViewWeek(
+                                                lecture?.lectureInfo?.repeatDay
+                                              );
+                                            }
+                                            console.log(
+                                              lecture?.lectureInfo?.repeatDay
+                                            );
                                           }}
                                         >
                                           {lecture?.lectureInfo.about === ""
@@ -2703,7 +2912,32 @@ export default function ClassPage() {
                                           setViewDate(lecture?.date);
                                           setViewEndTime(lecture?.endTime);
                                           setViewStartTime(lecture?.startTime);
-                                          setViewRepeat(false);
+                                          setViewAuto(
+                                            lecture?.lectureInfo?.autoAdd
+                                          );
+                                          if (
+                                            lecture?.lectureInfo?.repeatDay?.includes(
+                                              -1
+                                            )
+                                          ) {
+                                            setViewRepeat(false);
+                                          } else {
+                                            setViewRepeat(true);
+                                          }
+                                          if (
+                                            lecture?.lectureInfo?.repeatDay?.includes(
+                                              -1
+                                            )
+                                          ) {
+                                            setViewWeek([]);
+                                          } else {
+                                            setViewWeek(
+                                              lecture?.lectureInfo?.repeatDay
+                                            );
+                                          }
+                                          console.log(
+                                            lecture?.lectureInfo?.repeatDay
+                                          );
                                         }}
                                       >
                                         {lecture?.lectureInfo.about === ""
@@ -2723,16 +2957,47 @@ export default function ClassPage() {
               </div>
             </S.CalendarLeft>
             <S.CalendarRight>
-              {viewLecture === "" ? (
+              {viewDate === "" ? (
                 <></>
-              ) : (
+              ) : viewType === "class" ? (
                 <>
                   <S.CalendarRightTitle>수업 정보</S.CalendarRightTitle>
                   <S.CalendarRightDiv>지점</S.CalendarRightDiv>
                   {/* 지점 변경 필요 */}
-                  <S.CalendarRightSelect>
-                    <option>경기퍼플</option>
-                  </S.CalendarRightSelect>
+                  {/* <S.CalendarRightSelect>
+                  <option>경기퍼플</option>
+                </S.CalendarRightSelect> */}
+                  {myData?.me?.profile?.academies?.length > 0 ? (
+                    <S.CalendarRightSelect
+                      onChange={(e) => {
+                        setEditAcademy(Number(e.target.value));
+                      }}
+                      style={{
+                        borderRadius: "0.5rem",
+                        border: "1px solid #DBDDE1",
+                        width: "100%",
+                        padding: "0.5rem 0.5rem",
+                        paddingLeft: "10px",
+                        fontFamily: "Spoqa Han Sans Neo",
+                      }}
+                    >
+                      {myData?.me?.profile?.academies?.map((el) => {
+                        return (
+                          <option
+                            value={Number(el.id)}
+                            selected={
+                              Number(router.query.branch) === Number(el.id)
+                            }
+                          >
+                            {el.location}
+                          </option>
+                        );
+                      })}
+                    </S.CalendarRightSelect>
+                  ) : (
+                    <></>
+                  )}
+
                   <S.CalendarRightDiv>수업 방식</S.CalendarRightDiv>
                   <S.CalendarRightDiv>
                     <input
@@ -2754,27 +3019,42 @@ export default function ClassPage() {
                     ></input>
                     <span>반복</span>
                   </S.CalendarRightDiv>
+
                   {viewRepeat ? (
-                    <S.ModalRoutineDates>
-                      {week.map((el, index) => {
-                        return (
-                          <S.ModalRoutineDate
-                            key={uuidv4()}
-                            onClick={onClickDates(index)}
-                            style={
-                              selectDates.includes(index)
-                                ? {
-                                    backgroundColor: "#333",
-                                    color: "#eeeeee",
-                                  }
-                                : {}
-                            }
-                          >
-                            {el}
-                          </S.ModalRoutineDate>
-                        );
-                      })}
-                    </S.ModalRoutineDates>
+                    <>
+                      <S.CalendarRightDiv>자동 생성</S.CalendarRightDiv>
+                      <input
+                        type="checkBox"
+                        style={{ width: "20px", height: "20px" }}
+                        checked={viewAuto}
+                        onChange={() => {
+                          setViewAuto(!viewAuto);
+                        }}
+                      ></input>
+                      <S.CalendarRightDiv>반복 요일</S.CalendarRightDiv>
+                      <S.ModalRoutineDates>
+                        {week.map((el, index) => {
+                          return (
+                            <>
+                              <S.ModalRoutineDate
+                                key={uuidv4()}
+                                onClick={onClickViewDates(index)}
+                                style={
+                                  viewWeek.includes(index)
+                                    ? {
+                                        backgroundColor: "#333",
+                                        color: "#eeeeee",
+                                      }
+                                    : {}
+                                }
+                              >
+                                {el}
+                              </S.ModalRoutineDate>
+                            </>
+                          );
+                        })}
+                      </S.ModalRoutineDates>
+                    </>
                   ) : (
                     <></>
                   )}
@@ -2864,6 +3144,116 @@ export default function ClassPage() {
                     </button>
                   </div>
                 </>
+              ) : (
+                <>
+                  {/* 달력형 수업 수정 */}
+                  <div
+                    style={{
+                      display: "flex",
+                      width: "100%",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                    }}
+                  >
+                    <S.CalendarRightTitle style={{ width: "80%" }}>
+                      {calendarDate.getFullYear() +
+                        "년 " +
+                        (1 + calendarDate.getMonth()) +
+                        "월 " +
+                        calendarDate.getDate() +
+                        "일"}
+                    </S.CalendarRightTitle>
+                    <S.ModalCancelButton
+                      onClick={() => {
+                        setIsEdit(true);
+                      }}
+                      style={{
+                        backgroundColor: "#ddd",
+                        color: "#333",
+                        margin: "1rem",
+                      }}
+                    >
+                      수정
+                    </S.ModalCancelButton>
+                  </div>
+                  <table style={{ width: "35rem" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: "20px", padding: "3px" }}>
+                          <input
+                            type="checkbox"
+                            style={{ width: "20px", height: "20px" }}
+                            checked={
+                              checkList.length !== 0 &&
+                              studentArray.length === checkList.length
+                            }
+                            onChange={onChangeAllSelect}
+                          ></input>
+                        </th>
+                        <th>원생명</th>
+                        <th>시작 시간</th>
+                        <th>종료 시간</th>
+                        <th>강의 정보</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {studentArray?.map((el) => {
+                        return (
+                          <tr key={el.id || uuidv4()}>
+                            <td style={{ width: "20px", padding: "3px" }}>
+                              <input
+                                type="checkbox"
+                                onChange={(e) =>
+                                  onChangeEach(e, el.lecture.id, el.student.id)
+                                }
+                                style={{ width: "20px", height: "20px" }}
+                                checked={checkList.some((ele) => {
+                                  return (
+                                    Number(ele.studentId) ===
+                                      Number(el.student.id) &&
+                                    Number(ele.lectureId) ===
+                                      Number(el.lecture.id)
+                                  );
+                                })}
+                              ></input>
+                            </td>
+                            <td>{el.student.korName}</td>
+                            <td
+                              style={
+                                date.getDate() !== calendarDate.getDate() ||
+                                checkDate.getHours() * 60 +
+                                  checkDate.getMinutes() -
+                                  Number(el.lecture.startTime.slice(0, 2)) *
+                                    60 -
+                                  Number(el.lecture.startTime.slice(3, 5)) <
+                                  0 ||
+                                el?.attendanceStatus !== null
+                                  ? {}
+                                  : { color: "tomato" }
+                              }
+                            >
+                              {timeToHour(el.lecture.startTime)}
+                            </td>
+                            <td>{timeToHour(el.lecture.endTime)}</td>
+                            <td
+                            // onMouseEnter={() => {
+                            //   setIsViewTitle(true);
+                            //   setViewTitle(el.lecture.lectureInfo.about);
+                            // }}
+                            // onMouseLeave={() => {
+                            //   setIsViewTitle(false);
+                            // }}
+                            >
+                              {el.lecture.lectureMemo === ""
+                                ? shortWord(el.lecture.lectureInfo.about)
+                                : shortWord(el.lecture.lectureMemo)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </>
               )}
             </S.CalendarRight>
           </S.CalendarWrapper>
@@ -2887,6 +3277,19 @@ export default function ClassPage() {
                   alignContent: "flex-start",
                 }}
               >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    marginRight: "1rem",
+                  }}
+                >
+                  <CloseOutlined
+                    onClick={() => {
+                      setIsViewMore(false);
+                    }}
+                  />
+                </div>
                 {viewModalList.map((el, index) => {
                   if (index === 0) {
                     return (
@@ -2902,6 +3305,7 @@ export default function ClassPage() {
                         >
                           {Number(el.date[8]) * 10 + Number(el.date[9])}
                         </div>
+
                         <S.CalendarLecture
                           onClick={() => {
                             setViewLecture(el);
@@ -3217,7 +3621,13 @@ export default function ClassPage() {
                     placeholder="원번 혹은 이름을 입력하세요."
                   ></S.InputInput>
                 </div>{" "}
-                <S.ModalTable style={{ height: "40rem", overflow: "scroll" }}>
+                <S.ModalTable
+                  style={{
+                    height: "40rem",
+                    overflow: "scroll",
+                    // overflow: "hidden",
+                  }}
+                >
                   <S.ModalTag style={{ position: "sticky" }}>
                     <S.ModalHeadLeft
                       style={{
@@ -3289,6 +3699,7 @@ export default function ClassPage() {
                           }}
                         >
                           <input
+                            style={{ width: "20px", height: "20px" }}
                             type="checkbox"
                             onChange={onClickStudents(el?.id)}
                             checked={addList.includes(Number(el?.id))}
@@ -3589,6 +4000,7 @@ export default function ClassPage() {
                       }}
                     >
                       <input
+                        style={{ width: "20px", height: "20px" }}
                         type="checkbox"
                         onChange={onClickStudents(el?.id)}
                         checked={addList.includes(Number(el?.id))}
@@ -3811,19 +4223,27 @@ export default function ClassPage() {
           open={isBook}
           footer={null}
           closeIcon={null}
-          width={"80%"}
+          width={"95rem"}
           onCancel={() => {
             setIsBook(false);
             refetchBook({ minBl: 0, maxBl: 0, arQn: null });
             setSelectBookData([]);
             setSelectBooks([]);
-            setReserveType("search");
+            setReserveType("recommend");
             setBarcode("");
           }}
         >
-          <S.ModalTitle>
-            {"수업준비 - " + selectChild.korName + " 도서 예약"}
+          <S.ModalTitle
+            style={{ fontWeight: 600, fontFamily: "Spoqa Han Sans Neo" }}
+          >
+            {selectChild.origin +
+              " - " +
+              selectChild.korName +
+              " 도서 예약 (" +
+              reservationBookData?.studentReservedBooks.length +
+              "권 예약 중)"}
           </S.ModalTitle>
+
           <S.ModalButtonBox>
             <S.ModalReturnButton onClick={onClickTotalReturn}>
               일괄 반납
@@ -3833,46 +4253,84 @@ export default function ClassPage() {
                 setIsBook(false);
                 refetchBook({ minBl: 0, maxBl: 0, arQn: null });
                 setBookSearchWord("");
-                setReserveType("search");
+                setReserveType("recommend");
                 setBarcode("");
               }}
             >
               취소
             </S.ModalCancelButton>
           </S.ModalButtonBox>
-
-          <table>
+          <table style={{ width: "92rem" }}>
             {reservationBookData?.studentReservedBooks.length === 0 ? (
               <></>
             ) : (
               <thead style={{ height: "2.75rem" }}>
                 <tr>
-                  <th>PLBN</th>
-                  <th>도서 제목</th>
-                  <th>저자</th>
-                  <th>AR QUIZ No.</th>
-                  <th>AR점수</th>
-                  <th>Lexile</th>
-                  <th>Word Count</th>
-                  <th>도서 위치</th>
-                  <th>반납</th>
+                  <th style={{ width: "2rem" }}>목차</th>
+                  <th style={{ width: "6rem" }}>박스 넘버</th>
+                  <th style={{ width: "6rem" }}>PLBN</th>
+                  <th style={{ width: "13rem" }}>도서 제목</th>
+                  <th style={{ width: "9rem" }}>저자</th>
+                  <th style={{ width: "6rem" }}>AR QUIZ No.</th>
+                  <th style={{ width: "1.8rem" }}>F/NF</th>
+                  <th style={{ width: "1.8rem" }}>AR</th>
+                  <th style={{ width: "2.5rem" }}>WC</th>
+                  <th style={{ width: "2rem" }}>IL</th>
+                  <th style={{ width: "2.5rem" }}>Lexile</th>
+                  <th style={{ width: "3rem" }}>반납</th>
                 </tr>
               </thead>
             )}
             <tbody>
-              {reservationBookData?.studentReservedBooks?.map((el) => {
+              {reservationBookData?.studentReservedBooks?.map((el, index) => {
                 return (
                   <tr style={{ height: "2.75rem" }}>
-                    <td>{el.plbn}</td>
-                    <td>{longWord(el.booktitle)}</td>
-                    <td>{el.book.authorAr}</td>
-                    <td>{el.book.arQuiz}</td>
-                    <td>{el.book.bl}</td>
-                    <td>
-                      {el.book.lexileLex ? el.book.lexileAr : el.book.lexileLex}
-                    </td>
-                    <td>{el.book.wcAr}</td>
+                    <td>{index + 1}</td>
                     <td>{el.boxNumber}</td>
+                    <td>{el.plbn}</td>
+                    {el.booktitle.length > 25 ? (
+                      <td
+                        onMouseEnter={() => {
+                          setIsViewTitle(true);
+                          setViewTitle(el?.booktitle);
+                        }}
+                        onMouseLeave={() => {
+                          setIsViewTitle(false);
+                        }}
+                      >
+                        {longWord(el.booktitle)}
+                      </td>
+                    ) : (
+                      <td>{longWord(el.booktitle)}</td>
+                    )}
+                    {el.book.authorAr.length > 15 ? (
+                      <td
+                        onMouseEnter={() => {
+                          setIsViewTitle(true);
+                          setViewTitle(el.book.authorAr);
+                        }}
+                        onMouseLeave={() => {
+                          setIsViewTitle(false);
+                        }}
+                      >
+                        {longAuthor(el.book.authorAr)}
+                      </td>
+                    ) : (
+                      <td>{longAuthor(el.book.authorAr)}</td>
+                    )}
+                    {/* <td>{longAuthor(el.book.authorAr)}</td> */}
+                    <td>{"#" + el.book.arQuiz}</td>
+                    <td>{el.book.fnfStatus}</td>
+                    <td>{arFrame(el.book.bl)}</td>
+                    <td>{el.book.wcAr}</td>
+                    <td>{el.book.ilStatus.slice(3, 5)}</td>
+                    <td>
+                      {(el.book.lexileLex > 0
+                        ? el.book.lexileLex + "L"
+                        : "B" + -1 * el.book.lexileLex + "L") ||
+                        el.book.lexileAr}
+                    </td>
+
                     <td>
                       <button onClick={onClickReturnBook(Number(el.id))}>
                         반납
@@ -3998,7 +4456,7 @@ export default function ClassPage() {
               바코드
             </S.ModalTagHover>
           </S.ModalTag>
-          {reserveType === "search" ? (
+          {reserveType === "search" && (
             <>
               <S.ModalWrapper
                 style={{
@@ -4184,7 +4642,7 @@ export default function ClassPage() {
                     display: "inline-block",
                     textAlign: "right",
                     fontWeight: "bold",
-                    width: "100%",
+                    width: "92rem",
                   }}
                 >
                   검색
@@ -4205,15 +4663,29 @@ export default function ClassPage() {
                 <></>
               ) : (
                 <>
-                  <table>
+                  <table style={{ width: "92rem" }}>
                     {bookData?.getBooksByBl.length === 0 ||
                     bookData === undefined ? (
                       <></>
                     ) : (
                       <thead style={{ height: "2.75rem" }}>
                         <tr>
-                          <th>
-                            KPLBN{" "}
+                          {/* <th style={{ width: "2rem" }}>목차</th>
+                    <th style={{ width: "6rem" }}>박스 넘버</th>
+                    <th style={{ width: "6rem" }}>PLBN</th>
+                    <th style={{ width: "13rem" }}>도서 제목</th>
+                    <th style={{ width: "9rem" }}>저자</th>
+                    <th style={{ width: "6rem" }}>AR QUIZ No.</th>
+                    <th style={{ width: "1.8rem" }}>F/NF</th>
+                    <th style={{ width: "1.8rem" }}>AR</th>
+                    <th style={{ width: "2.5rem" }}>WC</th>
+                    <th style={{ width: "2rem" }}>IL</th>
+                    <th style={{ width: "2.5rem" }}>Lexile</th>
+                    <th style={{ width: "3rem" }}>예약</th> */}
+                          <th style={{ width: "6%" }}>목차</th>
+                          <th style={{ width: "10%" }}>박스 넘버</th>
+                          <th style={{ width: "10.5%" }}>
+                            PLBN{" "}
                             {sortType === "plbn" ? (
                               <UpOutlined
                                 onClick={onClickSortType("plbnReverse")}
@@ -4222,7 +4694,7 @@ export default function ClassPage() {
                               <DownOutlined onClick={onClickSortType("plbn")} />
                             )}
                           </th>
-                          <th>
+                          <th style={{ width: "15%" }}>
                             도서 제목{" "}
                             {sortType === "title" ? (
                               <UpOutlined
@@ -4234,7 +4706,7 @@ export default function ClassPage() {
                               />
                             )}
                           </th>
-                          <th>
+                          <th style={{ width: "13%" }}>
                             저자{" "}
                             {sortType === "author" ? (
                               <UpOutlined
@@ -4246,8 +4718,9 @@ export default function ClassPage() {
                               />
                             )}
                           </th>
-                          <th>AR QUIZ No.</th>
-                          <th>
+                          <th style={{ width: "9%" }}>AR QUIZ No.</th>
+                          <th style={{ width: "3%" }}>F/NF</th>
+                          <th style={{ width: "6%" }}>
                             AR{" "}
                             {sortType === "ar" ? (
                               <UpOutlined
@@ -4257,7 +4730,21 @@ export default function ClassPage() {
                               <DownOutlined onClick={onClickSortType("ar")} />
                             )}
                           </th>
-                          <th>
+
+                          <th style={{ width: "6.5%" }}>
+                            WC{" "}
+                            {sortType === "wordCount" ? (
+                              <UpOutlined
+                                onClick={onClickSortType("wordCountReverse")}
+                              />
+                            ) : (
+                              <DownOutlined
+                                onClick={onClickSortType("wordCount")}
+                              />
+                            )}
+                          </th>
+                          <th style={{ width: "3%" }}>IL</th>
+                          <th style={{ width: "7.2%" }}>
                             Lexile{" "}
                             {sortType === "lexile" ? (
                               <UpOutlined
@@ -4269,19 +4756,7 @@ export default function ClassPage() {
                               />
                             )}
                           </th>
-                          <th>
-                            Word Count{" "}
-                            {sortType === "wordCount" ? (
-                              <UpOutlined
-                                onClick={onClickSortType("wordCountReverse")}
-                              />
-                            ) : (
-                              <DownOutlined
-                                onClick={onClickSortType("wordCount")}
-                              />
-                            )}
-                          </th>
-                          <th>예약</th>
+                          <th style={{ width: "6.4%" }}>예약</th>
                         </tr>
                       </thead>
                     )}
@@ -4296,10 +4771,13 @@ export default function ClassPage() {
                             ).length === 0
                           );
                         })
-                        ?.map((el) => {
+                        ?.map((el, index) => {
                           return (
                             <tr style={{ height: "2.75rem" }}>
-                              <td>{kplbnFrame(el.kplbn)}</td>
+                              <td>{(bookPage - 1) * 20 + index + 1}</td>
+                              <td>{el.books?.[0].boxNumber}</td>
+                              {/* <td>{kplbnFrame(el.kplbn)}</td> */}
+                              <td>{el.books?.[0].plbn}</td>
                               {el.titleAr?.length > 25 ? (
                                 <td
                                   onMouseEnter={() => {
@@ -4331,13 +4809,16 @@ export default function ClassPage() {
                                 <td>{longAuthor(el.authorAr)}</td>
                               )}
                               <td>{"#" + el.arQuiz}</td>
+                              <td>{el.fnfStatus}</td>
                               <td>{arFrame(el.bl)}</td>
+
+                              <td>{addComma(el.wcAr)}</td>
+                              <th>{el?.ilStatus.slice(3, 5)}</th>
                               <td>
                                 {el.lexileLex === null
                                   ? lexileFrame(el.lexileAr)
                                   : lexileFrame(el.lexileLex)}
                               </td>
-                              <td>{addComma(el.wcAr)}</td>
                               <td>
                                 <button
                                   onClick={onClickBookingBooks(
@@ -4353,23 +4834,6 @@ export default function ClassPage() {
                         })}
                     </tbody>
                   </table>
-                  {isViewTitle ? (
-                    <span
-                      style={{
-                        position: "fixed",
-                        left: mousePosition.x,
-                        top: mousePosition.y,
-                        backgroundColor: "#dedede",
-                        border: "2px solid #333333",
-                        borderRadius: "3px",
-                        zIndex: 99999,
-                      }}
-                    >
-                      {viewTitle}
-                    </span>
-                  ) : (
-                    <></>
-                  )}
                 </>
               )}
               {isLoading ? (
@@ -4510,7 +4974,8 @@ export default function ClassPage() {
                 </div>
               )}
             </>
-          ) : (
+          )}
+          {reserveType === "barcode" && (
             <>
               <S.ModalWrapper
                 style={{
@@ -4577,6 +5042,273 @@ export default function ClassPage() {
                 </S.ModalButtonBox>
               </S.ModalWrapper>
             </>
+          )}
+          {reserveType === "recommend" && (
+            <>
+              <div
+                style={{
+                  fontFamily: "Spoqa Han Sans Neo",
+                  fontSize: "2rem",
+                  fontWeight: 500,
+                  margin: "1rem 0",
+                }}
+              >
+                Fiction 남은 도서{" "}
+                {fictionData?.getRecommendBooks?.[0]?.inventoryNum + "권"}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  width: "93rem",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <S.ModalCancelButton
+                  style={{
+                    backgroundColor: "#ddd",
+                    color: "#333",
+                    margin: "1rem",
+                    padding: "1.3rem",
+                  }}
+                  onClick={onClickChangePeriod("1")}
+                >
+                  F-package
+                </S.ModalCancelButton>
+                <S.ModalCancelButton
+                  style={{
+                    backgroundColor: "#ddd",
+                    color: "#333",
+                    margin: "1rem",
+                    padding: "1.3rem",
+                  }}
+                  onClick={onClickFetch("1")}
+                >
+                  F-list
+                </S.ModalCancelButton>
+              </div>
+              <table style={{ width: "92rem" }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: "2rem" }}>목차</th>
+                    <th style={{ width: "6rem" }}>박스 넘버</th>
+                    <th style={{ width: "6rem" }}>PLBN</th>
+                    <th style={{ width: "13rem" }}>도서 제목</th>
+                    <th style={{ width: "9rem" }}>저자</th>
+                    <th style={{ width: "6rem" }}>AR QUIZ No.</th>
+                    <th style={{ width: "1.8rem" }}>F/NF</th>
+                    <th style={{ width: "1.8rem" }}>AR</th>
+                    <th style={{ width: "2.5rem" }}>WC</th>
+                    <th style={{ width: "2rem" }}>IL</th>
+                    <th style={{ width: "2.5rem" }}>Lexile</th>
+                    <th style={{ width: "3rem" }}>예약</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fictionData?.getRecommendBooks?.map((el, index) => {
+                    return (
+                      <tr>
+                        <td>{index + 1}</td>
+                        <td>{el.boxNumber}</td>
+                        <td>{el.plbn}</td>
+                        {el.booktitle.length > 25 ? (
+                          <td
+                            onMouseEnter={() => {
+                              setIsViewTitle(true);
+                              setViewTitle(el?.booktitle);
+                            }}
+                            onMouseLeave={() => {
+                              setIsViewTitle(false);
+                            }}
+                          >
+                            {longWord(el.booktitle)}
+                          </td>
+                        ) : (
+                          <td>{longWord(el.booktitle)}</td>
+                        )}
+                        {el.book.authorAr.length > 15 ? (
+                          <td
+                            onMouseEnter={() => {
+                              setIsViewTitle(true);
+                              setViewTitle(el.book.authorAr);
+                            }}
+                            onMouseLeave={() => {
+                              setIsViewTitle(false);
+                            }}
+                          >
+                            {longAuthor(el.book.authorAr)}
+                          </td>
+                        ) : (
+                          <td>{longAuthor(el.book.authorAr)}</td>
+                        )}
+                        {/* <td>{longAuthor(el.book.authorAr)}</td> */}
+                        <td>{"#" + el.book.arQuiz}</td>
+                        <td>{el.book.fnfStatus}</td>
+                        <td>{arFrame(el.book.bl)}</td>
+                        <td>{el.book.wcAr || el.book.wcLex}</td>
+                        <td>{el.book.ilStatus.slice(3, 5)}</td>
+                        <td>
+                          {(el.book.lexileLex > 0
+                            ? el.book.lexileLex + "L"
+                            : "B" + el.book.lexileLex * -1 + "L") ||
+                            (el.book.lexileAr > 0
+                              ? el.book.lexileAr + "L"
+                              : "B" + el.book.lexileAr * -1 + "L")}
+                        </td>
+
+                        {/* <td>{el.book.litproStatus}</td> */}
+                        <td>
+                          <button
+                            onClick={onClickBookingBooks(el.id, el.booktitle)}
+                          >
+                            예약
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <div
+                style={{
+                  fontFamily: "Spoqa Han Sans Neo",
+                  fontSize: "2rem",
+                  fontWeight: 500,
+                  margin: "1rem 0",
+                }}
+              >
+                NonFiction 남은 도서{" "}
+                {nonFictionData?.getRecommendBooks?.[0]?.inventoryNum + "권"}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  width: "93rem",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <S.ModalCancelButton
+                  style={{
+                    backgroundColor: "#ddd",
+                    color: "#333",
+                    margin: "1rem",
+                    padding: "1.3rem",
+                  }}
+                  onClick={onClickChangePeriod("2")}
+                >
+                  NF-package
+                </S.ModalCancelButton>
+                <S.ModalCancelButton
+                  style={{
+                    backgroundColor: "#ddd",
+                    color: "#333",
+                    margin: "1rem",
+                    padding: "1.3rem",
+                  }}
+                  onClick={onClickFetch("2")}
+                >
+                  NF-list
+                </S.ModalCancelButton>
+              </div>
+              <table style={{ width: "92rem" }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: "2rem" }}>목차</th>
+                    <th style={{ width: "6rem" }}>박스 넘버</th>
+                    <th style={{ width: "6rem" }}>PLBN</th>
+                    <th style={{ width: "13rem" }}>도서 제목</th>
+                    <th style={{ width: "9rem" }}>저자</th>
+                    <th style={{ width: "6rem" }}>AR QUIZ No.</th>
+                    <th style={{ width: "1.8rem" }}>F/NF</th>
+                    <th style={{ width: "1.8rem" }}>AR</th>
+                    <th style={{ width: "2.5rem" }}>WC</th>
+                    <th style={{ width: "2rem" }}>IL</th>
+                    <th style={{ width: "2.5rem" }}>Lexile</th>
+                    <th style={{ width: "3rem" }}>예약</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {nonFictionData?.getRecommendBooks?.map((el, index) => {
+                    return (
+                      <tr>
+                        <td>{index + 1}</td>
+                        <td>{el.boxNumber}</td>
+                        <td>{el.plbn}</td>
+                        {el.booktitle.length > 25 ? (
+                          <td
+                            onMouseEnter={() => {
+                              setIsViewTitle(true);
+                              setViewTitle(el?.booktitle);
+                            }}
+                            onMouseLeave={() => {
+                              setIsViewTitle(false);
+                            }}
+                          >
+                            {longWord(el.booktitle)}
+                          </td>
+                        ) : (
+                          <td>{longWord(el.booktitle)}</td>
+                        )}
+                        {el.book.authorAr.length > 15 ? (
+                          <td
+                            onMouseEnter={() => {
+                              setIsViewTitle(true);
+                              setViewTitle(el.book.authorAr);
+                            }}
+                            onMouseLeave={() => {
+                              setIsViewTitle(false);
+                            }}
+                          >
+                            {longAuthor(el.book.authorAr)}
+                          </td>
+                        ) : (
+                          <td>{longAuthor(el.book.authorAr)}</td>
+                        )}
+                        {/* <td>{longAuthor(el.book.authorAr)}</td> */}
+                        <td>{"#" + el.book.arQuiz}</td>
+                        <td>{el.book.fnfStatus}</td>
+                        <td>{arFrame(el.book.bl)}</td>
+                        <td>{el.book.wcAr || el.book.wcLex}</td>
+                        <td>{el.book.ilStatus.slice(3, 5)}</td>
+                        <td>
+                          {(el.book.lexileLex > 0
+                            ? el.book.lexileLex + "L"
+                            : "B" + el.book.lexileLex * -1 + "L") ||
+                            (el.book.lexileAr > 0
+                              ? el.book.lexileAr + "L"
+                              : "B" + el.book.lexileAr * -1 + "L")}
+                        </td>
+
+                        {/* <td>{el.book.litproStatus}</td> */}
+                        <td>
+                          <button
+                            onClick={onClickBookingBooks(el.id, el.booktitle)}
+                          >
+                            예약
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </>
+          )}
+          {isViewTitle ? (
+            <span
+              style={{
+                position: "fixed",
+                left: mousePosition.x,
+                top: mousePosition.y,
+                backgroundColor: "#dedede",
+                border: "2px solid #333333",
+                borderRadius: "3px",
+                zIndex: 99999,
+              }}
+            >
+              {viewTitle}
+            </span>
+          ) : (
+            <></>
           )}
         </Modal>
       ) : (
@@ -4654,6 +5386,366 @@ export default function ClassPage() {
         </Modal>
       ) : (
         <></>
+      )}
+      {isChange ? (
+        <Modal
+          open={isChange}
+          onCancel={() => {
+            setIsChange(false);
+          }}
+          footer={null}
+          closable={false}
+          width={"80%"}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              padding: "3rem 3rem",
+            }}
+          >
+            <div
+              style={{
+                color: "#000",
+                fontSize: "2.125rem",
+                fontStyle: "normal",
+                fontWeight: 500,
+                lineHeight: "2.5rem",
+                marginBottom: "1.5rem",
+                fontFamily: "Spoqa Han Sans Neo",
+              }}
+            >
+              {"패키지를 변경 하시겠습니까?"}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                width: "100%",
+                justifyContent: "flex-start",
+              }}
+            >
+              <div
+                style={{
+                  textDecoration: isPeriod ? "underline" : "",
+                  fontSize: "1.3rem",
+                  fontFamily: "Spoqa Han Sans Neo",
+                  marginRight: "1rem",
+                }}
+                onClick={() => {
+                  setIsPeriod(true);
+                }}
+              >
+                기간 재설정
+              </div>
+              <div
+                style={{
+                  textDecoration: isPeriod ? "" : "underline",
+                  fontSize: "1.3rem",
+                  fontFamily: "Spoqa Han Sans Neo",
+                }}
+                onClick={() => {
+                  setIsPeriod(false);
+                  setReadingList(
+                    recordingData?.studentBookRecord
+                      ?.filter((el) => {
+                        // console.log(
+                        //   el?.arDate,
+                        //   packageData?.studentBookRecordWithPkg?.createdAt
+                        // );
+                        const ar =
+                          Number(el?.arDate?.slice(0, 4)) * 10000 +
+                          Number(el?.arDate?.slice(5, 7)) * 100 +
+                          Number(el?.arDate?.slice(8, 10));
+                        const created =
+                          Number(
+                            packageData?.studentBookRecordWithPkg?.bookPkg?.createdAt?.slice(
+                              0,
+                              4
+                            )
+                          ) *
+                            10000 +
+                          Number(
+                            packageData?.studentBookRecordWithPkg?.bookPkg?.createdAt?.slice(
+                              5,
+                              7
+                            )
+                          ) *
+                            100 +
+                          Number(
+                            packageData?.studentBookRecordWithPkg?.bookPkg?.createdAt?.slice(
+                              8,
+                              10
+                            )
+                          );
+
+                        if (created > ar) {
+                          return false;
+                        } else {
+                          console.log(true);
+                          return true;
+                        }
+                      })
+                      .map((el) => el.id)
+                  );
+                }}
+              >
+                기록 재설정
+              </div>
+            </div>
+            {/* <div
+              style={{
+                border: "1px solid #333333",
+                width: "100%",
+                marginTop: "1rem",
+              }}
+            ></div> */}
+            {!isPeriod && (
+              <div style={{ width: "100%", margin: "1rem 0" }}>
+                <span
+                  style={{
+                    fontSize: "1rem",
+                    fontFamily: "Spoqa Han Sans Neo",
+                  }}
+                >
+                  검색
+                </span>
+                <input
+                  style={{
+                    fontSize: "1rem",
+                    marginLeft: "0.5rem",
+                    padding: "0.5rem",
+                    border: "1px solid #dddddd",
+                    borderRadius: "5px",
+                  }}
+                  onChange={(e) => {
+                    setSearchReading(e.target.value);
+                  }}
+                  placeholder="도서 제목을 입력해주세요."
+                ></input>
+              </div>
+            )}
+
+            {!isPeriod && (
+              <S.ModalTable
+                style={{
+                  width: "100%",
+                  height: "38rem",
+                  overflow: "scroll",
+                }}
+              >
+                <table style={{ fontFamily: "Spoqa Han Sans Neo" }}>
+                  <thead>
+                    <th width="2rem">
+                      <input
+                        type="checkbox"
+                        style={{ width: "20px", height: "20px" }}
+                        checked={
+                          recordingData?.studentBookRecord
+                            ?.filter((el) => {
+                              if (fNf === "1") {
+                                return el.book.fnfStatus === "F";
+                              } else {
+                                return el.book.fnfStatus === "NF";
+                              }
+                            })
+                            ?.filter((el) => {
+                              return el?.book?.titleAr
+                                .toLowerCase()
+                                .includes(searchReading.toLowerCase());
+                            }).length === readingList.length
+                        }
+                        onChange={() => {
+                          if (
+                            recordingData?.studentBookRecord
+                              ?.filter((el) => {
+                                if (fNf === "1") {
+                                  return el.book.fnfStatus === "F";
+                                } else {
+                                  return el.book.fnfStatus === "NF";
+                                }
+                              })
+                              ?.filter((el) => {
+                                return el?.book?.titleAr
+                                  .toLowerCase()
+                                  .includes(searchReading.toLowerCase());
+                              }).length === readingList.length
+                          ) {
+                            setReadingList([]);
+                          } else {
+                            setReadingList(
+                              recordingData?.studentBookRecord
+                                ?.filter((el) => {
+                                  if (fNf === "1") {
+                                    return el.book.fnfStatus === "F";
+                                  } else {
+                                    return el.book.fnfStatus === "NF";
+                                  }
+                                })
+                                ?.filter((ele) => {
+                                  return ele?.book?.titleAr
+                                    .toLowerCase()
+                                    .includes(searchReading.toLowerCase());
+                                })
+                                ?.map((ele) => ele.id)
+                            );
+                          }
+                        }}
+                      ></input>
+                    </th>
+                    <th>날짜</th>
+                    <th>도서 제목</th>
+                    <th>저자</th>
+                    <th>AR Quiz</th>
+                    <th>AR</th>
+                    <th>WC</th>
+                    <th>정답률</th>
+                  </thead>
+                  <tbody>
+                    {recordingData?.studentBookRecord
+                      ?.filter((el) => {
+                        if (fNf === "1") {
+                          return el.book.fnfStatus === "F";
+                        } else {
+                          return el.book.fnfStatus === "NF";
+                        }
+                      })
+                      ?.filter((el) => {
+                        return el?.book?.titleAr
+                          .toLowerCase()
+                          .includes(searchReading.toLowerCase());
+                      })
+                      ?.map((el) => {
+                        return (
+                          <tr>
+                            <td>
+                              <input
+                                type="checkbox"
+                                style={{ width: "20px", height: "20px" }}
+                                checked={readingList.includes(el.id)}
+                                onChange={() => {
+                                  if (readingList.includes(el.id)) {
+                                    const newList = [...readingList];
+                                    setReadingList(
+                                      newList.filter((ele) => ele !== el.id)
+                                    );
+                                  } else {
+                                    const newList = [...readingList];
+                                    newList.push(el.id);
+                                    setReadingList(newList);
+                                  }
+                                }}
+                              ></input>
+                            </td>
+                            <td>{el.arDate}</td>
+                            <td>{el.book.titleAr}</td>
+                            <td>{longTitle(el.book.authorAr)}</td>
+                            <td>{"#" + el.book.arQuiz}</td>
+                            <td>{arFrame(el.book.bl)}</td>
+                            <td>{addComma(el.book.wcAr)}</td>
+                            <td>{el.arCorrect + "%"}</td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </S.ModalTable>
+            )}
+
+            <div style={{ marginTop: "1rem" }}>
+              <S.DeleteButton
+                onClick={() => {
+                  setIsChange(false);
+                }}
+                style={{
+                  backgroundColor: "background: #EBECEF;",
+                  color: "#1e1e1e",
+                  height: "2.75rem",
+                }}
+              >
+                취소
+              </S.DeleteButton>
+              <S.DeleteButton
+                onClick={isPeriod ? onClickConfirmPeriod : onClickConfirmRecord}
+                style={{
+                  backgroundColor: "#333",
+                  color: "#FFF",
+                  height: "2.75rem",
+                }}
+              >
+                확인
+              </S.DeleteButton>
+            </div>
+          </div>
+        </Modal>
+      ) : (
+        <></>
+      )}
+      {isAlert && (
+        <Modal
+          open={isAlert}
+          onCancel={() => {
+            isAlert(false);
+          }}
+          width={"40rem"}
+          footer={null}
+          closable={false}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              padding: "3rem 3rem",
+            }}
+          >
+            <div
+              style={{
+                color: "#000",
+                fontSize: "2.125rem",
+                fontStyle: "normal",
+                fontWeight: 500,
+                lineHeight: "2.5rem",
+                marginBottom: "1.5rem",
+                fontFamily: "Spoqa Han Sans Neo",
+              }}
+            >
+              {"패키지를 재설정하시겠습니까?"}
+            </div>
+            <div
+              style={{
+                marginBottom: "3.5rem",
+                fontFamily: "Spoqa Han Sans Neo",
+              }}
+            >
+              {"리스트의 책 권수가 10권 이하입니다."}
+            </div>
+            <div>
+              <S.DeleteButton
+                onClick={() => {
+                  setIsAlert(false);
+                }}
+                style={{
+                  backgroundColor: "background: #EBECEF;",
+                  color: "#1e1e1e",
+                  height: "2.75rem",
+                }}
+              >
+                취소
+              </S.DeleteButton>
+              <S.DeleteButton
+                onClick={onClickAlertRecord}
+                style={{
+                  backgroundColor: "#333",
+                  color: "#FFF",
+                  height: "2.75rem",
+                }}
+              >
+                확인
+              </S.DeleteButton>
+            </div>
+          </div>
+        </Modal>
       )}
       {/* <Modal
         open={isInfo}

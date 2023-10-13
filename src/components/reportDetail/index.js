@@ -1044,7 +1044,7 @@ export default function ReportDetailPage() {
           })
           ?.sort((a, b) => {
             const arA = new Date(a?.arDate);
-            const arB = new Date(b?.litDate);
+            const arB = new Date(b?.arDate);
             return arB - arA;
           })
           ?.sort((a, b) => {

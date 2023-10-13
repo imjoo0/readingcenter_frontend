@@ -7,6 +7,14 @@ export const longWord = (word) => {
   }
 };
 
+export const shortWord = (word) => {
+  if (word.length > 12) {
+    return word.slice(0, 11) + "...";
+  } else {
+    return word;
+  }
+};
+
 export const longTitle = (word) => {
   if (word.length > 40) {
     return word.slice(0, 40) + "...";
