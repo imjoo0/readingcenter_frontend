@@ -58,6 +58,7 @@ export default function AcademyPage() {
   const [selectId, setSelectId] = useState("");
   const [isCheck, setIsCheck] = useState(false);
   const [isStop, setIsStop] = useState(false);
+  const [branches, setBranches] = useState([]);
   const { data: myData } = useQuery(GET_ME);
 
   const onChangeSearchWord = (event) => {
@@ -90,6 +91,20 @@ export default function AcademyPage() {
     setIsCheck(true);
   };
 
+  const onClickAddBranchList = (id) => () => {
+    const newBranches = [...branches];
+    if (branches.includes(id)) {
+      setBranches(
+        newBranches.filter((el) => {
+          return el !== id;
+        })
+      );
+    } else {
+      newBranches.push(id);
+      setBranches(newBranches);
+    }
+  };
+
   const onClickStop = async () => {
     try {
       await stopAcademy({ variables: { userId: Number(selectId.id) } });
@@ -105,10 +120,11 @@ export default function AcademyPage() {
       addKorName === "" ||
       password === "" ||
       addPMobileNumber2 === "" ||
-      addMobileNumber3 === "" ||
+      addPMobileNumber3 === "" ||
       addPMobileNumber3 === "" ||
       addBirthDay === "" ||
-      addId === ""
+      addId === "" ||
+      (branches.length === 0 && myData?.me?.profile?.academies?.length > 0)
     ) {
       alert("필수 입력을 모두 완료해 주십시오.");
       return;
@@ -122,7 +138,6 @@ export default function AcademyPage() {
           userCategory: "학생",
         },
       });
-      console.log(result1);
       try {
         const result2 = await createProfile({
           variables: {
@@ -131,11 +146,19 @@ export default function AcademyPage() {
             engName: addEngName,
             gender: addGender,
             mobileno:
-              addPMobileNumber1 +
-              "-" +
-              addPMobileNumber2 +
-              "-" +
-              addPMobileNumber3,
+              addMobileNumber1 === "" ||
+              addMobileNumber2 === "" ||
+              addMobileNumber3 === ""
+                ? addPMobileNumber1 +
+                  "-" +
+                  addPMobileNumber2 +
+                  "-" +
+                  addPMobileNumber3
+                : addPMobileNumber1 +
+                  "-" +
+                  addPMobileNumber2 +
+                  "-" +
+                  addPMobileNumber3,
             pmobileno:
               addPMobileNumber1 +
               "-" +
@@ -147,14 +170,28 @@ export default function AcademyPage() {
             origin: addId,
           },
         });
-        try {
-          await addUserToAcademy({
-            variables: {
-              userIds: [Number(result1?.data?.createUser?.user?.id)],
-              academyId: Number(router.query.branch),
-            },
+        if (myData?.me?.profile?.academies?.length > 0) {
+          branches.forEach(async (el) => {
+            try {
+              await addUserToAcademy({
+                variables: {
+                  userIds: [Number(result1?.data?.createUser?.user?.id)],
+                  academyId: Number(el),
+                },
+              });
+            } catch {}
           });
-        } catch {}
+        } else {
+          try {
+            await addUserToAcademy({
+              variables: {
+                userIds: [Number(result1?.data?.createUser?.user?.id)],
+                academyId: Number(router.query.branch),
+              },
+            });
+            refetch();
+          } catch {}
+        }
       } catch {
         alert("유저 정보 수정 오류");
       }
@@ -443,8 +480,7 @@ export default function AcademyPage() {
                   {dateChange(el.registerDate)}
                 </S.TableHead>
                 <S.TableHead2 style={{ width: "100%" }}>
-                  <div>{"학생 : " + el.mobileno}</div>
-                  <div>{"학부모 : " + el.pmobileno}</div>
+                  <div>{el.pmobileno}</div>
                 </S.TableHead2>
                 <S.TableHead style={{ width: "30%" }}>
                   {el.gender === "M" ? "남" : "여"}
@@ -546,20 +582,6 @@ export default function AcademyPage() {
               ></S.ModalInput>
             </S.ModalTag>
             <S.ModalTag>
-              <S.ModalTitle>E-Mail</S.ModalTitle>
-              <S.ModalInput
-                type="text"
-                onChange={(e) => {
-                  setAddEmail(e.target.value);
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    onClickAddStudent();
-                  }
-                }}
-              ></S.ModalInput>
-            </S.ModalTag>
-            <S.ModalTag>
               <S.ModalTitle>Password *</S.ModalTitle>
               <S.ModalInput
                 type="password"
@@ -573,8 +595,9 @@ export default function AcademyPage() {
                 }}
               ></S.ModalInput>
             </S.ModalTag>
+
             <S.ModalTag>
-              <S.ModalTitle>한글 이름</S.ModalTitle>
+              <S.ModalTitle>한글 이름 *</S.ModalTitle>
               <S.ModalInput
                 type="text"
                 onChange={(e) => {
@@ -593,6 +616,20 @@ export default function AcademyPage() {
                 type="text"
                 onChange={(e) => {
                   setAddEngName(e.target.value);
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    onClickAddStudent();
+                  }
+                }}
+              ></S.ModalInput>
+            </S.ModalTag>
+            <S.ModalTag>
+              <S.ModalTitle>E-Mail</S.ModalTitle>
+              <S.ModalInput
+                type="text"
+                onChange={(e) => {
+                  setAddEmail(e.target.value);
                 }}
                 onKeyPress={(e) => {
                   if (e.key === "Enter") {
@@ -627,7 +664,7 @@ export default function AcademyPage() {
               </div>
             </S.ModalTag>
             <S.ModalTag>
-              <S.ModalTitle>전화번호 *</S.ModalTitle>
+              <S.ModalTitle>학부모 전화번호 *</S.ModalTitle>
               <div>
                 <S.ModalSmall
                   type="text"
@@ -669,10 +706,52 @@ export default function AcademyPage() {
               </div>
             </S.ModalTag>
             <S.ModalTag>
+              <S.ModalTitle>원생 전화번호</S.ModalTitle>
+              <div>
+                <S.ModalSmall
+                  type="text"
+                  maxLength={3}
+                  onChange={(e) => {
+                    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
+                    setAddMobileNumber1(onlyNumber);
+                    if (e.target.value.length === 3) {
+                      mobileNumber2.current.focus();
+                    }
+                  }}
+                  value={addMobileNumber1}
+                ></S.ModalSmall>{" "}
+                -{" "}
+                <S.ModalSmall
+                  type="text"
+                  maxLength={4}
+                  onChange={(e) => {
+                    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
+                    setAddMobileNumber2(onlyNumber);
+                    if (e.target.value.length === 4) {
+                      mobileNumber3.current.focus();
+                    }
+                  }}
+                  ref={mobileNumber2}
+                  value={addMobileNumber2}
+                ></S.ModalSmall>{" "}
+                -{" "}
+                <S.ModalSmall
+                  type="text"
+                  maxLength={4}
+                  onChange={(e) => {
+                    const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
+                    setAddMobileNumber3(onlyNumber);
+                  }}
+                  ref={mobileNumber3}
+                  value={addMobileNumber3}
+                ></S.ModalSmall>
+              </div>
+            </S.ModalTag>
+            <S.ModalTag>
               <S.ModalTitle>생년월일 *</S.ModalTitle>
               <S.ModalInput
                 type="date"
-                defaultValue={addBirthDay}
+                value={addBirthDay}
                 onChange={(e) => {
                   setAddBirthDay(e.target.value);
                 }}
@@ -687,6 +766,28 @@ export default function AcademyPage() {
                   setAddRegisterDay(e.target.value);
                 }}
               ></S.ModalInput>
+            </S.ModalTag>
+            <S.ModalTag>
+              {myData?.me?.profile?.academies?.length > 0 && (
+                <>
+                  <S.ModalTitle style={{ marginBottom: "0.5rem" }}>
+                    지점 *
+                  </S.ModalTitle>
+                  {myData?.me?.profile?.academies?.map((el) => {
+                    return (
+                      <div style={{ display: "flex" }}>
+                        <div>{el.location}</div>{" "}
+                        <input
+                          type="checkbox"
+                          style={{ width: "20px", height: "20px" }}
+                          onClick={onClickAddBranchList(el?.id)}
+                          checked={branches.includes(el?.id)}
+                        ></input>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
             </S.ModalTag>
             {/* <S.ModalTag>
               <S.ModalTitle>원생 번호</S.ModalTitle>
@@ -729,6 +830,7 @@ export default function AcademyPage() {
                 setAddBirthDay(dateToInput(date));
                 setAddRegisterDay(dateToInput(date));
                 setAddOrigin("");
+                setBranches([]);
               }}
             >
               취소

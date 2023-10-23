@@ -60,9 +60,9 @@ export default function Header() {
     ["원생 관리", "academy"],
     ["수업 관리", "class"],
     ["도서 관리", "books"],
-    ["수업 목록", "classList"],
+    // ["수업 목록", "classList"],
     ["학습 리포트", "report"],
-    ["도서 대여", "library"],
+    // ["도서 대여", "library"],
   ];
   const router = useRouter();
   const { data: myData } = useQuery(GET_ME);

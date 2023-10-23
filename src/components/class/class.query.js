@@ -211,6 +211,7 @@ export const CREATE_CLASS = gql`
     $repeatDays: String!
     $repeatWeeks: Int!
     $autoAdd: Boolean!
+    $studentIds: [Int]!
   ) {
     createLecture(
       academyId: $academyId
@@ -223,6 +224,7 @@ export const CREATE_CLASS = gql`
       repeatWeeks: $repeatWeeks
       autoAdd: $autoAdd
       lectureMemo: $lectureMemo
+      studentIds: $studentIds
     ) {
       lectureIds
     }
@@ -355,6 +357,7 @@ export const GET_STUDENTS_BY_DATE = gql`
         lectureMemo
         lectureInfo {
           about
+          id
         }
       }
       attendanceStatus {
@@ -413,28 +416,28 @@ export const GET_BOOK_COUNT = gql`
 
 export const CREATE_MAKE_UP = gql`
   mutation createMakeup(
-    $academyId: Int!
+    $lectureId: Int!
     $date: Date!
     $startTime: Time!
     $endTime: Time!
-    $lectureInfo: String!
+    $lectureMemo: String
     $teacherId: Int!
-    $repeatDays: [Int]!
-    $repeatWeeks: Int!
     $studentIds: [Int]!
   ) {
     createMakeup(
-      academyId: $academyId
+      lectureId: $lectureId
       date: $date
       startTime: $startTime
       endTime: $endTime
-      lectureInfo: $lectureInfo
+      lectureMemo: $lectureMemo
       teacherId: $teacherId
-      repeatDays: $repeatDays
-      repeatWeeks: $repeatWeeks
       studentIds: $studentIds # 이 부분을 추가하려는 학생들의 ID 목록으로 교체하세요.
     ) {
-      lectureIds
+      lecture {
+        students {
+          id
+        }
+      }
     }
   }
 `;
@@ -581,7 +584,7 @@ export const GET_ME = gql`
 `;
 
 export const UPDATE_LECTURE = gql`
-  mutation updateLectureStudents(
+  mutation updateLecture(
     $lectureId: Int!
     $date: Date!
     $studentIds: [Int]!
@@ -589,9 +592,8 @@ export const UPDATE_LECTURE = gql`
     $endTime: Time!
     $academyId: Int!
     $teacherId: Int!
-    $lectureMemo: String
   ) {
-    updateLectureStudents(
+    updateLecture(
       lectureId: $lectureId
       date: $date
       studentIds: $studentIds
@@ -599,7 +601,6 @@ export const UPDATE_LECTURE = gql`
       endTime: $endTime
       academyId: $academyId
       teacherId: $teacherId
-      lectureMemo: $lectureMemo
     ) {
       success
       message
@@ -615,6 +616,7 @@ export const GET_MONTH_CLASS = gql`
       startTime
       endTime
       lectureInfo {
+        id
         about
         repeatDay
         repeatWeeks
@@ -651,8 +653,18 @@ export const GET_MONTH_CLASS = gql`
 `;
 
 export const GET_FICTION_RECOMMEND = gql`
-  query getRecommendBooks($studentId: ID!, $academyId: ID!, $fNf: String!) {
-    getRecommendBooks(studentId: $studentId, academyId: $academyId, fNf: $fNf) {
+  query getRecommendBooks(
+    $studentId: ID!
+    $academyId: ID!
+    $fNf: String!
+    $isSelected: Boolean!
+  ) {
+    getRecommendBooks(
+      studentId: $studentId
+      academyId: $academyId
+      fNf: $fNf
+      isSelected: $isSelected
+    ) {
       boxNumber
       booktitle
       id
@@ -795,6 +807,121 @@ export const GET_PACKAGE_DATE = gql`
           pkg
           createdAt
         }
+      }
+    }
+  }
+`;
+
+export const EDIT_LECTURE_INFO = gql`
+  mutation updateLectureInfo(
+    $lectureInfoId: Int!
+    $date: Date!
+    $about: String!
+    $repeatDays: String!
+    $repeatWeeks: Int!
+    $autoAdd: Boolean!
+    $studentIds: [Int]!
+    $startTime: Time!
+    $endTime: Time!
+    $academyId: Int!
+    $teacherId: Int!
+  ) {
+    updateLectureInfo(
+      lectureInfoId: $lectureInfoId
+      date: $date
+      about: $about
+      repeatDays: $repeatDays
+      repeatWeeks: $repeatWeeks
+      autoAdd: $autoAdd
+      studentIds: $studentIds
+      startTime: $startTime
+      endTime: $endTime
+      academyId: $academyId
+      teacherId: $teacherId
+    ) {
+      success
+      message
+    }
+  }
+`;
+
+export const BARCODE_CHECK = gql`
+  query studentPlbnRecord($studentId: Int!, $plbn: String!) {
+    studentPlbnRecord(studentId: $studentId, plbn: $plbn)
+  }
+`;
+
+export const RESERVATION_BARCODE = gql`
+  mutation reservePlbn($studentId: ID!, $lectureId: ID!, $plbn: String!) {
+    reservePlbn(studentId: $studentId, lectureId: $lectureId, plbn: $plbn) {
+      bookReservation {
+        id
+        student {
+          id
+        }
+        lecture {
+          id
+        }
+        books {
+          id
+          reservations {
+            id
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const DELETE_LECTURE = gql`
+  mutation deleteLecture($id: ID!) {
+    deleteLecture(id: $id) {
+      success
+    }
+  }
+`;
+
+export const DELETE_LECTURE_INFO = gql`
+  mutation deleteLectureInfo($id: ID!, $date: Date!) {
+    deleteLectureInfo(id: $id, date: $date) {
+      success
+    }
+  }
+`;
+
+export const GET_LECTURE_INFO = gql`
+  query studentLectures($academyIds: [ID]!, $studentId: ID!) {
+    studentLectures(academyIds: $academyIds, studentId: $studentId) {
+      student {
+        id
+        korName
+      }
+      lecture {
+        date
+        startTime
+        endTime
+        academy {
+          id
+          name
+        }
+        lectureInfo {
+          about
+          repeatDay
+          repeatWeeks
+          id
+          autoAdd
+        }
+        id
+        date
+        teacher {
+          id
+        }
+        lectureMemo
+      }
+      attendanceStatus {
+        statusDisplay
+        entryTime
+        exitTime
       }
     }
   }

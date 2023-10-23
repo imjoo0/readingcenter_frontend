@@ -1,8 +1,12 @@
-import { useQuery } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import * as S from "./studentReport.style";
 import {
+  CREATE_OPINION,
+  GET_ME,
   GET_MEMO,
+  GET_MEMOS,
   GET_MONTH_REPORT,
+  GET_OPINION,
   GET_STUDENT,
   GET_SUMMARY_REPORT,
 } from "./studentReport.query";
@@ -65,68 +69,64 @@ export default function StudentReportPage() {
     },
   ]);
   const [halfYearData, setHalfYearData] = useState([
-    {
-      name: "1월",
-      wc: 1818,
-      books: 16,
-      ar: 2.7,
-      correct: 88,
-      days: 15,
-      WCPerBooks: 1641,
-    },
-    {
-      name: "2월",
-      wc: 1981,
-      books: 19,
-      ar: 2.5,
-      correct: 96,
-      days: 13,
-      WCPerBooks: 1981,
-    },
-    {
-      name: "3월",
-      wc: 1899,
-      books: 14,
-      ar: 2.7,
-      correct: 91,
-      days: 17,
-      WCPerBooks: 2074,
-    },
-    {
-      name: "4월",
-      wc: 1997,
-      books: 17,
-      ar: 2.9,
-      correct: 95,
-      days: 16,
-      WCPerBooks: 1717,
-    },
-    {
-      name: "5월",
-      wc: 1921,
-      books: 15,
-      ar: 2.8,
-      correct: 79,
-      days: 15,
-      WCPerBooks: 2274,
-    },
-    {
-      name: "6월",
-      wc: 1999,
-      books: 20,
-      ar: 3.1,
-      correct: 96,
-      days: 17,
-      WCPerBooks: 2101,
-    },
+    // {
+    //   name: "1월",
+    //   wc: 1818,
+    //   books: 16,
+    //   ar: 2.7,
+    //   correct: 88,
+    //   days: 15,
+    //   WCPerBooks: 1641,
+    // },
+    // {
+    //   name: "2월",
+    //   wc: 1981,
+    //   books: 19,
+    //   ar: 2.5,
+    //   correct: 96,
+    //   days: 13,
+    //   WCPerBooks: 1981,
+    // },
+    // {
+    //   name: "3월",
+    //   wc: 1899,
+    //   books: 14,
+    //   ar: 2.7,
+    //   correct: 91,
+    //   days: 17,
+    //   WCPerBooks: 2074,
+    // },
+    // {
+    //   name: "4월",
+    //   wc: 1997,
+    //   books: 17,
+    //   ar: 2.9,
+    //   correct: 95,
+    //   days: 16,
+    //   WCPerBooks: 1717,
+    // },
+    // {
+    //   name: "5월",
+    //   wc: 1921,
+    //   books: 15,
+    //   ar: 2.8,
+    //   correct: 79,
+    //   days: 15,
+    //   WCPerBooks: 2274,
+    // },
+    // {
+    //   name: "6월",
+    //   wc: 1999,
+    //   books: 20,
+    //   ar: 3.1,
+    //   correct: 96,
+    //   days: 17,
+    //   WCPerBooks: 2101,
+    // },
   ]);
-  const [memoData, setMemoDate] = useState([
-    { date: "2023-07-21", memo: "메모1" },
-    { date: "2023-07-24", memo: "메모2" },
-    { date: "2023-07-25", memo: "7월 25일 특이사항(예시)" },
-    { date: "2023-08-03", memo: "8월 3일 특이사항(예시)" },
-    { date: "2023-08-05", memo: "8월 5일 특이사항(예시)" },
-  ]);
+  const [memoData, setMemoData] = useState([]);
+  const [opinion, setOpinion] = useState("");
+  const [opinionIndex, setOpinionIndex] = useState(1);
 
   const { data: userData } = useQuery(GET_STUDENT, {
     variables: {
@@ -142,12 +142,38 @@ export default function StudentReportPage() {
     variables: { studentId: Number(router.query.id) },
   });
 
-  const { data: userMemoData } = useQuery(GET_MEMO, {
+  const { data: myData } = useQuery(GET_ME);
+  const { data: memosData, refetch: refetchMemos } = useQuery(GET_MEMOS, {
     variables: {
-      academyId: Number(router.query.branch),
+      studentId: Number(router.query.id),
+      academyIds: myData?.me?.profile?.academies
+        ? myData?.me?.profile?.academies.map((el) => Number(el.id))
+        : [Number(myData?.me?.profile?.academy.id)],
+    },
+  });
+  const { data: opinionData, refetch: refetchOpinion } = useQuery(GET_OPINION, {
+    variables: {
+      userId: Number(myData?.me?.id),
       studentId: Number(router.query.id),
     },
   });
+
+  const [createOpinion] = useMutation(CREATE_OPINION);
+
+  const onClickCreateOpinion = async () => {
+    if (opinionData.getOpinion.length === opinionIndex) {
+      try {
+        await createOpinion({
+          variables: {
+            contents: opinion,
+            writerId: Number(myData?.me?.id),
+            studentId: Number(router.query.id),
+          },
+        });
+        refetchOpinion();
+      } catch (err) {}
+    }
+  };
 
   const CustomTooltip1 = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -266,6 +292,11 @@ export default function StudentReportPage() {
     return null;
   };
 
+  // useEffect(() => {
+  //   console.log([myData?.me?.profile?.academies]);
+  //   refetchMemos();
+  // }, [myData]);
+
   // 최근 반년 정보 데이터 추출
   useEffect(() => {
     if (Array.isArray(monthData?.getMonthReports)) {
@@ -355,6 +386,32 @@ export default function StudentReportPage() {
   }, [monthData, summaryData]);
 
   useEffect(() => {
+    if (memosData?.getLectureMemoByStudent?.length > 3) {
+      setMemoData(
+        memosData?.getLectureMemoByStudent
+          ?.filter((el, index) => {
+            return index > memosData?.getLectureMemoByStudent.length - 4;
+          })
+          ?.map((el) => {
+            return {
+              memo: el.memo,
+              date: el.lecture.date,
+            };
+          })
+      );
+    } else {
+      setMemoData(
+        memosData?.getLectureMemoByStudent?.map((el) => {
+          return {
+            memo: el.memo,
+            date: el.lecture.date,
+          };
+        })
+      );
+    }
+  }, [memosData]);
+
+  useEffect(() => {
     let ar = 0;
     let wc = 0;
     let wcPerBooks = 0;
@@ -385,11 +442,19 @@ export default function StudentReportPage() {
   }, [halfYearData]);
 
   useEffect(() => {
-    if (Array.isArray(userMemoData?.getStudentLectureHistory)) {
+    if (opinionData?.getOpinion?.length > 0) {
+      setOpinionIndex(opinionData?.getOpinion?.length - 1);
+      setOpinion(opinionData?.getOpinion[opinionIndex]?.contents);
     }
-  }, [userMemoData]);
+  }, [opinionData]);
 
-  console.log(userMemoData);
+  useEffect(() => {
+    if (opinionIndex < opinionData?.getOpinion.length) {
+      setOpinion(opinionData?.getOpinion[opinionIndex].contents);
+    } else {
+      setOpinion("");
+    }
+  }, [opinionIndex]);
 
   return (
     <S.PageWrapper>
@@ -447,8 +512,10 @@ export default function StudentReportPage() {
             <td>{userData?.userDetails?.profile?.korName}</td>
             <td>{userData?.userDetails?.profile?.origin}</td>
             <td>{summaryData?.getSummaryReport?.recentStudyDate}</td>
-            <td>{userData?.userDetails?.profile?.registerDate.slice(0, 10)}</td>
-            <td>{userData?.userDetails?.profile?.birthDate.slice(0, 10)}</td>
+            <td>
+              {userData?.userDetails?.profile?.registerDate?.slice(0, 10)}
+            </td>
+            <td>{userData?.userDetails?.profile?.birthDate?.slice(0, 10)}</td>
           </tr>
         </tbody>
       </table>
@@ -750,7 +817,9 @@ export default function StudentReportPage() {
                     누적 평균 정답률
                   </div>
                   <S.ReportSubContainerGage>
-                    {summaryData?.getSummaryReport?.totalCorrect + "%"}
+                    {summaryData?.getSummaryReport?.totalCorrect
+                      ? summaryData?.getSummaryReport?.totalCorrect + "%"
+                      : ""}
                   </S.ReportSubContainerGage>
                 </S.ReportSubContainer>
               </div>
@@ -940,7 +1009,9 @@ export default function StudentReportPage() {
                     누적 학습일
                   </div>
                   <S.ReportSubContainerGage>
-                    {summaryData?.getSummaryReport?.totalStudyDays + "일"}
+                    {summaryData?.getSummaryReport?.totalStudyDays
+                      ? summaryData?.getSummaryReport?.totalStudyDays + "일"
+                      : ""}
                   </S.ReportSubContainerGage>
                 </S.ReportSubContainer>
               </div>
@@ -1189,8 +1260,7 @@ export default function StudentReportPage() {
           </S.ReportChartContainer>
 
           <S.ReportChartContainer>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <S.ReportSubTitle>리딩 기록</S.ReportSubTitle>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <PlusOutlined
                 style={{ margin: 30, fontSize: "1.7rem" }}
                 onClick={() => {
@@ -1198,23 +1268,58 @@ export default function StudentReportPage() {
                 }}
               />
             </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <S.ReportSubTitle>원생 메모</S.ReportSubTitle>
+            </div>
             <S.ReportMemoContainer>
               {memoData?.map((el, index) => {
-                if (index > memoData?.length - 4) {
-                  return (
-                    <S.ReportMemoBox>
-                      <div>{el.date}</div>
-                      <div>{el.memo}</div>
-                    </S.ReportMemoBox>
-                  );
-                } else {
-                  return <></>;
-                }
+                return (
+                  <S.ReportMemoBox>
+                    <div>{el.date}</div>
+                    <div>{el.memo}</div>
+                  </S.ReportMemoBox>
+                );
               })}
             </S.ReportMemoContainer>
             <S.ReportInputBox>
-              <S.ReportSubTitle>원장선생님 종합의견</S.ReportSubTitle>
-              <S.ReportTextArea></S.ReportTextArea>
+              <S.ReportSubTitle>담당 선생님 종합의견</S.ReportSubTitle>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-evenly",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                <button
+                  style={{ width: "3rem", height: "2rem" }}
+                  disabled={opinionIndex === 0}
+                  onClick={() => {
+                    setOpinionIndex(opinionIndex - 1);
+                  }}
+                >
+                  {"<"}
+                </button>
+                <S.ReportTextArea
+                  value={
+                    opinionData?.getOpinion.length === opinionIndex
+                      ? opinion
+                      : opinionData?.getOpinion[opinionIndex]?.contents
+                  }
+                  onChange={(e) => {
+                    setOpinion(e.target.value);
+                  }}
+                ></S.ReportTextArea>
+                <button
+                  style={{ width: "3rem", height: "2rem" }}
+                  disabled={opinionIndex === opinionData?.getOpinion?.length}
+                  onClick={() => {
+                    setOpinionIndex(opinionIndex + 1);
+                  }}
+                >
+                  {">"}
+                </button>
+              </div>
             </S.ReportInputBox>
             <div
               style={{
@@ -1223,7 +1328,9 @@ export default function StudentReportPage() {
                 justifyContent: "center",
               }}
             >
-              <S.ReportSaveButton>저장</S.ReportSaveButton>
+              <S.ReportSaveButton onClick={onClickCreateOpinion}>
+                저장
+              </S.ReportSaveButton>
             </div>
           </S.ReportChartContainer>
         </>
@@ -1240,13 +1347,22 @@ export default function StudentReportPage() {
           }}
         >
           {/* <div style={{ overflow: "scroll" }}> */}
-          {memoData?.map((el) => {
-            return (
-              <S.ReportModalMemo>
-                <div>{el.date}</div>
-                <div>{el.memo}</div>
-              </S.ReportModalMemo>
-            );
+          {memosData?.getLectureMemoByStudent?.map((el) => {
+            if (el.memo !== null) {
+              return (
+                <S.ReportModalMemo>
+                  <div>{"날짜 : " + el.lecture.date}</div>
+                  <div>{"메모 내용 : " + el.memo}</div>
+                </S.ReportModalMemo>
+              );
+            } else {
+              return (
+                <S.ReportModalMemo>
+                  <div>{"날짜 : " + el.lecture.date}</div>
+                  <div>{"메모 내용 : 없음"}</div>
+                </S.ReportModalMemo>
+              );
+            }
           })}
           {/* </div> */}
         </Modal>

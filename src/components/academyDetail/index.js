@@ -19,8 +19,11 @@ import {
   STOP_ACADEMY,
   GET_ME,
   UPDATE_LECTURE,
+  CREATE_ACADEMY_TO_USER,
+  EDIT_ACADEMY_LIST,
 } from "./academyDetail.query";
 import {
+  dateInputToNumber,
   dateToClock,
   dateToClockOneHour,
   dateToInput,
@@ -45,6 +48,9 @@ export default function AcademyDetailPage() {
   const [editLectureMemo] = useMutation(CREATE_MEMO);
   const [stopAcademy] = useMutation(STOP_ACADEMY);
   const [updateLecture] = useMutation(UPDATE_LECTURE);
+  const [addAcademyUser] = useMutation(CREATE_ACADEMY_TO_USER);
+  const [editUserAcademy] = useMutation(EDIT_ACADEMY_LIST);
+  const [editEngName, setEditEngName] = useState("");
   const [editBirthDay, setEditBirthDay] = useState("");
   const [editMobileNumber, setEditMobileNumber] = useState("");
   const [editPMobileNumber, setEditPMobileNumber] = useState("");
@@ -77,6 +83,9 @@ export default function AcademyDetailPage() {
   const [editInfo, setEditInfo] = useState("");
   const [editAcademy, setEditAcademy] = useState(0);
   const [lectureId, setLectureId] = useState(0);
+  const [branches, setBranches] = useState([]);
+  const [listDate, setListDate] = useState(dateToInput(new Date()));
+  const [lectureList, setLectureList] = useState([]);
 
   const { data: memoData, refetch: refetchMemo } = useQuery(GET_MEMO, {
     variables: {
@@ -127,6 +136,33 @@ export default function AcademyDetailPage() {
     setClassToggle(false);
   };
 
+  useEffect(() => {
+    if (data) {
+      setLectureList(
+        data?.userDetails?.profile?.lectures
+          ?.filter((el) => {
+            return dateInputToNumber(el.date) <= dateInputToNumber(listDate);
+          })
+          ?.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return dateB - dateA;
+          })
+          ?.filter((el, index) => {
+            return index < 20;
+          })
+      );
+    }
+  }, [data, listDate]);
+
+  useEffect(() => {
+    setBranches(
+      data?.userDetails?.profile?.academies?.map((el) => {
+        return el.id;
+      })
+    );
+  }, [data]);
+
   const onClickCheck = (id, active) => async () => {
     setSelectId({ id: id, active: active });
     // setIsCheck(true);
@@ -136,6 +172,21 @@ export default function AcademyDetailPage() {
       console.log(err);
     }
   };
+
+  const onClickAddBranchList = (id) => () => {
+    const newBranches = [...branches];
+    if (branches.includes(id)) {
+      setBranches(
+        newBranches.filter((el) => {
+          return el !== id;
+        })
+      );
+    } else {
+      newBranches.push(id);
+      setBranches(newBranches);
+    }
+  };
+
   const onClickImageURL = (event) => {
     setImageFile(event.target.files[0]);
     let reader = new FileReader();
@@ -162,33 +213,21 @@ export default function AcademyDetailPage() {
 
   const onClickMakeUpClass = async () => {
     try {
-      await createAttendance({
+      await createMakeUp({
         variables: {
           lectureId: Number(makeUpLectureId),
-          studentId: Number(Number(router.query.id)),
-          statusInput: "makeup",
+          date: addClassDate,
+          startTime: addClassStart,
+          endTime: addClassEnd,
+          lectureInfo: addClassInfo,
+          teacherId: Number(teacherId),
+          studentIds: [Number(router.query.id)],
         },
       });
-      try {
-        await createMakeUp({
-          variables: {
-            academyId: Number(router.query.branch),
-            date: addClassDate,
-            startTime: addClassStart,
-            endTime: addClassEnd,
-            lectureInfo: addClassInfo,
-            teacherId: Number(teacherId),
-            repeatDays: [-1],
-            repeatWeeks: 1,
-            studentIds: [Number(router.query.id)],
-          },
-        });
-      } catch (err) {
-        alert(err);
-      }
     } catch (err) {
       alert(err);
     }
+
     refetch();
     refetchUsers();
     refetchStudents();
@@ -210,6 +249,9 @@ export default function AcademyDetailPage() {
       ),
       origin: data?.userDetails?.profile?.origin,
     };
+    if (data?.userDetails?.profile.engName !== editEngName) {
+      variables.engName = editEngName;
+    }
     if (data?.userDetails?.profile.birthDate !== editBirthDay) {
       variables.birthDate = editBirthDay;
     }
@@ -235,9 +277,22 @@ export default function AcademyDetailPage() {
             academyId: Number(router.query.branch),
           },
         });
-        alert("수정 되었습니다.");
       } catch (err) {
-        alert("메모 내용을 입력해주세요.");
+        // alert("메모 내용을 입력해주세요.");
+      }
+
+      if (branches.length > 0) {
+        try {
+          await editUserAcademy({
+            variables: {
+              userId: Number(router.query.id),
+              academyIds: branches.map((el) => Number(el)),
+            },
+          });
+        } catch (err) {}
+        alert("수정 완료했습니다.");
+      } else {
+        alert("등원 지점은 1개 이상 체크하셔야 합니다.");
       }
     } catch (err) {
       alert(err);
@@ -362,6 +417,7 @@ export default function AcademyDetailPage() {
     );
   }, [userData]);
   useEffect(() => {
+    setEditEngName(data?.userDetails?.profile.engName);
     setEditBirthDay(data?.userDetails?.profile.birthDate);
     setEditMobileNumber(data?.userDetails?.profile.mobileno);
     setEditPMobileNumber(data?.userDetails?.profile.pmobileno);
@@ -429,14 +485,20 @@ export default function AcademyDetailPage() {
             <S.InputTag>
               <S.InputName>이름</S.InputName>
               <S.InputInput
-                value={
-                  data?.userDetails?.profile.korName +
-                  "(" +
-                  data?.userDetails?.profile.engName +
-                  ")"
-                }
+                value={data?.userDetails?.profile.korName}
               ></S.InputInput>
             </S.InputTag>
+            <S.InputTag>
+              <S.InputName>영어 이름</S.InputName>
+              <S.InputInput
+                defaultValue={data?.userDetails?.profile.engName}
+                onChange={(e) => {
+                  setEditEngName(e.target.value);
+                }}
+              ></S.InputInput>
+            </S.InputTag>
+          </S.TagLine>
+          <S.TagLine>
             <S.InputTag>
               <S.InputName>학부모 전화번호</S.InputName>
               <S.InputInput
@@ -444,14 +506,6 @@ export default function AcademyDetailPage() {
                   setEditPMobileNumber(e.target.value);
                 }}
                 defaultValue={data?.userDetails?.profile.pmobileno}
-              ></S.InputInput>
-            </S.InputTag>
-          </S.TagLine>
-          <S.TagLine>
-            <S.InputTag>
-              <S.InputName>원번</S.InputName>
-              <S.InputInput
-                value={data?.userDetails?.profile?.origin}
               ></S.InputInput>
             </S.InputTag>
             <S.InputTag>
@@ -466,13 +520,9 @@ export default function AcademyDetailPage() {
           </S.TagLine>
           <S.TagLine>
             <S.InputTag>
-              <S.InputName>생년월일</S.InputName>
+              <S.InputName>원번</S.InputName>
               <S.InputInput
-                type="date"
-                defaultValue={data?.userDetails?.profile.birthDate}
-                onChange={(e) => {
-                  setEditBirthDay(e.target.value);
-                }}
+                value={data?.userDetails?.profile?.origin}
               ></S.InputInput>
             </S.InputTag>
             <S.InputTag>
@@ -493,6 +543,18 @@ export default function AcademyDetailPage() {
                 value={data?.userDetails?.profile.registerDate.slice(0, 10)}
               ></S.InputInput>
             </S.InputTag>
+            <S.InputTag>
+              <S.InputName>생년월일</S.InputName>
+              <S.InputInput
+                type="date"
+                defaultValue={data?.userDetails?.profile.birthDate}
+                onChange={(e) => {
+                  setEditBirthDay(e.target.value);
+                }}
+              ></S.InputInput>
+            </S.InputTag>
+          </S.TagLine>
+          <S.TagLine>
             <S.InputTag>
               <S.InputName>성별</S.InputName>
               <div style={{ width: "10vw" }}>
@@ -518,7 +580,40 @@ export default function AcademyDetailPage() {
                 ></input>
               </div>
             </S.InputTag>
+            <S.InputTag>
+              {myData?.me?.profile?.academies?.length > 0 ? (
+                <>
+                  <S.EditModalTagTitle>담당 지점</S.EditModalTagTitle>
+                  <div style={{ display: "flex" }}>
+                    {myData?.me?.profile?.academies?.map((el) => {
+                      return (
+                        <S.InputTag>
+                          <S.InputName
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            {el.location}
+                            <input
+                              type="checkbox"
+                              style={{ width: "20px", height: "20px" }}
+                              onClick={onClickAddBranchList(el.id)}
+                              checked={
+                                branches?.filter((ele) => {
+                                  return el.id === ele;
+                                }).length === 1
+                              }
+                            ></input>
+                          </S.InputName>
+                        </S.InputTag>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <></>
+              )}
+            </S.InputTag>
           </S.TagLine>
+
           <S.InputTag style={{ width: "100%" }}>
             <S.InputName>메모</S.InputName>
             <textarea
@@ -559,6 +654,17 @@ export default function AcademyDetailPage() {
       </S.ButtonBox>
 
       <S.Box>수업 정보</S.Box>
+      <div
+        style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}
+      >
+        <input
+          type="date"
+          value={listDate}
+          onChange={(e) => {
+            setListDate(e.target.value);
+          }}
+        ></input>
+      </div>
       <S.Table>
         <S.TableHeaderRound>
           <S.TableHeadLeft style={{ width: "70%" }}>수업 날짜</S.TableHeadLeft>
@@ -570,11 +676,11 @@ export default function AcademyDetailPage() {
           <S.TableHead style={{ width: "30%" }}>수업 수정</S.TableHead>
           <S.TableHead style={{ width: "30%" }}>보강 학습 추가</S.TableHead>
         </S.TableHeaderRound>
-        {data?.userDetails?.profile?.lectures
+        {lectureList
           ?.sort((a, b) => {
             const dateA = new Date(a.date);
             const dateB = new Date(b.date);
-            return dateA - dateB;
+            return dateB - dateA;
           })
           ?.sort((a, b) => {
             if (
@@ -701,9 +807,7 @@ export default function AcademyDetailPage() {
               ></S.InputInput>
             </div>
             <S.ModalInputBox>
-              <div>
-                <div>수업 시간</div>
-              </div>
+              <div>수업 시간</div>
               <S.TimeBox>
                 <input
                   type="time"

@@ -24,6 +24,8 @@ import {
   longAuthor,
   shortWord,
   longTitle,
+  getDateZero,
+  lastDate,
 } from "../../commons/library/library";
 import { Modal, Spin, Switch } from "antd";
 import {
@@ -37,7 +39,6 @@ import { useRouter } from "next/router";
 import { useMutation, useQuery } from "@apollo/client";
 import {
   CREATE_CLASS,
-  // GET_CLASS,
   CREATE_ATTENDANCE,
   DELETE_STUDENT_FROM_LECTURE,
   ADD_STUDENTS,
@@ -68,16 +69,43 @@ import {
   CHANGE_RECOMMEND_BY_RECORD,
   GET_READING_RECORD,
   GET_PACKAGE_DATE,
+  EDIT_LECTURE_INFO,
+  RESERVATION_BARCODE,
+  BARCODE_CHECK,
+  DELETE_LECTURE,
+  DELETE_LECTURE_INFO,
+  GET_LECTURE_INFO,
 } from "./class.query";
+import { TableClassListBody } from "@/src/commons/library/table";
+import { el } from "date-fns/locale";
 
 const week = ["월", "화", "수", "목", "금", "토", "일"];
 const itemsPerPage = 20; // 페이지당 항목 수
 
+const dummyData = [
+  {
+    repeatWeeks: [0, 2, 4],
+    date: "2023-10-01",
+    startTime: "15:20",
+    endTime: "16:40",
+  },
+  {
+    repeatWeeks: [-1],
+    date: "2023-10-17",
+    startTime: "13:20",
+    endTime: "14:40",
+  },
+  {
+    repeatWeeks: [-1],
+    date: "2023-10-21",
+    startTime: "14:20",
+    endTime: "15:40",
+  },
+];
+
 export default function ClassPage() {
   const router = useRouter();
   const [date, setTodayDate] = useState(new Date());
-  // const [startTimes, setStartTimes] = useState([]);
-  // const [endTimes, setEndTimes] = useState([]);
   const [bookArray, setBookArray] = useState([]);
   const [bookPage, setBookPage] = useState(1);
   const [bookMaxPage, setBookMaxPage] = useState(1);
@@ -86,14 +114,26 @@ export default function ClassPage() {
   const [isLate, setIsLate] = useState(false);
   const [isAttendance, setIsAttendance] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  // 수업 수정 부분 state
   const [isEdit, setIsEdit] = useState(false);
   const [editAcademy, setEditAcademy] = useState(Number(router.query.branch));
   const [editDate, setEditDate] = useState(dateToInput(date));
   const [editEndTime, setEditEndTime] = useState(dateToClockOneHour(date));
   const [editStartTime, setEditStartTime] = useState(dateToClock(date));
   const [editInfo, setEditInfo] = useState("");
-
+  const [addRepeatCount, setAddRepeatCount] = useState(1);
+  const [addRepeatInput, setAddRepeatInput] = useState([
+    {
+      week: [],
+      startTime: dateToClock(date),
+      endTime: dateToClockOneHour(date),
+      isAuto: false,
+      isRepeat: "once",
+      repeatsNum: 0,
+      startDate: dateToInput(date),
+      teacherId: "",
+      about: "",
+    },
+  ]);
   const [lateTime, setLateTime] = useState(dateToClock(date));
   const [startList, setStartList] = useState([]);
   const [endList, setEndList] = useState([]);
@@ -130,6 +170,50 @@ export default function ClassPage() {
   const [searchReading, setSearchReading] = useState("");
   const [readingList, setReadingList] = useState([]);
   const [isAlert, setIsAlert] = useState(false);
+  const [isDup, setIsDup] = useState(false);
+
+  // 수업 수정 추가 지점
+  const [isAll, setIsAll] = useState(false);
+  const [isEditAuto, setIsEditAuto] = useState(false);
+  const [isEditRepeat, setIsEditRepeat] = useState(false);
+  const [editRepeatWeek, setEditRepeatWeek] = useState([]);
+  const [editRepeatCount, setEditRepeatCount] = useState(0);
+
+  // 수업 보강 추가 지점
+  const [isMakeUp, setIsMakeUp] = useState(false);
+  const [makeUpDate, setMakeUpDate] = useState("");
+  const [makeUpStart, setMakeUpStart] = useState();
+  const [makeUpEnd, setMakeUpEnd] = useState();
+  const [makeUpId, setMakeUpId] = useState();
+  const [makeUpInfo, setMakeUpInfo] = useState("");
+  const [makeUpTeacherId, setMakeUpTeacherId] = useState("");
+  const [makeUpLectureId, setMakeUpLectureId] = useState("");
+
+  const onClickOpenMakeUp = (sId, lId) => () => {
+    setIsMakeUp(true);
+    setTodayDate(new Date());
+    setMakeUpId(sId);
+    setMakeUpInfo("");
+    setMakeUpTeacherId(
+      userData?.allUsers
+        .filter((el) => el.userCategory === "선생님")
+        .filter((el) => {
+          return Number(el.profile.academy.id) === Number(router.query.branch);
+        })[0].id
+    );
+    console.log(
+      userData?.allUsers
+        .filter((el) => el.userCategory === "선생님")
+        .filter((el) => {
+          return Number(el.profile.academy.id) === Number(router.query.branch);
+        })[0].id
+    );
+    setMakeUpLectureId(lId);
+  };
+
+  // 삭제 스테이트
+  const [deleteDate, setDeleteDate] = useState(dateToInput(date));
+
   const { data: myData } = useQuery(GET_ME);
   const { data: fictionData, refetch: refetchFiction } = useQuery(
     GET_FICTION_RECOMMEND,
@@ -138,6 +222,7 @@ export default function ClassPage() {
         studentId: 22,
         academyId: Number(router.query.branch),
         fNf: "1",
+        isSelected: true,
       },
     }
   );
@@ -148,8 +233,14 @@ export default function ClassPage() {
         studentId: 22,
         academyId: Number(router.query.branch),
         fNf: "2",
+        isSelected: true,
       },
     }
+  );
+
+  const { data: lectureInfoData, refetch: refetchLectureInfo } = useQuery(
+    GET_LECTURE_INFO,
+    { variables: { academyIds: [Number(router.query.branch)], studentId: 10 } }
   );
 
   const { data: packageData, refetch: refetchPackage } = useQuery(
@@ -164,6 +255,8 @@ export default function ClassPage() {
 
   const [changeRecommendPeriod] = useMutation(CHANGE_RECOMMEND_BY_PERIOD);
   const [changeRecommendRecord] = useMutation(CHANGE_RECOMMEND_BY_RECORD);
+  const [deleteLecture] = useMutation(DELETE_LECTURE);
+  const [deleteLectureInfo] = useMutation(DELETE_LECTURE_INFO);
 
   const { data: bookData, refetch: refetchBook } = useQuery(GET_BOOKS, {
     variables: {
@@ -224,6 +317,10 @@ export default function ClassPage() {
       },
     }
   );
+  const { data: readingCheckData, refetch: refetchCheck } = useQuery(
+    BARCODE_CHECK,
+    { variables: { studentId: 10, plbn: "" } }
+  );
 
   const [createLecture] = useMutation(CREATE_CLASS);
   const [addStudents] = useMutation(ADD_STUDENTS);
@@ -236,13 +333,15 @@ export default function ClassPage() {
   const [deleteStudentFromLecture] = useMutation(DELETE_STUDENT_FROM_LECTURE);
   const [editMemo] = useMutation(CREATE_MEMO);
   const [updateLecture] = useMutation(UPDATE_LECTURE);
+  const [editLectureInfo] = useMutation(EDIT_LECTURE_INFO);
+  const [reservationBarcode] = useMutation(RESERVATION_BARCODE);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [calendarArray, setCalendarArray] = useState([]);
   const [isCalendar, setIsCalendar] = useState(false);
   const [lookCalendar, setLookCalendar] = useState(false);
   const [page, setPage] = useState(1);
   const [studentArray, setStudentArray] = useState([]);
-  const [array, setArray] = useState([]); // initial value changed from undefined to []
+  // const [array, setArray] = useState([]); // initial value changed from undefined to []
   const [searchWord, setSearchWord] = useState("");
   const [classToggle, setClassToggle] = useState(false);
   const [studentToggle, setStudentToggle] = useState(false);
@@ -257,12 +356,13 @@ export default function ClassPage() {
   const [teacherId, setTeacherId] = useState("");
   const [addLectureId, setAddLectureId] = useState("");
   const [addList, setAddList] = useState([]);
+  const [addListName, setAddListName] = useState("");
   const [searchLecture, setSearchLecture] = useState(dateToInput(date));
   const [searchStudents, setSearchStudents] = useState("");
   const [isBook, setIsBook] = useState(false);
   const [maxScore, setMaxScore] = useState("");
   const [minScore, setMinScore] = useState(0);
-  const [bookList, setBookList] = useState([]);
+  // const [bookList, setBookList] = useState([]);
   const [selectBooks, setSelectBooks] = useState([]);
   const [addClassType, setAddClassType] = useState("once");
   const [routineCount, setRoutineCount] = useState(0);
@@ -270,8 +370,6 @@ export default function ClassPage() {
   const [selectDates, setSelectDates] = useState([]);
   const [selectBookData, setSelectBookData] = useState([]);
   const [isConfirm, setIsConfirm] = useState(false);
-  const [isAm, setIsAm] = useState(date.getHours() < 12);
-  const [isMakeUp, setIsMakeUp] = useState(false);
   const [intervalArray, setIntervalArray] = useState([]);
   const [allStudent, setAllStudent] = useState([]);
   const [studentPage, setStudentPage] = useState(0);
@@ -294,6 +392,25 @@ export default function ClassPage() {
     setAddList([]);
     setStudentPage(0);
     setIsAuto(false);
+    setAddRepeatInput([
+      {
+        week: [],
+        startTime: dateToClock(date),
+        endTime: dateToClockOneHour(date),
+        isAuto: false,
+        isRepeat: "once",
+        repeatsNum: 0,
+        startDate: dateToInput(date),
+        teacherId: userData?.allUsers
+          .filter((el) => el.userCategory === "선생님")
+          .filter((el) => {
+            return (
+              Number(el.profile.academy.id) === Number(router.query.branch)
+            );
+          })[0].id,
+        about: "",
+      },
+    ]);
   };
   const onClickCalendar = () => {
     setIsCalendar(!isCalendar);
@@ -337,6 +454,39 @@ export default function ClassPage() {
       );
     })?.length ?? 1) / itemsPerPage
   );
+
+  useEffect(() => {
+    const newList = [...addRepeatInput];
+    newList.forEach((el) => {
+      el.teacherId = userData?.allUsers
+        .filter((el) => el.userCategory === "선생님")
+        .filter((el) => {
+          return (
+            Number(el?.profile?.academy?.id) === Number(router.query.branch)
+          );
+        })[0].id;
+    });
+    console.log(newList);
+    setAddRepeatInput(newList);
+  }, [userData]);
+
+  useEffect(() => {
+    setLateTime(dateToClock(date));
+    // setEditStartTime(dateToClock(date));
+    // setEditEndTime(dateToClockOneHour(date));
+    setAddClassStart(dateToClock(date));
+    setAddClassEnd(dateToClockOneHour(date));
+    const newList = [...addRepeatInput];
+    newList.forEach((el) => {
+      el.startTime = dateToClock(date);
+      el.endTime = dateToClockOneHour(date);
+    });
+    setAddRepeatInput(newList);
+    setDeleteDate(dateToInput(date));
+    setMakeUpDate(dateToInput(date));
+    setMakeUpStart(dateToClock(date));
+    setMakeUpEnd(dateToClockOneHour(date));
+  }, [date]);
 
   useEffect(() => {
     const { startDay, endDate, weekNumber } = getMonthInfo(
@@ -414,25 +564,27 @@ export default function ClassPage() {
   }, [studentListData, searchWord]);
 
   const onClickMakeUpClass = async () => {
-    try {
-      await onClickAttendance("makeup")();
-    } catch (err) {
-      alert(err);
-    }
+    // try {
+    //   await createAttendanceMutation({
+    //     variables: {
+    //       lectureId: Number(makeUpLectureId),
+    //       studentId: Number(makeUpId),
+    //       statusInput: "makeup",
+    //     },
+    //   });
+    // } catch (err) {
+    //   alert(err);
+    // }
     try {
       const result = await createMakeup({
         variables: {
-          academyId: Number(router.query.branch),
-          date: addClassDate,
-          startTime: addClassStart,
-          endTime: addClassEnd,
-          lectureInfo: addClassInfo,
-          studentIds: checkList.map((el) => {
-            return Number(el.studentId);
-          }),
-          teacherId: Number(teacherId),
-          repeatDays: addClassType === "once" ? [-1] : selectDates,
-          repeatWeeks: addClassType === "once" ? 1 : routineCount,
+          date: makeUpDate,
+          startTime: makeUpStart,
+          endTime: makeUpEnd,
+          lectureMemo: makeUpInfo,
+          studentIds: [Number(makeUpId)],
+          teacherId: Number(makeUpTeacherId),
+          lectureId: Number(makeUpLectureId),
         },
       });
       setAddLectureId("");
@@ -445,6 +597,7 @@ export default function ClassPage() {
       refetchList();
       refetchStudentList();
       refetchMonth();
+      setIsMakeUp(false);
     } catch (err) {
       alert(err);
     }
@@ -541,79 +694,73 @@ export default function ClassPage() {
   };
 
   const onClickOk = async () => {
-    try {
-      const result = await createLecture({
-        variables: {
-          academyId: Number(router.query.branch),
-          date: addClassDate,
-          startTime: addClassStart,
-          endTime: addClassEnd,
-          lectureMemo: "",
-          about: addClassInfo,
-          teacherId: Number(teacherId),
-          repeatDays:
-            addClassType === "once"
-              ? JSON.stringify({ repeat_days: [-1] })
-              : JSON.stringify({ repeat_days: selectDates }),
-          repeatWeeks: addClassType === "once" || isAuto ? 1 : routineCount,
-          autoAdd: isAuto,
-        },
-      });
-      if (addList.length !== 0) {
-        result?.data?.createLecture?.lectureIds.forEach(async (el) => {
-          try {
-            const data = await addStudents({
-              variables: {
-                lectureId: Number(el),
-                studentIds: addList,
-              },
-            });
-            setAddLectureId("");
-            setStudentToggle(false);
-            setAddList([]);
-            setSelectDates([]);
-            setSearchLecture(dateToInput(date));
-            setSearchStudents("");
-            // refetchLecture();
-            refetchList();
-            refetchStudentList();
-            refetchMonth();
-            setStudentPage(0);
-            setIsAuto(false);
-          } catch (err) {
-            // alert(err);  // 수정 필요
-          }
-        });
-        // setAddLectureId("");
-        // setStudentToggle(false);
-        // setAddList([]);
-        // setSelectDates([]);
-        // setSearchLecture(dateToInput(date));
-        // setSearchStudents("");
-        // refetchLecture();
-        // refetchList();
-        // refetchStudentList();
-        // setStudentPage(0);
-        // setIsAuto(false);
-        alert("성공");
-      }
-      setClassToggle(false);
-      setTeacherId(
-        userData?.allUsers
-          .filter((el) => el.userCategory === "선생님")
-          .filter((el) => {
-            return (
-              Number(el.profile.academy.id) === Number(router.query.branch)
-            );
-          })[0].id
+    addRepeatInput.map((el) => {
+      console.log(
+        el.startDate,
+        el.startTime,
+        el.endTime,
+        el.about,
+        Number(el.teacherId)
       );
-      setAddClassInfo("");
-      setAddClassDate(dateToInput(date));
-      setAddClassStart(dateToClock(date));
-      setAddClassEnd(dateToClockOneHour(date));
-    } catch (err) {
-      console.log(err);
-    }
+    });
+
+    addList.forEach((ele) => {
+      addRepeatInput.forEach(async (el, index) => {
+        try {
+          await createLecture({
+            variables: {
+              academyId: Number(router.query.branch),
+              date: el.startDate,
+              startTime: addRepeatInput[index].startTime,
+              endTime: addRepeatInput[index].endTime,
+              lectureMemo: "",
+              about: addRepeatInput[index].about,
+              teacherId: Number(addRepeatInput[index].teacherId),
+              repeatDays:
+                addRepeatInput[index].isRepeat === "once"
+                  ? JSON.stringify({ repeat_days: [-1] })
+                  : JSON.stringify({ repeat_days: addRepeatInput[index].week }),
+              repeatWeeks:
+                addRepeatInput[index].isRepeat === "once" ||
+                addRepeatInput[index].isAuto
+                  ? 1
+                  : Number(addRepeatInput[index].repeatsNum),
+              autoAdd: addRepeatInput[index].isAuto,
+              studentIds: [ele],
+            },
+          });
+          setAddLectureId("");
+          setStudentToggle(false);
+          setAddList([]);
+          setSelectDates([]);
+          setSearchLecture(dateToInput(date));
+          setSearchStudents("");
+          refetchList();
+          refetchStudentList();
+          refetchMonth();
+          setStudentPage(0);
+          setIsAuto(false);
+          setClassToggle(false);
+          setTeacherId(
+            userData?.allUsers
+              .filter((el) => el.userCategory === "선생님")
+              .filter((el) => {
+                return (
+                  Number(el.profile.academy.id) === Number(router.query.branch)
+                );
+              })[0].id
+          );
+          setAddClassInfo("");
+          setAddClassDate(dateToInput(date));
+          setAddClassStart(dateToClock(date));
+          setAddClassEnd(dateToClockOneHour(date));
+        } catch (err) {
+          console.log(err);
+        }
+      });
+    });
+
+    // }
   };
 
   const onClickPage = (pageNumber) => () => {
@@ -714,19 +861,26 @@ export default function ClassPage() {
     setSelectChild(el);
     setSelectLecture(ele);
     try {
-      await refetchFiction({ studentId: Number(el.id) });
+      await refetchFiction({ studentId: Number(el.id), isSelected: true });
     } catch (err) {}
     try {
-      await refetchNonFiction({ studentId: Number(el.id) });
+      await refetchNonFiction({ studentId: Number(el.id), isSelected: true });
     } catch (err) {}
     await refetchReservation({ studentId: Number(el.id) });
     refetchRecord({ studentId: Number(el.id) });
     setIsBook(true);
   };
 
-  const onChangeEach = (e, lectureId, studentId) => {
+  const onChangeEach = (e, lectureId, studentId, lectureInfoId) => {
     if (e.target.checked) {
-      setCheckList([...checkList, { lectureId, studentId: Number(studentId) }]);
+      setCheckList([
+        ...checkList,
+        {
+          lectureId,
+          studentId: Number(studentId),
+          lectureInfoId: lectureInfoId,
+        },
+      ]);
     } else {
       setCheckList(
         checkList.filter(
@@ -782,8 +936,8 @@ export default function ClassPage() {
         entryTime = new Date(lecture.lecture.date + " " + lateTime);
       }
       let variables = {
-        lectureId: Number(lecture.lecture.id),
-        studentId: Number(lecture.student.id),
+        lectureId: Number(lecture?.lecture?.id),
+        studentId: Number(lecture?.student?.id),
         statusInput: attendanceStatus,
       };
 
@@ -812,32 +966,50 @@ export default function ClassPage() {
     const currentCheckList = [...checkList];
     // let student_ids = []
     // let lectureId;
-    for (const item of currentCheckList) {
-      const lecture = studentArray.find(
-        (el) =>
-          Number(el.lecture.id) === Number(item.lectureId) &&
-          Number(el.student.id) === Number(item.studentId)
-      );
-      // student_ids.push(Number(lecture.student.id))
-      // lectureId = Number(lecture.lecture.id);
-      let variables = {
-        lectureId: Number(lecture.lecture.id),
-        studentIds: [Number(lecture.student.id)],
-      };
-      try {
-        await deleteStudentFromLecture({
-          variables,
-        });
-        setCheckList([]);
-      } catch (error) {
-        console.error(error);
-        alert(error.message);
+    if (!isAll) {
+      for (const item of currentCheckList) {
+        try {
+          await deleteLecture({ variables: { id: item.lectureId } });
+        } catch (err) {}
+        // const lecture = studentArray.find(
+        //   (el) =>
+        //     Number(el.lecture.id) === Number(item.lectureId) &&
+        //     Number(el.student.id) === Number(item.studentId)
+        // );
+        // // student_ids.push(Number(lecture.student.id))
+        // // lectureId = Number(lecture.lecture.id);
+        // let variables = {
+        //   lectureId: Number(lecture.lecture.id),
+        //   studentIds: [Number(lecture.student.id)],
+        // };
+        // try {
+        //   await deleteStudentFromLecture({
+        //     variables,
+        //   });
+        //   setCheckList([]);
+        // } catch (error) {
+        //   console.error(error);
+        //   alert(error.message);
+        // }
       }
+      setCheckList([]);
+      await refetch();
+      await refetchStudentList();
+      await refetchMonth();
+    } else {
+      for (const item of currentCheckList) {
+        try {
+          await deleteLectureInfo({
+            variables: { id: item.lectureInfoId, date: deleteDate },
+          });
+        } catch (err) {}
+      }
+      setDeleteDate(dateToInput(date));
+      setCheckList([]);
+      await refetch();
+      await refetchStudentList();
+      await refetchMonth();
     }
-    // setCheckList([]);
-    await refetch();
-    await refetchStudentList();
-    await refetchMonth();
   };
   const onClickAddStudents = async () => {
     try {
@@ -871,8 +1043,12 @@ export default function ClassPage() {
     setSelectBookData(newBookData);
   };
 
-  const onClickStudents = (id) => () => {
+  const onClickStudents = (id, name) => async () => {
     const nId = Number(id);
+    try {
+      await refetchLectureInfo({ studentId: Number(id) });
+    } catch (err) {}
+    setAddListName(name);
     if (addList.includes(nId)) {
       const newList = [...addList];
       const filter = newList.filter((el) => {
@@ -943,8 +1119,8 @@ export default function ClassPage() {
           },
         });
         setIsChange(false);
-        refetchFiction();
-        refetchNonFiction();
+        refetchFiction({ isSelected: true });
+        refetchNonFiction({ isSelected: true });
         setReadingList([]);
         setSearchReading("");
       } catch (err) {
@@ -967,8 +1143,8 @@ export default function ClassPage() {
         },
       });
       setIsChange(false);
-      refetchFiction();
-      refetchNonFiction();
+      refetchFiction({ isSelected: true });
+      refetchNonFiction({ isSelected: true });
       setReadingList([]);
       setSearchReading("");
       setIsAlert(false);
@@ -1006,8 +1182,8 @@ export default function ClassPage() {
         },
       });
       setIsChange(false);
-      refetchFiction();
-      refetchNonFiction();
+      refetchFiction({ isSelected: true });
+      refetchNonFiction({ isSelected: true });
     } catch (err) {
       alert(err);
       setIsChange(false);
@@ -1016,10 +1192,14 @@ export default function ClassPage() {
 
   const onClickFetch = (fnf) => async () => {
     if (fnf === "1") {
-      await refetchFiction();
+      try {
+        await refetchFiction({ isSelected: false });
+      } catch (err) {}
     }
     if (fnf === "2") {
-      await refetchNonFiction();
+      try {
+        await refetchNonFiction({ isSelected: false });
+      } catch (err) {}
     }
   };
 
@@ -1042,8 +1222,8 @@ export default function ClassPage() {
         refetchStudentList();
         refetchMonth();
         refetchReservation();
-        refetchFiction();
-        refetchNonFiction();
+        refetchFiction({ isSelected: true });
+        refetchNonFiction({ isSelected: true });
         refetchCount();
       } catch (err) {
         alert(err);
@@ -1052,18 +1232,72 @@ export default function ClassPage() {
   };
 
   const onClickBarcode = async () => {
-    const variables = {
-      academyIds: [Number(router.query.branch)],
-      lectureDate: dateToInput(searchDate),
-      studentId: Number(selectChild.id),
-    };
-    variables.arQn = Number(barcode);
+    console.log(Number(selectChild.id), Number(selectLecture.id), barcode);
+
+    const editBarcode = barcode
+      .toUpperCase()
+      .replaceAll(" ", "")
+      .replaceAll("ㅖ", "P")
+      .replaceAll("ㅔ", "P")
+      .replaceAll("ㄷ", "E")
+      .replaceAll("ㄸ", "E");
+
     try {
-      await refetchBook(variables);
-      setConfirmReserve(true);
-    } catch (err) {
-      console.log(err);
-    }
+      const result = await refetchCheck({
+        studentId: Number(selectChild.id),
+        plbn: editBarcode,
+      });
+      if (result?.data?.studentPlbnRecord) {
+        setIsDup(true);
+      } else {
+        try {
+          await reservationBarcode({
+            variables: {
+              studentId: Number(selectChild.id),
+              lectureId: Number(selectLecture.id),
+              plbn: editBarcode,
+            },
+          });
+          refetch();
+          refetchStudentList();
+          refetchMonth();
+          refetchReservation();
+          refetchFiction({ isSelected: true });
+          refetchNonFiction({ isSelected: true });
+          refetchCount();
+          setBarcode("");
+        } catch (err) {}
+      }
+    } catch (err) {}
+  };
+
+  const onClickConfirmBarcode = async () => {
+    const editBarcode = barcode
+      .toUpperCase()
+      .replaceAll(" ", "")
+      .replaceAll("ㅖ", "P")
+      .replaceAll("ㅔ", "P")
+      .replaceAll("ㄷ", "E")
+      .replaceAll("ㄸ", "E");
+
+    try {
+      await reservationBarcode({
+        variables: {
+          studentId: Number(selectChild.id),
+          lectureId: Number(selectLecture.id),
+          plbn: editBarcode,
+        },
+      });
+      refetch();
+      refetchStudentList();
+      refetchMonth();
+      refetchReservation();
+      refetchFiction({ isSelected: true });
+      refetchNonFiction({ isSelected: true });
+      refetchCount();
+      setBarcode("");
+      setIsDup(false);
+    } catch (err) {}
   };
 
   const onClickDates = (index) => () => {
@@ -1075,6 +1309,143 @@ export default function ClassPage() {
       setSelectDates(newDates);
     }
   };
+
+  const onClickOpenEditModal = async () => {
+    if (checkList.length === 1) {
+      console.log(checkList);
+      if (monthClassData !== undefined) {
+        try {
+          await refetchLectureInfo({
+            studentId: Number(checkList[0].studentId),
+          });
+        } catch (err) {}
+        setIsAll(false);
+        setTodayDate(new Date());
+        setIsEdit(true);
+        const setting = monthClassData?.getLecturesByAcademyAndMonth
+          ?.filter((lecture) => {
+            return (
+              lecture.date ===
+              calendarDate.getFullYear() +
+                "-" +
+                getMonthZero(calendarDate) +
+                "-" +
+                getDateZero(calendarDate)
+            );
+          })
+          .filter((el) => {
+            return el.lectureInfo.id === checkList[0].lectureInfoId;
+          })[0];
+        setIsEditAuto(setting?.lectureInfo.autoAdd);
+        setIsEditRepeat(!setting?.lectureInfo.repeatDay.includes(-1));
+        setEditStartTime(setting?.startTime);
+        setEditEndTime(setting?.endTime);
+        if (!setting?.lectureInfo.repeatDay.includes(-1)) {
+          setEditRepeatWeek(setting?.lectureInfo.repeatDay);
+          setEditRepeatCount(setting?.lectureInfo.repeatWeeks);
+        } else {
+          setEditRepeatCount(1);
+          setEditRepeatWeek([]);
+        }
+      }
+    } else {
+      alert("수업 수정은 원생 한 명 체크해주시기 바랍니다.");
+    }
+  };
+
+  const onClickEditDates = (index) => () => {
+    const newDates = [...editRepeatWeek];
+    if (newDates.includes(index)) {
+      setEditRepeatWeek(newDates.filter((el) => index !== el));
+    } else {
+      newDates.push(index);
+      setEditRepeatWeek(newDates);
+    }
+  };
+
+  // 수업 반복 추가 커스텀 지점
+  const onClickRepeatDates = (ind, index) => () => {
+    const newInput = [...addRepeatInput];
+    const newDates = [...newInput[ind].week];
+    if (newDates.includes(index)) {
+      newInput[ind].week = newDates.filter((el) => index !== el);
+    } else {
+      newDates.push(index);
+      newInput[ind].week = newDates;
+    }
+    console.log(newInput);
+    setAddRepeatInput(newInput);
+  };
+
+  const onChangeRepeatStartTime = (ind) => (e) => {
+    const newInput = [...addRepeatInput];
+    newInput[ind].startTime = e.target.value;
+    setAddRepeatInput(newInput);
+    console.log(newInput);
+  };
+
+  const onChangeRepeatEndTime = (ind) => (e) => {
+    const newInput = [...addRepeatInput];
+    newInput[ind].endTime = e.target.value;
+    setAddRepeatInput(newInput);
+    console.log(newInput);
+  };
+
+  const onChangeRepeatTeacherId = (ind) => (e) => {
+    const newInput = [...addRepeatInput];
+    newInput[ind].teacherId = e.target.value;
+    setAddRepeatInput(newInput);
+    console.log(newInput);
+  };
+
+  const onChangeRepeatDate = (ind) => (e) => {
+    const newInput = [...addRepeatInput];
+    newInput[ind].startDate = e.target.value;
+    setAddRepeatInput(newInput);
+    console.log(newInput);
+  };
+
+  const onChangeRepeatIsRepeat = (ind, value) => () => {
+    const newInput = [...addRepeatInput];
+    newInput[ind].isRepeat = value;
+    setAddRepeatInput(newInput);
+    console.log(newInput);
+  };
+
+  const onChangeRepeatIsAuto = (ind) => () => {
+    const newInput = [...addRepeatInput];
+    newInput[ind].isAuto = !newInput[ind].isAuto;
+    setAddRepeatInput(newInput);
+    console.log(newInput);
+  };
+
+  const onChangeRepeatAbout = (ind) => (e) => {
+    const newInput = [...addRepeatInput];
+    newInput[ind].about = e.target.value;
+    setAddRepeatInput(newInput);
+    console.log(newInput);
+  };
+
+  const onChangeRepeatCount = (ind) => (e) => {
+    const newInput = [...addRepeatInput];
+    newInput[ind].repeatsNum = e.target.value;
+    setAddRepeatInput(newInput);
+    console.log(newInput);
+  };
+
+  const onClickAddRepeatDelete = (ind) => () => {
+    if (addRepeatInput.length !== 1) {
+      const newInput = [...addRepeatInput];
+      setAddRepeatInput(
+        newInput.filter((_, index) => {
+          return ind !== index;
+        })
+      );
+    }
+  };
+
+  //여기까지
+
   const onClickViewDates = (index) => () => {
     const newDates = [...viewWeek];
     if (newDates.includes(index)) {
@@ -1099,6 +1470,7 @@ export default function ClassPage() {
       refetchCount();
       refetchStudentList();
       refetchMonth();
+      setReserveType("recommend");
     } catch (err) {
       alert(err);
     }
@@ -1132,43 +1504,47 @@ export default function ClassPage() {
     }
   };
 
-  // 수업 수정
-  const onClickUpdateLecture = () => {
-    const newList = [...checkList];
-    const updateList = {};
-
-    newList.forEach((el) => {
-      const key = el.lectureId;
-      if (!updateList[key]) {
-        updateList[key] = { lectureId: key, studentIds: [] };
-      }
-      updateList[key].studentIds.push(Number(el.studentId));
-    });
-    const updateArray = Object.values(updateList);
-    console.log(updateArray);
-
-    updateArray.map(async (el) => {
+  // 수업 전체 수정
+  const onClickUpdateLecture = async () => {
+    if (isAll) {
+      console.log(
+        Number(checkList[0].lectureInfoId),
+        editDate,
+        editInfo,
+        isEditRepeat,
+        editRepeatWeek,
+        editRepeatCount,
+        isEditAuto,
+        [checkList[0].studentId]
+      );
       try {
-        const result = await updateLecture({
+        await editLectureInfo({
           variables: {
-            lectureId: Number(el.lectureId),
+            lectureInfoId: Number(checkList[0].lectureInfoId),
             date: editDate,
-            studentIds: el.studentIds,
+            about: editInfo,
+            repeatDays: isEditRepeat
+              ? JSON.stringify({ repeat_days: editRepeatWeek })
+              : JSON.stringify({ repeat_days: [-1] }),
+            repeatWeeks: isEditRepeat ? Number(editRepeatCount) : 1,
+            autoAdd: isEditAuto,
+            studentIds: [Number(checkList[0].studentId)],
             startTime: editStartTime,
             endTime: editEndTime,
-            academyId: editAcademy,
+            academyId: Number(editAcademy),
             teacherId: Number(teacherId),
-            lectureMemo: editInfo,
           },
         });
-        // refetchLecture();
+        await refetchList();
+        await refetchStudentList();
+        await refetchMonth();
         refetchList();
         refetchStudentList();
         refetchMonth();
         setIsEdit(false);
         setEditDate(dateToInput(date));
-        setEditStartTime(dateToClock(date));
-        setEditEndTime(dateToClockOneHour(date));
+        // setEditStartTime(dateToClock(date));
+        // setEditEndTime(dateToClockOneHour(date));
         setEditInfo("");
         setCheckList([]);
         setEditAcademy(Number(router.query.branch));
@@ -1181,10 +1557,59 @@ export default function ClassPage() {
               );
             })[0].id
         );
-      } catch (err) {
-        console.log(err);
-      }
-    });
+      } catch (err) {}
+    } else {
+      const newList = [...checkList];
+      const updateList = {};
+
+      newList.forEach((el) => {
+        const key = el.lectureId;
+        if (!updateList[key]) {
+          updateList[key] = { lectureId: key, studentIds: [] };
+        }
+        updateList[key].studentIds.push(Number(el.studentId));
+      });
+      const updateArray = Object.values(updateList);
+      console.log(updateArray);
+
+      updateArray.map(async (el) => {
+        try {
+          const result = await updateLecture({
+            variables: {
+              lectureId: Number(el.lectureId),
+              date: editDate,
+              studentIds: el.studentIds,
+              startTime: editStartTime,
+              endTime: editEndTime,
+              academyId: editAcademy,
+              teacherId: Number(teacherId),
+            },
+          });
+          // refetchLecture();
+          refetchList();
+          refetchStudentList();
+          refetchMonth();
+          setIsEdit(false);
+          setEditDate(dateToInput(date));
+          // setEditStartTime(dateToClock(date));
+          // setEditEndTime(dateToClockOneHour(date));
+          setEditInfo("");
+          setCheckList([]);
+          setEditAcademy(Number(router.query.branch));
+          setTeacherId(
+            userData?.allUsers
+              .filter((el) => el.userCategory === "선생님")
+              .filter((el) => {
+                return (
+                  Number(el.profile.academy.id) === Number(router.query.branch)
+                );
+              })[0].id
+          );
+        } catch (err) {
+          console.log(err);
+        }
+      });
+    }
   };
 
   useEffect(() => {
@@ -1209,10 +1634,15 @@ export default function ClassPage() {
         ?.filter((el) => {
           return el.date == dateToInput(date);
         })
+        // endTime 리스트 수정 지점
+        // ?.filter((el)=>{
+        //   return el.students?.filter
+        // })
         .map((lecture) => lecture.endTime);
       // setEndTimes(endTimesArray);
       const endTimesJSON = JSON.stringify(endTimesArray);
       localStorage.setItem("endTimes", endTimesJSON);
+      console.log(data.allLectures);
     }
   }, [data, settingData]);
 
@@ -1398,33 +1828,35 @@ export default function ClassPage() {
           } catch {}
         }
       });
-
-      endTimes.forEach(async (endTime) => {
-        if (
-          (now.getHours() === endTime.getHours() &&
-            now.getMinutes() === endTime.getMinutes()) ||
-          now.getHours() * 60 + now.getMinutes() ===
-            60 * endTime.getHours() + endTime.getMinutes() - time
-        ) {
-          // 원하는 동작 실행 (예: 알림 표시, WebSocket 메시지 전송 등)
-          try {
-            const result = await refetchAttendance({
-              endtime: dateToClock(endTime),
-              startTime: "",
-              academyId: Number(router.query.branch),
-            });
-            setEndList(result?.data?.getAttendance);
-            setIsAlarm(true);
-            setAlarmTime(dateToClock(endTime));
-            setAlarmType("end");
-            if (result?.data?.getAttendance !== null && isSound) {
-              alarmSound = true;
-              const audio = new Audio("/2.mp3");
-              audio.play();
-            }
-          } catch {}
-        }
-      });
+      // 수정 지점
+      if (!isCustom) {
+        endTimes.forEach(async (endTime) => {
+          if (
+            (now.getHours() === endTime.getHours() &&
+              now.getMinutes() === endTime.getMinutes()) ||
+            now.getHours() * 60 + now.getMinutes() ===
+              60 * endTime.getHours() + endTime.getMinutes() - time
+          ) {
+            // 원하는 동작 실행 (예: 알림 표시, WebSocket 메시지 전송 등)
+            try {
+              const result = await refetchAttendance({
+                endtime: dateToClock(endTime),
+                startTime: "",
+                academyId: Number(router.query.branch),
+              });
+              setEndList(result?.data?.getAttendance);
+              setIsAlarm(true);
+              setAlarmTime(dateToClock(endTime));
+              setAlarmType("end");
+              if (result?.data?.getAttendance !== null && isSound) {
+                alarmSound = true;
+                const audio = new Audio("/2.mp3");
+                audio.play();
+              }
+            } catch {}
+          }
+        });
+      }
 
       if (isCustom) {
         const lateTimesStr = localStorage.getItem("lateTimes");
@@ -2224,6 +2656,7 @@ export default function ClassPage() {
               </S.CountNumber>
               <S.ClassSmallGreenButton
                 onClick={() => {
+                  setTodayDate(new Date());
                   setIsAttendance(true);
                   setIsLate(false);
                   setIsComplete(false);
@@ -2262,6 +2695,7 @@ export default function ClassPage() {
               </S.ClassSmallRedButton>
               <S.ClassSmallBlueButton
                 onClick={() => {
+                  setTodayDate(new Date());
                   setIsAttendance(false);
                   setIsLate(false);
                   setIsComplete(true);
@@ -2282,6 +2716,7 @@ export default function ClassPage() {
 
               <S.ClassSmallBlackButton
                 onClick={() => {
+                  setTodayDate(new Date());
                   setIsAttendance(false);
                   setIsLate(true);
                   setIsComplete(false);
@@ -2301,40 +2736,22 @@ export default function ClassPage() {
               </S.ClassSmallBlackButton>
 
               <S.ClassSmallBlackButton
-                onClick={() => {
-                  setIsEdit(true);
-                }}
+                onClick={onClickOpenEditModal}
                 style={{ marginLeft: "0.75rem", border: "1px solid purple" }}
               >
                 수정
-                {/* <div
-                  style={{
-                    width: "0.5rem",
-                    height: "0.5rem",
-                    background: "purple",
-                    marginLeft: "0.37rem",
-                    borderRadius: "5rem",
-                  }}
-                ></div> */}
               </S.ClassSmallBlackButton>
 
               <S.ClassSmallBlackButton
                 onClick={() => {
                   setIsConfirm(true);
                   setConfirmState("삭제");
+                  setTodayDate(new Date());
+                  setIsAll(false);
                 }}
                 style={{ marginLeft: "0.75rem", border: "1px solid #333" }}
               >
                 삭제
-                {/* <div
-                  style={{
-                    width: "0.5rem",
-                    height: "0.5rem",
-                    background: "#333",
-                    marginLeft: "0.37rem",
-                    borderRadius: "5rem",
-                  }}
-                ></div> */}
               </S.ClassSmallBlackButton>
             </S.ClassMiddleTag>
             <S.ClassMiddleTag>
@@ -2352,9 +2769,31 @@ export default function ClassPage() {
               </S.ClassButton>
               <S.ClassButton
                 onClick={() => {
+                  setTodayDate(new Date());
                   setClassToggle(true);
                   setAddClassType("once");
-                  setIsMakeUp(false);
+                  setAddRepeatInput([
+                    {
+                      week: [],
+                      startTime: dateToClock(date),
+                      endTime: dateToClockOneHour(date),
+                      isAuto: false,
+                      isRepeat: "once",
+                      repeatsNum: 0,
+                      startDate: dateToInput(date),
+                      teacherId: Number(
+                        userData?.allUsers
+                          .filter((el) => el.userCategory === "선생님")
+                          .filter((el) => {
+                            return (
+                              Number(el.profile.academy.id) ===
+                              Number(router.query.branch)
+                            );
+                          })[0].id
+                      ),
+                      about: "",
+                    },
+                  ]);
                 }}
               >
                 <svg
@@ -2429,7 +2868,12 @@ export default function ClassPage() {
                       <input
                         type="checkbox"
                         onChange={(e) =>
-                          onChangeEach(e, el.lecture.id, el.student.id)
+                          onChangeEach(
+                            e,
+                            el.lecture.id,
+                            el.student.id,
+                            el.lecture.lectureInfo.id
+                          )
                         }
                         style={{ width: "20px", height: "20px" }}
                         checked={checkList.some((ele) => {
@@ -2460,7 +2904,20 @@ export default function ClassPage() {
                       {timeToHour(el.lecture.startTime)}
                     </td>
                     <td>{timeToHour(el.lecture.endTime)}</td>
-                    <td>{el?.attendanceStatus?.statusDisplay ?? ""}</td>
+                    <td>
+                      {el?.attendanceStatus?.statusDisplay ?? ""}
+                      {el?.attendanceStatus?.statusDisplay === "결석" && (
+                        // 여기서부터 보강
+                        <button
+                          onClick={onClickOpenMakeUp(
+                            el.student.id,
+                            el.lecture.id
+                          )}
+                        >
+                          보강
+                        </button>
+                      )}
+                    </td>
                     <td>
                       {el?.attendanceStatus?.entryTime
                         ? timeToHour(
@@ -2525,9 +2982,16 @@ export default function ClassPage() {
                     //   setIsViewTitle(false);
                     // }}
                     >
-                      {el.lecture.lectureMemo === ""
-                        ? longWord(el.lecture.lectureInfo.about)
-                        : longWord(el.lecture.lectureMemo)}
+                      {el.lecture.lectureMemo === "" ? (
+                        <div>{longWord(el.lecture.lectureInfo.about)}</div>
+                      ) : (
+                        <div>
+                          {longWord(el.lecture.lectureInfo.about)}
+                          <div style={{ fontSize: "0.7rem", color: "#ababab" }}>
+                            {"(" + longWord(el.lecture.lectureMemo) + ")"}
+                          </div>
+                        </div>
+                      )}
                     </td>
                     <td>
                       <div>
@@ -2618,246 +3082,184 @@ export default function ClassPage() {
         //달력 시작
         <>
           <S.CalendarWrapper>
-            <S.CalendarLeft>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  margin: "1rem 0",
-                  width: "100%",
-                }}
-              >
-                <div>
-                  <span>
-                    {calendarDate.getFullYear() +
-                      "년 " +
-                      (calendarDate.getMonth() + 1) +
-                      "월"}
-                  </span>
+            {isViewMore ? (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <svg
+                    width="30"
+                    height="30"
+                    viewBox="0 0 40 40"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    onClick={() => {
+                      setIsViewMore(false);
+                    }}
+                    cursor={"pointer"}
+                  >
+                    <path
+                      d="M35 19.9999H5M5 19.9999L19.1667 5.83325M5 19.9999L19.1667 34.1666"
+                      stroke="black"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <S.CalendarRightTitle>수업 목록</S.CalendarRightTitle>
                 </div>
-                <S.CalendarLeftSelect
-                  onChange={(e) => {
-                    setViewType(e.target.value);
-                    setViewLecture("");
-                    setViewDate("");
-                  }}
-                >
-                  <option value={"student"}>원생 기준</option>
-                  <option value={"class"}>수업 기준</option>
-                </S.CalendarLeftSelect>
+
+                <table style={{ display: "flex" }}>
+                  <tbody>
+                    <thead>
+                      <tr>
+                        <th>수업 시간</th>
+                        <th>수업 설명</th>
+                        <th>수업 반복 여부</th>
+                        <th>수업 자동 추가 여부</th>
+                        <th>반복 주</th>
+                        <th>반복 요일</th>
+                        {/* <th>수업 인원 수정</th> */}
+                        <th>원생</th>
+                        <th>담당 선생님</th>
+                        {/* <th>담당 지점</th> */}
+                        <th>수정</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewModalList?.map((el) => {
+                        return (
+                          <TableClassListBody
+                            el={el}
+                            allStudent={studentData?.studentsInAcademy}
+                            // academies={
+                            //   myData?.me?.profile?.academies?.length > 0
+                            //     ? myData?.me?.profile?.academies
+                            //     : []
+                            // }
+                            teachers={userData?.allUsers
+                              .filter((el) => el.userCategory === "선생님")
+                              .filter((el) => {
+                                return (
+                                  Number(el.profile.academy.id) ===
+                                  Number(router.query.branch)
+                                );
+                              })}
+                            editLectureInfo={editLectureInfo}
+                            refetchList={refetchList}
+                            refetchStudentList={refetchStudentList}
+                            refetchMonth={refetchMonth}
+                          ></TableClassListBody>
+                        );
+                      })}
+                    </tbody>
+                  </tbody>
+                </table>
               </div>
-              <div style={{ marginBottom: "5rem" }}>
+            ) : (
+              <S.CalendarLeft>
                 <div
                   style={{
                     display: "flex",
-                    borderTop: "0.4px solid #DBDDE1",
-                    borderBottom: "0.4px solid #DBDDE1",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    margin: "1rem 0",
+                    width: "100%",
                   }}
                 >
-                  {week.map((_, index) => {
-                    return (
-                      <div
-                        style={{
-                          width: "7rem",
-                          height: "2.75rem",
-                          color: index === 0 ? "tomato" : "black",
-                          display: "flex",
-                          alignItems: "center",
-                          paddingLeft: "2rem",
-                          backgroundColor: "#F7F8FA",
-                        }}
-                      >
-                        {week[(index + 6) % 7]}
-                      </div>
-                    );
-                  })}
+                  <div>
+                    <span>
+                      {calendarDate.getFullYear() +
+                        "년 " +
+                        (calendarDate.getMonth() + 1) +
+                        "월"}
+                    </span>
+                  </div>
+                  {/* <S.CalendarLeftSelect
+                    onChange={(e) => {
+                      setViewType(e.target.value);
+                      setViewLecture("");
+                      setViewDate("");
+                      setIsViewMore(false);
+                    }}
+                    value={viewType}
+                  >
+                    <option value={"student"}>원생 기준</option>
+                    <option value={"class"}>수업 기준</option>
+                  </S.CalendarLeftSelect> */}
                 </div>
-                {calendarArray.map((el, index1) => {
-                  return (
-                    <div style={{ display: "flex" }}>
-                      {el.map((ele, index2) => {
-                        return (
-                          <div
-                            style={{
-                              width: "7rem",
-                              height: "9.5rem",
-                              borderBottom: "0.4px solid #DBDDE1",
-                              color:
-                                ele < 1 ||
-                                ele >
-                                  new Date(
-                                    calendarDate.getFullYear(),
-                                    calendarDate.getMonth() + 1,
-                                    0
-                                  ).getDate()
-                                  ? "gray"
-                                  : "black",
-                              backgroundColor:
-                                calendarDate.getDate() === ele ? "#F7F8FA" : "",
-                              paddingLeft: "2rem",
-                              paddingTop: "0.5rem",
-                              display: "flex",
-                              flexDirection: "column",
-                            }}
-                          >
-                            <div>
-                              {ele < 1
-                                ? ele +
-                                  new Date(
-                                    calendarDate.getFullYear(),
-                                    calendarDate.getMonth(),
-                                    0
-                                  ).getDate() +
-                                  1
-                                : ele >
-                                  new Date(
-                                    calendarDate.getFullYear(),
-                                    calendarDate.getMonth() + 1,
-                                    0
-                                  ).getDate()
-                                ? ele -
-                                  new Date(
-                                    calendarDate.getFullYear(),
-                                    calendarDate.getMonth() + 1,
-                                    0
-                                  ).getDate()
-                                : ele}
-                            </div>
-
-                            {viewType === "student" ? (
-                              <>
-                                <S.CalendarLecture
-                                  onClick={() => {
-                                    setViewDate(
-                                      calendarDate.getFullYear() +
-                                        "-" +
-                                        getMonthZero(calendarDate) +
-                                        "-" +
-                                        getNumberZero(ele)
-                                    );
-                                    const newDate = new Date(
-                                      calendarDate.getFullYear() +
-                                        "-" +
-                                        getMonthZero(calendarDate) +
-                                        "-" +
-                                        getNumberZero(ele)
-                                    );
-                                    refetchStudentList({
-                                      date: dateToInput(newDate),
-                                    });
-                                    setCalendarDate(newDate);
-                                  }}
-                                >
-                                  {monthClassData?.getLecturesByAcademyAndMonth
-                                    ?.filter((lecture) => {
-                                      return (
-                                        lecture.date ===
-                                        calendarDate.getFullYear() +
-                                          "-" +
-                                          getMonthZero(calendarDate) +
-                                          "-" +
-                                          getNumberZero(ele)
-                                      );
-                                    })
-                                    ?.reduce((acc, cur) => {
-                                      return acc + cur.students.length;
-                                    }, 0) === 0 || undefined
-                                    ? ""
-                                    : "출석 인원 : " +
-                                      monthClassData?.getLecturesByAcademyAndMonth
-                                        ?.filter((lecture) => {
-                                          return (
-                                            lecture.date ===
-                                            calendarDate.getFullYear() +
-                                              "-" +
-                                              getMonthZero(calendarDate) +
-                                              "-" +
-                                              getNumberZero(ele)
-                                          );
-                                        })
-                                        ?.reduce((acc, cur) => {
-                                          return acc + cur.students.length;
-                                        }, 0) +
-                                      "명"}
-                                </S.CalendarLecture>
-                              </>
-                            ) : monthClassData?.getLecturesByAcademyAndMonth?.filter(
-                                (lecture) => {
-                                  return (
-                                    lecture.date ===
-                                    calendarDate.getFullYear() +
-                                      "-" +
-                                      getMonthZero(calendarDate) +
-                                      "-" +
-                                      getNumberZero(ele)
-                                  );
-                                }
-                              ).length > 2 ? (
-                              <>
-                                {monthClassData?.getLecturesByAcademyAndMonth
-                                  ?.filter((lecture) => {
-                                    return (
-                                      lecture.date ===
-                                      calendarDate.getFullYear() +
-                                        "-" +
-                                        getMonthZero(calendarDate) +
-                                        "-" +
-                                        getNumberZero(ele)
-                                    );
-                                  })
-                                  .map((lecture, index) => {
-                                    if (index < 2) {
-                                      return (
-                                        <S.CalendarLecture
-                                          onClick={() => {
-                                            setViewLecture(lecture);
-                                            setViewDate(lecture?.date);
-                                            setViewEndTime(lecture?.endTime);
-                                            setViewStartTime(
-                                              lecture?.startTime
-                                            );
-                                            setViewAuto(
-                                              lecture?.lectureInfo?.autoAdd
-                                            );
-                                            if (
-                                              lecture?.lectureInfo?.repeatDay?.includes(
-                                                -1
-                                              )
-                                            ) {
-                                              setViewRepeat(false);
-                                            } else {
-                                              setViewRepeat(true);
-                                            }
-                                            if (
-                                              lecture?.lectureInfo?.repeatDay?.includes(
-                                                -1
-                                              )
-                                            ) {
-                                              setViewWeek([]);
-                                            } else {
-                                              setViewWeek(
-                                                lecture?.lectureInfo?.repeatDay
-                                              );
-                                            }
-                                            console.log(
-                                              lecture?.lectureInfo?.repeatDay
-                                            );
-                                          }}
-                                        >
-                                          {lecture?.lectureInfo.about === ""
-                                            ? ele + "일 강의"
-                                            : lecture?.lectureInfo.about}
-                                        </S.CalendarLecture>
-                                      );
-                                    } else {
-                                      return <></>;
-                                    }
-                                  })}
-                                <S.CalendarLecture
-                                  onClick={() => {
+                <div style={{ marginBottom: "5rem" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      borderTop: "0.4px solid #DBDDE1",
+                      borderBottom: "0.4px solid #DBDDE1",
+                    }}
+                  >
+                    {week.map((_, index) => {
+                      return (
+                        <div
+                          style={{
+                            width: "7rem",
+                            height: "2.75rem",
+                            color: index === 0 ? "tomato" : "black",
+                            display: "flex",
+                            alignItems: "center",
+                            paddingLeft: "2rem",
+                            backgroundColor: "#F7F8FA",
+                          }}
+                        >
+                          {week[(index + 6) % 7]}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {calendarArray.map((el, index1) => {
+                    return (
+                      <div style={{ display: "flex" }}>
+                        {el.map((ele, index2) => {
+                          return (
+                            <div
+                              style={{
+                                width: "7rem",
+                                height: "9.5rem",
+                                borderBottom: "0.4px solid #DBDDE1",
+                                color:
+                                  ele < 1 ||
+                                  ele >
+                                    new Date(
+                                      calendarDate.getFullYear(),
+                                      calendarDate.getMonth() + 1,
+                                      0
+                                    ).getDate()
+                                    ? "gray"
+                                    : "black",
+                                backgroundColor:
+                                  calendarDate.getDate() === ele
+                                    ? "#F7F8FA"
+                                    : "",
+                                paddingLeft: "2rem",
+                                paddingTop: "0.5rem",
+                                display: "flex",
+                                flexDirection: "column",
+                              }}
+                              onClick={() => {
+                                if (viewType === "class") {
+                                  if (
+                                    monthClassData?.getLecturesByAcademyAndMonth?.filter(
+                                      (lecture) => {
+                                        return (
+                                          lecture.date ===
+                                          calendarDate.getFullYear() +
+                                            "-" +
+                                            getMonthZero(calendarDate) +
+                                            "-" +
+                                            getNumberZero(ele)
+                                        );
+                                      }
+                                    )?.length > 0
+                                  ) {
                                     setIsViewMore(true);
                                     setViewMorePosition([index1, index2]);
+                                    // setViewDate("1");
                                     setViewModalList(
                                       monthClassData?.getLecturesByAcademyAndMonth?.filter(
                                         (lecture) => {
@@ -2872,29 +3274,183 @@ export default function ClassPage() {
                                         }
                                       )
                                     );
-                                  }}
-                                >
-                                  {"+ " +
-                                    (monthClassData?.getLecturesByAcademyAndMonth?.filter(
-                                      (lecture) => {
-                                        return (
-                                          lecture.date ===
-                                          calendarDate.getFullYear() +
-                                            "-" +
-                                            getMonthZero(calendarDate) +
-                                            "-" +
-                                            getNumberZero(ele)
-                                        );
-                                      }
-                                    ).length -
-                                      2) +
-                                    " 더 보기"}{" "}
-                                </S.CalendarLecture>
-                              </>
-                            ) : (
-                              <>
-                                {monthClassData?.getLecturesByAcademyAndMonth
-                                  ?.filter((lecture) => {
+                                  }
+                                }
+                                console.log(
+                                  monthClassData?.getLecturesByAcademyAndMonth?.filter(
+                                    (lecture) => {
+                                      return (
+                                        lecture.date ===
+                                        calendarDate.getFullYear() +
+                                          "-" +
+                                          getMonthZero(calendarDate) +
+                                          "-" +
+                                          getNumberZero(ele)
+                                      );
+                                    }
+                                  )
+                                );
+                              }}
+                            >
+                              <div>
+                                {ele < 1
+                                  ? ele +
+                                    new Date(
+                                      calendarDate.getFullYear(),
+                                      calendarDate.getMonth(),
+                                      0
+                                    ).getDate() +
+                                    1
+                                  : ele >
+                                    new Date(
+                                      calendarDate.getFullYear(),
+                                      calendarDate.getMonth() + 1,
+                                      0
+                                    ).getDate()
+                                  ? ele -
+                                    new Date(
+                                      calendarDate.getFullYear(),
+                                      calendarDate.getMonth() + 1,
+                                      0
+                                    ).getDate()
+                                  : ele}
+                              </div>
+
+                              {viewType === "student" ? (
+                                <>
+                                  <S.CalendarLecture
+                                    onClick={() => {
+                                      setViewDate(
+                                        calendarDate.getFullYear() +
+                                          "-" +
+                                          getMonthZero(calendarDate) +
+                                          "-" +
+                                          getNumberZero(ele)
+                                      );
+                                      const newDate = new Date(
+                                        calendarDate.getFullYear() +
+                                          "-" +
+                                          getMonthZero(calendarDate) +
+                                          "-" +
+                                          getNumberZero(ele)
+                                      );
+                                      refetchStudentList({
+                                        date: dateToInput(newDate),
+                                      });
+                                      setCheckList([]);
+                                      setCalendarDate(newDate);
+                                    }}
+                                  >
+                                    {monthClassData !== undefined
+                                      ? monthClassData?.getLecturesByAcademyAndMonth
+                                          ?.filter((lecture) => {
+                                            return (
+                                              lecture.date ===
+                                              calendarDate.getFullYear() +
+                                                "-" +
+                                                getMonthZero(calendarDate) +
+                                                "-" +
+                                                getNumberZero(ele)
+                                            );
+                                          })
+                                          ?.reduce((acc, cur) => {
+                                            return acc + cur.students.length;
+                                          }, 0) === 0 || undefined
+                                        ? ""
+                                        : "총 인원 : " +
+                                          monthClassData?.getLecturesByAcademyAndMonth
+                                            ?.filter((lecture) => {
+                                              return (
+                                                lecture.date ===
+                                                calendarDate.getFullYear() +
+                                                  "-" +
+                                                  getMonthZero(calendarDate) +
+                                                  "-" +
+                                                  getNumberZero(ele)
+                                              );
+                                            })
+                                            ?.reduce((acc, cur) => {
+                                              return acc + cur.students.length;
+                                            }, 0) +
+                                          "명"
+                                      : ""}
+                                  </S.CalendarLecture>
+                                  <S.CalendarLecture
+                                    onClick={() => {
+                                      setViewDate(
+                                        calendarDate.getFullYear() +
+                                          "-" +
+                                          getMonthZero(calendarDate) +
+                                          "-" +
+                                          getNumberZero(ele)
+                                      );
+                                      const newDate = new Date(
+                                        calendarDate.getFullYear() +
+                                          "-" +
+                                          getMonthZero(calendarDate) +
+                                          "-" +
+                                          getNumberZero(ele)
+                                      );
+                                      refetchStudentList({
+                                        date: dateToInput(newDate),
+                                      });
+                                      setCheckList([]);
+                                      setCalendarDate(newDate);
+                                    }}
+                                  >
+                                    {monthClassData !== undefined
+                                      ? monthClassData?.getLecturesByAcademyAndMonth
+                                          ?.filter((lecture) => {
+                                            return (
+                                              lecture.date ===
+                                              calendarDate.getFullYear() +
+                                                "-" +
+                                                getMonthZero(calendarDate) +
+                                                "-" +
+                                                getNumberZero(ele)
+                                            );
+                                          })
+                                          ?.reduce((acc, cur) => {
+                                            return acc + cur.students.length;
+                                          }, 0) === 0 || undefined
+                                        ? ""
+                                        : "출석 인원 : " +
+                                          monthClassData?.getLecturesByAcademyAndMonth
+                                            ?.filter((lecture) => {
+                                              return (
+                                                lecture.date ===
+                                                calendarDate.getFullYear() +
+                                                  "-" +
+                                                  getMonthZero(calendarDate) +
+                                                  "-" +
+                                                  getNumberZero(ele)
+                                              );
+                                            })
+                                            ?.reduce((acc, cur) => {
+                                              let count = cur.students.filter(
+                                                (el) => {
+                                                  return (
+                                                    el.attendances.filter(
+                                                      (ele) => {
+                                                        return (
+                                                          Number(
+                                                            ele?.lecture?.id
+                                                          ) === Number(cur?.id)
+                                                        );
+                                                      }
+                                                    ).length !== 0
+                                                  );
+                                                }
+                                              ).length;
+
+                                              return acc + count;
+                                            }, 0) +
+                                          "명"
+                                      : ""}
+                                  </S.CalendarLecture>
+                                </>
+                              ) : monthClassData?.getLecturesByAcademyAndMonth?.filter(
+                                  (lecture) => {
                                     return (
                                       lecture.date ===
                                       calendarDate.getFullYear() +
@@ -2903,102 +3459,190 @@ export default function ClassPage() {
                                         "-" +
                                         getNumberZero(ele)
                                     );
-                                  })
-                                  .map((lecture, index) => {
-                                    return (
-                                      <S.CalendarLecture
-                                        onClick={() => {
-                                          setViewLecture(lecture);
-                                          setViewDate(lecture?.date);
-                                          setViewEndTime(lecture?.endTime);
-                                          setViewStartTime(lecture?.startTime);
-                                          setViewAuto(
-                                            lecture?.lectureInfo?.autoAdd
+                                  }
+                                ).length > 2 ? (
+                                <>
+                                  {monthClassData?.getLecturesByAcademyAndMonth
+                                    ?.filter((lecture) => {
+                                      return (
+                                        lecture.date ===
+                                        calendarDate.getFullYear() +
+                                          "-" +
+                                          getMonthZero(calendarDate) +
+                                          "-" +
+                                          getNumberZero(ele)
+                                      );
+                                    })
+                                    .map((lecture, index) => {
+                                      if (index < 2) {
+                                        return (
+                                          <S.CalendarLecture
+                                          // onClick={() => {
+                                          //   setViewLecture(lecture);
+                                          //   setViewDate(lecture?.date);
+                                          //   setViewEndTime(lecture?.endTime);
+                                          //   setViewStartTime(
+                                          //     lecture?.startTime
+                                          //   );
+                                          //   setViewAuto(
+                                          //     lecture?.lectureInfo?.autoAdd
+                                          //   );
+                                          //   if (
+                                          //     lecture?.lectureInfo?.repeatDay?.includes(
+                                          //       -1
+                                          //     )
+                                          //   ) {
+                                          //     setViewRepeat(false);
+                                          //   } else {
+                                          //     setViewRepeat(true);
+                                          //   }
+                                          //   if (
+                                          //     lecture?.lectureInfo?.repeatDay?.includes(
+                                          //       -1
+                                          //     )
+                                          //   ) {
+                                          //     setViewWeek([]);
+                                          //   } else {
+                                          //     setViewWeek(
+                                          //       lecture?.lectureInfo?.repeatDay
+                                          //     );
+                                          //   }
+                                          // }}
+                                          >
+                                            {lecture?.lectureInfo.about === ""
+                                              ? ele + "일 강의"
+                                              : lecture?.lectureInfo.about}
+                                          </S.CalendarLecture>
+                                        );
+                                      } else {
+                                        return <></>;
+                                      }
+                                    })}
+                                  <S.CalendarLecture>
+                                    {"+ " +
+                                      (monthClassData?.getLecturesByAcademyAndMonth?.filter(
+                                        (lecture) => {
+                                          return (
+                                            lecture.date ===
+                                            calendarDate.getFullYear() +
+                                              "-" +
+                                              getMonthZero(calendarDate) +
+                                              "-" +
+                                              getNumberZero(ele)
                                           );
-                                          if (
-                                            lecture?.lectureInfo?.repeatDay?.includes(
-                                              -1
-                                            )
-                                          ) {
-                                            setViewRepeat(false);
-                                          } else {
-                                            setViewRepeat(true);
-                                          }
-                                          if (
-                                            lecture?.lectureInfo?.repeatDay?.includes(
-                                              -1
-                                            )
-                                          ) {
-                                            setViewWeek([]);
-                                          } else {
-                                            setViewWeek(
-                                              lecture?.lectureInfo?.repeatDay
-                                            );
-                                          }
-                                          console.log(
-                                            lecture?.lectureInfo?.repeatDay
-                                          );
-                                        }}
-                                      >
-                                        {lecture?.lectureInfo.about === ""
-                                          ? ele + "일 강의"
-                                          : lecture?.lectureInfo.about}
-                                      </S.CalendarLecture>
-                                    );
-                                  })}
-                              </>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
-            </S.CalendarLeft>
+                                        }
+                                      ).length -
+                                        2)}
+                                  </S.CalendarLecture>
+                                </>
+                              ) : (
+                                <>
+                                  {monthClassData?.getLecturesByAcademyAndMonth
+                                    ?.filter((lecture) => {
+                                      return (
+                                        lecture.date ===
+                                        calendarDate.getFullYear() +
+                                          "-" +
+                                          getMonthZero(calendarDate) +
+                                          "-" +
+                                          getNumberZero(ele)
+                                      );
+                                    })
+                                    .map((lecture, index) => {
+                                      return (
+                                        <S.CalendarLecture
+                                        // onClick={() => {
+                                        //   setViewLecture(lecture);
+                                        //   setViewDate(lecture?.date);
+                                        //   setViewEndTime(lecture?.endTime);
+                                        //   setViewStartTime(lecture?.startTime);
+                                        //   setViewAuto(
+                                        //     lecture?.lectureInfo?.autoAdd
+                                        //   );
+                                        //   if (
+                                        //     lecture?.lectureInfo?.repeatDay?.includes(
+                                        //       -1
+                                        //     )
+                                        //   ) {
+                                        //     setViewRepeat(false);
+                                        //   } else {
+                                        //     setViewRepeat(true);
+                                        //   }
+                                        //   if (
+                                        //     lecture?.lectureInfo?.repeatDay?.includes(
+                                        //       -1
+                                        //     )
+                                        //   ) {
+                                        //     setViewWeek([]);
+                                        //   } else {
+                                        //     setViewWeek(
+                                        //       lecture?.lectureInfo?.repeatDay
+                                        //     );
+                                        //   }
+                                        //   console.log(
+                                        //     lecture?.lectureInfo?.repeatDay
+                                        //   );
+                                        // }}
+                                        >
+                                          {lecture?.lectureInfo.about === ""
+                                            ? ele + "일 강의"
+                                            : lecture?.lectureInfo.about}
+                                        </S.CalendarLecture>
+                                      );
+                                    })}
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </S.CalendarLeft>
+            )}
+
             <S.CalendarRight>
               {viewDate === "" ? (
                 <></>
               ) : viewType === "class" ? (
                 <>
                   <S.CalendarRightTitle>수업 정보</S.CalendarRightTitle>
-                  <S.CalendarRightDiv>지점</S.CalendarRightDiv>
-                  {/* 지점 변경 필요 */}
-                  {/* <S.CalendarRightSelect>
-                  <option>경기퍼플</option>
-                </S.CalendarRightSelect> */}
                   {myData?.me?.profile?.academies?.length > 0 ? (
-                    <S.CalendarRightSelect
-                      onChange={(e) => {
-                        setEditAcademy(Number(e.target.value));
-                      }}
-                      style={{
-                        borderRadius: "0.5rem",
-                        border: "1px solid #DBDDE1",
-                        width: "100%",
-                        padding: "0.5rem 0.5rem",
-                        paddingLeft: "10px",
-                        fontFamily: "Spoqa Han Sans Neo",
-                      }}
-                    >
-                      {myData?.me?.profile?.academies?.map((el) => {
-                        return (
-                          <option
-                            value={Number(el.id)}
-                            selected={
-                              Number(router.query.branch) === Number(el.id)
-                            }
-                          >
-                            {el.location}
-                          </option>
-                        );
-                      })}
-                    </S.CalendarRightSelect>
+                    <>
+                      <S.CalendarRightDiv>지점</S.CalendarRightDiv>
+                      <S.CalendarRightSelect
+                        onChange={(e) => {
+                          setEditAcademy(Number(e.target.value));
+                        }}
+                        style={{
+                          borderRadius: "0.5rem",
+                          border: "1px solid #DBDDE1",
+                          width: "100%",
+                          padding: "0.5rem 0.5rem",
+                          paddingLeft: "10px",
+                          fontFamily: "Spoqa Han Sans Neo",
+                        }}
+                      >
+                        {myData?.me?.profile?.academies?.map((el) => {
+                          return (
+                            <option
+                              value={Number(el.id)}
+                              selected={
+                                Number(router.query.branch) === Number(el.id)
+                              }
+                            >
+                              {el.location}
+                            </option>
+                          );
+                        })}
+                      </S.CalendarRightSelect>
+                    </>
                   ) : (
                     <></>
                   )}
 
-                  <S.CalendarRightDiv>수업 방식</S.CalendarRightDiv>
+                  <S.CalendarRightDiv>수업 반복</S.CalendarRightDiv>
                   <S.CalendarRightDiv>
                     <input
                       type="radio"
@@ -3163,10 +3807,8 @@ export default function ClassPage() {
                         calendarDate.getDate() +
                         "일"}
                     </S.CalendarRightTitle>
-                    <S.ModalCancelButton
-                      onClick={() => {
-                        setIsEdit(true);
-                      }}
+                    {/* <S.ModalCancelButton
+                      onClick={onClickOpenEditModal}
                       style={{
                         backgroundColor: "#ddd",
                         color: "#333",
@@ -3174,12 +3816,12 @@ export default function ClassPage() {
                       }}
                     >
                       수정
-                    </S.ModalCancelButton>
+                    </S.ModalCancelButton> */}
                   </div>
                   <table style={{ width: "35rem" }}>
                     <thead>
                       <tr>
-                        <th style={{ width: "20px", padding: "3px" }}>
+                        {/* <th style={{ width: "20px", padding: "3px" }}>
                           <input
                             type="checkbox"
                             style={{ width: "20px", height: "20px" }}
@@ -3189,22 +3831,28 @@ export default function ClassPage() {
                             }
                             onChange={onChangeAllSelect}
                           ></input>
-                        </th>
+                        </th> */}
                         <th>원생명</th>
                         <th>시작 시간</th>
                         <th>종료 시간</th>
                         <th>강의 정보</th>
+                        <th>수정</th>
                       </tr>
                     </thead>
                     <tbody>
                       {studentArray?.map((el) => {
                         return (
                           <tr key={el.id || uuidv4()}>
-                            <td style={{ width: "20px", padding: "3px" }}>
+                            {/* <td style={{ width: "20px", padding: "3px" }}>
                               <input
                                 type="checkbox"
                                 onChange={(e) =>
-                                  onChangeEach(e, el.lecture.id, el.student.id)
+                                  onChangeEach(
+                                    e,
+                                    el.lecture.id,
+                                    el.student.id,
+                                    el.lecture.lectureInfo.id
+                                  )
                                 }
                                 style={{ width: "20px", height: "20px" }}
                                 checked={checkList.some((ele) => {
@@ -3216,7 +3864,7 @@ export default function ClassPage() {
                                   );
                                 })}
                               ></input>
-                            </td>
+                            </td> */}
                             <td>{el.student.korName}</td>
                             <td
                               style={
@@ -3248,6 +3896,67 @@ export default function ClassPage() {
                                 ? shortWord(el.lecture.lectureInfo.about)
                                 : shortWord(el.lecture.lectureMemo)}
                             </td>
+                            <td>
+                              <button
+                                onClick={() => {
+                                  setCheckList([
+                                    {
+                                      studentId: el.student.id,
+                                      lectureId: el.lecture.id,
+                                      lectureInfoId: el.lecture.lectureInfo.id,
+                                    },
+                                  ]);
+                                  if (monthClassData !== undefined) {
+                                    setIsAll(false);
+                                    setTodayDate(new Date());
+                                    setIsEdit(true);
+                                    const setting =
+                                      monthClassData?.getLecturesByAcademyAndMonth
+                                        ?.filter((lecture) => {
+                                          return (
+                                            lecture.date ===
+                                            calendarDate.getFullYear() +
+                                              "-" +
+                                              getMonthZero(calendarDate) +
+                                              "-" +
+                                              getDateZero(calendarDate)
+                                          );
+                                        })
+                                        .filter((ele) => {
+                                          return (
+                                            Number(ele.lectureInfo.id) ===
+                                            Number(el.lecture.lectureInfo.id)
+                                          );
+                                        })[0];
+                                    setIsEditAuto(setting?.lectureInfo.autoAdd);
+                                    setIsEditRepeat(
+                                      !setting?.lectureInfo.repeatDay.includes(
+                                        -1
+                                      )
+                                    );
+                                    setEditStartTime(setting?.startTime);
+                                    setEditEndTime(setting?.endTime);
+                                    if (
+                                      !setting?.lectureInfo.repeatDay.includes(
+                                        -1
+                                      )
+                                    ) {
+                                      setEditRepeatWeek(
+                                        setting?.lectureInfo.repeatDay
+                                      );
+                                      setEditRepeatCount(
+                                        setting?.lectureInfo.repeatWeeks
+                                      );
+                                    } else {
+                                      setEditRepeatCount(1);
+                                      setEditRepeatWeek([]);
+                                    }
+                                  }
+                                }}
+                              >
+                                수정
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}
@@ -3257,7 +3966,7 @@ export default function ClassPage() {
               )}
             </S.CalendarRight>
           </S.CalendarWrapper>
-          {isViewMore ? (
+          {/* {isViewMore ? (
             <div
               style={{
                 backgroundColor: "#ffffff",
@@ -3346,7 +4055,7 @@ export default function ClassPage() {
             </div>
           ) : (
             <></>
-          )}
+          )} */}
         </>
       )}
 
@@ -3363,94 +4072,623 @@ export default function ClassPage() {
             setSelectDates([]);
             setStudentPage(0);
             setIsAuto(false);
-          }}
-          footer={null}
-        >
-          <S.ClassTitle>{isMakeUp ? "수업 보강" : "수업 추가"}</S.ClassTitle>
-          <S.ModalClassAddWrapper>
-            <S.ModalWrapper style={{ width: "48%", display: "block" }}>
-              <div
-                style={{
-                  fontSize: "0.875rem",
-                  color: "#000",
-                  marginBottom: "0.75rem",
-                }}
-              >
-                담당 선생님
-              </div>
-              <select
-                onChange={(event) => {
-                  setTeacherId(event.target.value);
-                }}
-                style={{
-                  borderRadius: "0.5rem",
-                  border: "1px solid #DBDDE1",
-                  width: "100%",
-                  padding: "0.81rem 1.5rem",
-                }}
-                value={teacherId}
-              >
-                {userData?.allUsers
+            setAddRepeatInput([
+              {
+                week: [],
+                startTime: dateToClock(date),
+                endTime: dateToClockOneHour(date),
+                isAuto: false,
+                isRepeat: "once",
+                repeatsNum: 0,
+                startDate: dateToInput(date),
+                teacherId: userData?.allUsers
                   .filter((el) => el.userCategory === "선생님")
                   .filter((el) => {
                     return (
                       Number(el.profile.academy.id) ===
                       Number(router.query.branch)
                     );
-                  })
-                  .map((el) => {
-                    return (
-                      <option key={uuidv4()} value={el.profile.id}>
-                        {el.profile.korName}
-                      </option>
-                    );
-                  })}
-              </select>
+                  })[0].id,
+                about: "",
+              },
+            ]);
+          }}
+          footer={null}
+        >
+          <S.ClassTitle>{"수업 추가"}</S.ClassTitle>
+          <S.ModalClassAddWrapper>
+            <div style={{ width: "50%" }}>
+              <div>
+                <div
+                  style={{
+                    marginRight: "5px",
+                    fontSize: "0.875rem",
+                    fontStyle: "normal",
+                    fontWeight: "500",
+                    marginBottom: "0.75rem",
+                  }}
+                >
+                  원생 목록
+                </div>
+                <S.InputInput
+                  onChange={(e) => {
+                    setSearchStudents(e.target.value);
+                  }}
+                  style={{
+                    borderRadius: "0.5rem",
+                    border: "1px solid #DBDDE1",
+                    padding: "0.81rem 1.25rem",
+                    width: "80%",
+                  }}
+                  placeholder="원번 혹은 이름을 입력하세요."
+                ></S.InputInput>
+              </div>{" "}
+              {addList.length === 0 ? (
+                <>
+                  <S.ModalTable
+                    style={{
+                      height: "40rem",
+                      overflow: "scroll",
+                      // overflow: "hidden",
+                    }}
+                  >
+                    <S.ModalTag style={{ position: "sticky" }}>
+                      <S.ModalHeadLeft
+                        style={{
+                          width: "30%",
+                          color: "#000",
+                          background: "#F7F8FA",
+                          height: "2.75rem",
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        원번
+                      </S.ModalHeadLeft>
+                      <S.ModalHeadMiddle
+                        style={{
+                          width: "30%",
+                          color: "#000",
+                          background: "#F7F8FA",
+                          height: "2.75rem",
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        이름
+                      </S.ModalHeadMiddle>
+                      <S.ModalHeadRight
+                        style={{
+                          width: "25%",
+                          color: "#000",
+                          background: "#F7F8FA",
+                          height: "2.75rem",
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        추가
+                      </S.ModalHeadRight>
+                    </S.ModalTag>
+                    {/* 여기다가 필터 추가 lecture 정보로 */}
+                    {allStudent?.map((el) => {
+                      return (
+                        <S.ModalTag key={uuidv4()} style={{ margin: 0 }}>
+                          <S.ModalHeadLeft
+                            style={{
+                              width: "30%",
+                              height: "2.75rem",
+                              display: "flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            {el?.origin}
+                          </S.ModalHeadLeft>
+                          <S.ModalHeadMiddle
+                            style={{
+                              width: "30%",
+                              height: "2.75rem",
+                              display: "flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            {el?.korName}
+                          </S.ModalHeadMiddle>
+                          <S.ModalHeadRight
+                            style={{
+                              width: "25%",
+                              height: "2.75rem",
+                              display: "flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            {/* <input
+                        style={{ width: "20px", height: "20px" }}
+                        type="checkbox"
+                        onChange={onClickStudents(el?.id)}
+                        checked={addList.includes(Number(el?.id))}
+                      ></input> */}
+                            <button
+                              onClick={onClickStudents(el?.id, el?.korName)}
+                            >
+                              선택
+                            </button>
+                          </S.ModalHeadRight>
+                        </S.ModalTag>
+                      );
+                    })}
+                  </S.ModalTable>
+                  <S.PageContainer
+                    style={{ marginBottom: "20px", justifyContent: "center" }}
+                  >
+                    {Array.from({ length: studentMaxPage }, (_, i) => (
+                      <S.PageBox
+                        key={i}
+                        style={
+                          i === studentPage
+                            ? { backgroundColor: "#333", color: "#eeeeee" }
+                            : {}
+                        }
+                        onClick={onClickStudentPage(i)}
+                      >
+                        {i + 1}
+                      </S.PageBox>
+                    ))}
+                  </S.PageContainer>
+                </>
+              ) : (
+                <>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <S.EditModalTagTitle>
+                      {addListName + " 수업 목록"}
+                    </S.EditModalTagTitle>
+                    <button
+                      onClick={() => {
+                        setAddList([]);
+                      }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>날짜</th>
+                        <th>반복 요일</th>
+                        <th>수업 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lectureInfoData?.studentLectures
+                        ?.filter((el, i, callback) => {
+                          return (
+                            i ===
+                            callback.findIndex(
+                              (t) =>
+                                t.lecture.lectureInfo.id ===
+                                el.lecture.lectureInfo.id
+                            )
+                          );
+                        })
+                        ?.map((el) => {
+                          return (
+                            <tr>
+                              <td>
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? el?.lecture?.date
+                                  : el?.lecture?.lectureInfo?.autoAdd
+                                  ? el?.lecture?.date + "~"
+                                  : el?.lecture?.date +
+                                    "~" +
+                                    lastDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatWeeks,
+                                      el?.lecture?.lectureInfo?.repeatDay?.[
+                                        el?.lecture?.lectureInfo?.repeatDay
+                                          ?.length - 1
+                                      ]
+                                    )}
+                              </td>
+                              <td>
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? "없음"
+                                  : el?.lecture?.lectureInfo?.repeatDay
+                                      ?.sort((a, b) => {
+                                        return a - b;
+                                      })
+                                      .map((ele) => {
+                                        return week[ele];
+                                      })}
+                              </td>
+                              <td>
+                                {el?.lecture?.startTime.slice(0, 5) +
+                                  "-" +
+                                  el?.lecture?.endTime.slice(0, 5)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </>
+              )}
+            </div>
+            <S.ModalTable style={{ width: "48%", display: "block" }}>
               <div
                 style={{
-                  fontSize: "0.875rem",
-                  color: "#000",
-                  marginBottom: "0.75rem",
-                  marginTop: "1.25rem",
+                  marginBottom: "1rem",
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "flex-end",
                 }}
               >
-                수업 방식
+                <button
+                  style={{ marginTop: "1rem" }}
+                  onClick={() => {
+                    const newList = [...addRepeatInput];
+                    newList.push({
+                      week: [],
+                      startTime: dateToClock(date),
+                      endTime: dateToClockOneHour(date),
+                      isAuto: false,
+                      isRepeat: "once",
+                      repeatsNum: 0,
+                      startDate: dateToInput(date),
+                      teacherId: userData?.allUsers
+                        .filter((el) => el.userCategory === "선생님")
+                        .filter((el) => {
+                          return (
+                            Number(el.profile.academy.id) ===
+                            Number(router.query.branch)
+                          );
+                        })[0].id,
+                      about: "",
+                    });
+                    setAddRepeatInput(newList);
+                    setAddRepeatCount(addRepeatCount + 1);
+                  }}
+                >
+                  +
+                </button>
               </div>
-              {isMakeUp ? (
-                <></>
-              ) : (
-                <S.ModalRadioBox>
-                  <input
-                    type="radio"
-                    name="type"
-                    defaultChecked={true}
-                    value={"once"}
-                    onClick={() => setAddClassType("once")}
-                    style={{ width: "1.25rem", height: "1.25rem" }}
-                  ></input>
-                  <div style={{ fontSize: "0.875rem", paddingLeft: "0.5rem" }}>
-                    단일
+              {addRepeatInput.map((_, ind) => {
+                return (
+                  <>
+                    <div
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <button onClick={onClickAddRepeatDelete(ind)}>X</button>
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: "0.875rem",
+                        color: "#000",
+                        marginBottom: "0.75rem",
+                      }}
+                    >
+                      담당 선생님
+                    </div>
+                    <select
+                      onChange={onChangeRepeatTeacherId(ind)}
+                      style={{
+                        borderRadius: "0.5rem",
+                        border: "1px solid #DBDDE1",
+                        width: "100%",
+                        padding: "0.81rem 1.5rem",
+                      }}
+                      // value={teacherId}
+                    >
+                      {userData?.allUsers
+                        .filter((el) => el.userCategory === "선생님")
+                        .filter((el) => {
+                          return (
+                            Number(el.profile.academy.id) ===
+                            Number(router.query.branch)
+                          );
+                        })
+                        .filter((el) => {
+                          console.log(el);
+                          return true;
+                        })
+                        .map((el) => {
+                          return (
+                            <option
+                              key={uuidv4()}
+                              value={el.profile.id}
+                              selected={
+                                Number(addRepeatInput[ind].teacherId) ===
+                                Number(el.profile.id)
+                              }
+                            >
+                              {el.profile.korName}
+                            </option>
+                          );
+                        })}
+                    </select>
+                    <div style={{ marginTop: "1.87rem" }}>수업 날짜</div>
+                    <S.InputInput
+                      type="date"
+                      // defaultValue={dateToInput(date)}
+                      value={addRepeatInput[ind].startDate}
+                      style={{
+                        width: "88%",
+                        height: "2.75rem",
+                        padding: "0 1.5rem",
+                      }}
+                      onChange={onChangeRepeatDate(ind)}
+                    ></S.InputInput>
+                    <div
+                      style={{
+                        fontSize: "0.875rem",
+                        color: "#000",
+                        marginBottom: "0.75rem",
+                        marginTop: "1.25rem",
+                      }}
+                    >
+                      수업 방식
+                    </div>
+
+                    <S.ModalRadioBox>
+                      <input
+                        type="radio"
+                        name={"type" + ind}
+                        checked={addRepeatInput[ind].isRepeat === "once"}
+                        value={"once"}
+                        onClick={onChangeRepeatIsRepeat(ind, "once")}
+                        style={{ width: "1.25rem", height: "1.25rem" }}
+                      ></input>
+                      <div
+                        style={{
+                          fontSize: "0.875rem",
+                          paddingLeft: "0.5rem",
+                        }}
+                      >
+                        단일
+                      </div>
+                      <input
+                        type="radio"
+                        name={"type" + ind}
+                        value={"routine"}
+                        checked={addRepeatInput[ind].isRepeat !== "once"}
+                        style={{
+                          width: "1.25rem",
+                          height: "1.25rem",
+                          marginLeft: "1.5rem",
+                        }}
+                        onClick={onChangeRepeatIsRepeat(ind, "routine")}
+                      ></input>
+                      <div
+                        style={{
+                          fontSize: "0.875rem",
+                          paddingLeft: "0.5rem",
+                        }}
+                      >
+                        반복
+                      </div>
+                      <input
+                        type="radio"
+                        name={"type" + ind}
+                        value={"routine"}
+                        checked={addRepeatInput[ind].isRepeat === "count"}
+                        style={{
+                          width: "1.25rem",
+                          height: "1.25rem",
+                          marginLeft: "1.5rem",
+                        }}
+                        onClick={onChangeRepeatIsRepeat(ind, "count")}
+                      ></input>
+                      <div
+                        style={{
+                          fontSize: "0.875rem",
+                          paddingLeft: "0.5rem",
+                        }}
+                      >
+                        횟수
+                      </div>
+                    </S.ModalRadioBox>
+                    {addRepeatInput[ind].isRepeat === "once" ? (
+                      <></>
+                    ) : (
+                      <>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginTop: "1.87rem",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "70%",
+                              border: "1px solid #DBDDE1",
+                              borderRadius: "0.5rem",
+                              backgroundColor: addRepeatInput[ind].isAuto
+                                ? "#dddddd"
+                                : "",
+                            }}
+                          >
+                            <input
+                              type="number"
+                              onChange={onChangeRepeatCount(ind)}
+                              style={{
+                                paddingLeft: "5%",
+                                paddingTop: "0.81rem",
+                                paddingBottom: "0.81rem",
+                                border: "0",
+                                width: "85%",
+                              }}
+                              value={addRepeatInput[ind].repeatsNum}
+                              disabled={addRepeatInput[ind].isAuto}
+                            ></input>
+                            <span>
+                              {addRepeatInput[ind].isRepeat === "count"
+                                ? "회"
+                                : "주"}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              marginLeft: "20px",
+                            }}
+                          >
+                            <span>자동 생성</span>
+                            <input
+                              type="checkbox"
+                              checked={addRepeatInput[ind].isAuto}
+                              style={{ width: "20px", height: "20px" }}
+                              onChange={onChangeRepeatIsAuto(ind)}
+                              disabled={
+                                addRepeatInput[ind].isRepeat === "count"
+                              }
+                            ></input>
+                          </div>
+                        </div>
+                        <S.ModalRoutineInput>
+                          <S.ModalRoutineDates>
+                            {week.map((el, index) => {
+                              return (
+                                <S.ModalRoutineDate
+                                  key={uuidv4()}
+                                  onClick={onClickRepeatDates(ind, index)}
+                                  style={
+                                    addRepeatInput[ind].week.includes(index)
+                                      ? {
+                                          backgroundColor: "#333",
+                                          color: "#eeeeee",
+                                        }
+                                      : {}
+                                  }
+                                >
+                                  {el}
+                                </S.ModalRoutineDate>
+                              );
+                            })}
+                          </S.ModalRoutineDates>
+                        </S.ModalRoutineInput>
+                      </>
+                    )}
+
+                    <div
+                      style={{
+                        marginTop: "1.25rem",
+                        marginBottom: "0.75rem",
+                      }}
+                    >
+                      수업 시간
+                    </div>
+                    <S.TimeBox style={{ width: "100%" }}>
+                      <input
+                        type="time"
+                        style={{
+                          width: "40%",
+                          fontSize: "17px",
+                          border: "1px solid #dddddd",
+                          paddingLeft: "12px",
+                          borderRadius: "5px",
+                          height: "2.75rem",
+                        }}
+                        // defaultValue={dateToClock(date)}
+                        value={addRepeatInput[ind].startTime}
+                        onChange={onChangeRepeatStartTime(ind)}
+                      ></input>
+                      ~
+                      <input
+                        type="time"
+                        style={{
+                          width: "40%",
+                          fontSize: "17px",
+                          border: "1px solid #dddddd",
+                          paddingLeft: "12px",
+                          borderRadius: "5px",
+                          height: "2.75rem",
+                        }}
+                        // defaultValue={dateToClockOneHour(date)}
+                        value={addRepeatInput[ind].endTime}
+                        onChange={onChangeRepeatEndTime(ind)}
+                      ></input>
+                    </S.TimeBox>
+                    <S.ModalInputBox style={{ display: "block" }}>
+                      <div>
+                        <div
+                          style={{
+                            marginTop: "1.25rem",
+                            marginBottom: "0.75rem",
+                          }}
+                        >
+                          메모
+                        </div>
+                      </div>
+                      <S.ModalTextArea
+                        onChange={onChangeRepeatAbout(ind)}
+                        style={{
+                          width: "100%",
+                          borderRadius: "0.5rem",
+                          border: "1px solid #DBDDE1",
+                        }}
+                        value={addRepeatInput[ind].about}
+                      ></S.ModalTextArea>
+                    </S.ModalInputBox>
+                  </>
+                );
+              })}
+
+              {/* {addClassType === "once" ? (
+                <>
+                  <div
+                    style={{ marginTop: "1.25rem", marginBottom: "0.75rem" }}
+                  >
+                    수업 시간
                   </div>
-                  <input
-                    type="radio"
-                    name="type"
-                    value={"routine"}
-                    style={{
-                      width: "1.25rem",
-                      height: "1.25rem",
-                      marginLeft: "1.5rem",
-                    }}
-                    onClick={() => setAddClassType("routine")}
-                  ></input>
-                  <div style={{ fontSize: "0.875rem", paddingLeft: "0.5rem" }}>
-                    반복
-                  </div>
-                </S.ModalRadioBox>
-              )}
-              {addClassType === "once" ? (
-                <></>
+                  <S.TimeBox style={{ width: "100%" }}>
+                    <input
+                      type="time"
+                      style={{
+                        width: "40%",
+                        fontSize: "17px",
+                        border: "1px solid #dddddd",
+                        paddingLeft: "12px",
+                        borderRadius: "5px",
+                        height: "2.75rem",
+                      }}
+                      defaultValue={dateToClock(date)}
+                      onChange={(event) => {
+                        setAddClassStart(event.target.value);
+                      }}
+                    ></input>
+                    ~
+                    <input
+                      type="time"
+                      style={{
+                        width: "40%",
+                        fontSize: "17px",
+                        border: "1px solid #dddddd",
+                        paddingLeft: "12px",
+                        borderRadius: "5px",
+                        height: "2.75rem",
+                      }}
+                      defaultValue={dateToClockOneHour(date)}
+                      onChange={(event) => {
+                        setAddClassEnd(event.target.value);
+                      }}
+                    ></input>
+                  </S.TimeBox>
+                </>
               ) : (
-                <S.ModalRoutineInput>
+                <>
                   <div
                     style={{
                       display: "flex",
@@ -3500,234 +4738,9 @@ export default function ClassPage() {
                       ></input>
                     </div>
                   </div>
-                  <S.ModalRoutineDates>
-                    {week.map((el, index) => {
-                      return (
-                        <S.ModalRoutineDate
-                          key={uuidv4()}
-                          onClick={onClickDates(index)}
-                          style={
-                            selectDates.includes(index)
-                              ? {
-                                  backgroundColor: "#333",
-                                  color: "#eeeeee",
-                                }
-                              : {}
-                          }
-                        >
-                          {el}
-                        </S.ModalRoutineDate>
-                      );
-                    })}
-                  </S.ModalRoutineDates>
-                </S.ModalRoutineInput>
-              )}
-              <div>
-                <div style={{ marginTop: "1.87rem" }}>수업 날짜</div>
-              </div>
-              <S.InputInput
-                type="date"
-                defaultValue={dateToInput(date)}
-                style={{ width: "88%", height: "2.75rem", padding: "0 1.5rem" }}
-                onChange={(event) => {
-                  setAddClassDate(event.target.value);
-                }}
-              ></S.InputInput>
-              <div>
-                <div style={{ marginTop: "1.25rem", marginBottom: "0.75rem" }}>
-                  수업 시간
-                </div>
-              </div>
-              <S.TimeBox style={{ width: "100%" }}>
-                <input
-                  type="time"
-                  style={{
-                    width: "40%",
-                    fontSize: "17px",
-                    border: "1px solid #dddddd",
-                    paddingLeft: "12px",
-                    borderRadius: "5px",
-                    height: "2.75rem",
-                  }}
-                  defaultValue={dateToClock(date)}
-                  onChange={(event) => {
-                    setAddClassStart(event.target.value);
-                  }}
-                ></input>
-                ~
-                <input
-                  type="time"
-                  style={{
-                    width: "40%",
-                    fontSize: "17px",
-                    border: "1px solid #dddddd",
-                    paddingLeft: "12px",
-                    borderRadius: "5px",
-                    height: "2.75rem",
-                  }}
-                  defaultValue={dateToClockOneHour(date)}
-                  onChange={(event) => {
-                    setAddClassEnd(event.target.value);
-                  }}
-                ></input>
-              </S.TimeBox>
-              <S.ModalInputBox style={{ display: "block" }}>
-                <div>
-                  <div
-                    style={{ marginTop: "1.25rem", marginBottom: "0.75rem" }}
-                  >
-                    메모
-                  </div>
-                </div>
-                <S.ModalTextArea
-                  onChange={(event) => {
-                    setAddClassInfo(event.target.value);
-                  }}
-                  style={{
-                    width: "100%",
-                    borderRadius: "0.5rem",
-                    border: "1px solid #DBDDE1",
-                  }}
-                ></S.ModalTextArea>
-              </S.ModalInputBox>
-            </S.ModalWrapper>
-
-            {isMakeUp ? (
-              <></>
-            ) : (
-              <div style={{ width: "50%" }}>
-                <div>
-                  <div
-                    style={{
-                      marginRight: "5px",
-                      fontSize: "0.875rem",
-                      fontStyle: "normal",
-                      fontWeight: "500",
-                      marginBottom: "0.75rem",
-                    }}
-                  >
-                    원생 목록
-                  </div>
-                  <S.InputInput
-                    onChange={(e) => {
-                      setSearchStudents(e.target.value);
-                    }}
-                    style={{
-                      borderRadius: "0.5rem",
-                      border: "1px solid #DBDDE1",
-                      padding: "0.81rem 1.25rem",
-                      width: "80%",
-                    }}
-                    placeholder="원번 혹은 이름을 입력하세요."
-                  ></S.InputInput>
-                </div>{" "}
-                <S.ModalTable
-                  style={{
-                    height: "40rem",
-                    overflow: "scroll",
-                    // overflow: "hidden",
-                  }}
-                >
-                  <S.ModalTag style={{ position: "sticky" }}>
-                    <S.ModalHeadLeft
-                      style={{
-                        width: "30%",
-                        color: "#000",
-                        background: "#F7F8FA",
-                        height: "2.75rem",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      원번
-                    </S.ModalHeadLeft>
-                    <S.ModalHeadMiddle
-                      style={{
-                        width: "30%",
-                        color: "#000",
-                        background: "#F7F8FA",
-                        height: "2.75rem",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      이름
-                    </S.ModalHeadMiddle>
-                    <S.ModalHeadRight
-                      style={{
-                        width: "25%",
-                        color: "#000",
-                        background: "#F7F8FA",
-                        height: "2.75rem",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      추가
-                    </S.ModalHeadRight>
-                  </S.ModalTag>
-                  {/* 여기다가 필터 추가 lecture 정보로 */}
-                  {allStudent?.map((el) => {
-                    return (
-                      <S.ModalTag key={uuidv4()} style={{ margin: 0 }}>
-                        <S.ModalHeadLeft
-                          style={{
-                            width: "30%",
-                            height: "2.75rem",
-                            display: "flex",
-                            alignItems: "center",
-                          }}
-                        >
-                          {el?.origin}
-                        </S.ModalHeadLeft>
-                        <S.ModalHeadMiddle
-                          style={{
-                            width: "30%",
-                            height: "2.75rem",
-                            display: "flex",
-                            alignItems: "center",
-                          }}
-                        >
-                          {el?.korName}
-                        </S.ModalHeadMiddle>
-                        <S.ModalHeadRight
-                          style={{
-                            width: "25%",
-                            height: "2.75rem",
-                            display: "flex",
-                            alignItems: "center",
-                          }}
-                        >
-                          <input
-                            style={{ width: "20px", height: "20px" }}
-                            type="checkbox"
-                            onChange={onClickStudents(el?.id)}
-                            checked={addList.includes(Number(el?.id))}
-                          ></input>
-                        </S.ModalHeadRight>
-                      </S.ModalTag>
-                    );
-                  })}
-                </S.ModalTable>
-                <S.PageContainer
-                  style={{ marginBottom: "20px", justifyContent: "center" }}
-                >
-                  {Array.from({ length: studentMaxPage }, (_, i) => (
-                    <S.PageBox
-                      key={i}
-                      style={
-                        i === studentPage
-                          ? { backgroundColor: "#333", color: "#eeeeee" }
-                          : {}
-                      }
-                      onClick={onClickStudentPage(i)}
-                    >
-                      {i + 1}
-                    </S.PageBox>
-                  ))}
-                </S.PageContainer>
-              </div>
-            )}
+                </>
+              )} */}
+            </S.ModalTable>
           </S.ModalClassAddWrapper>
           <S.ModalButtonBox style={{ width: "100%", justifyContent: "center" }}>
             <S.ModalCancelButton
@@ -3736,15 +4749,97 @@ export default function ClassPage() {
             >
               취소
             </S.ModalCancelButton>
-            <S.ModalOkButton
-              onClick={isMakeUp ? onClickMakeUpClass : onClickOk}
-            >
-              저장
-            </S.ModalOkButton>
+            <S.ModalOkButton onClick={onClickOk}>저장</S.ModalOkButton>
           </S.ModalButtonBox>
         </Modal>
       ) : (
         <></>
+      )}
+      {isMakeUp && (
+        <Modal
+          open={isMakeUp}
+          footer={null}
+          closable={false}
+          onCancel={() => {
+            setIsMakeUp(false);
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div>
+              담당 선생님
+              <select
+                onChange={(event) => {
+                  setMakeUpTeacherId(event.target.value);
+                }}
+                value={makeUpTeacherId}
+              >
+                {userData?.allUsers
+                  .filter((el) => el.userCategory === "선생님")
+                  .filter((el) => {
+                    return (
+                      Number(el.profile.academy.id) ===
+                      Number(router.query.branch)
+                    );
+                  })
+                  .map((el) => {
+                    return (
+                      <option key={uuidv4()} value={el.profile.id}>
+                        {el.profile.korName}
+                      </option>
+                    );
+                  })}
+              </select>
+            </div>
+            <div>
+              수정 날짜
+              <input
+                type="date"
+                onChange={(e) => {
+                  setMakeUpDate(e.target.value);
+                }}
+                value={makeUpDate}
+              ></input>
+            </div>
+            <div>
+              수업 시간
+              <input
+                type="time"
+                onChange={(e) => {
+                  setMakeUpStart(e.target.value);
+                }}
+                value={makeUpStart}
+              ></input>
+              -
+              <input
+                type="time"
+                onChange={(e) => {
+                  setMakeUpEnd(e.target.value);
+                }}
+                value={makeUpEnd}
+              ></input>
+            </div>
+            <div>
+              보강 설명
+              <input
+                type="text"
+                onChange={(e) => {
+                  setMakeUpInfo(e.target.value);
+                }}
+                value={makeUpInfo}
+              ></input>
+            </div>
+            <div>
+              <button
+                onClick={() => {
+                  setIsMakeUp(false);
+                }}
+              >
+                취소
+              </button>
+              <button onClick={onClickMakeUpClass}>보강</button>
+            </div>
+          </div>
+        </Modal>
       )}
       {studentToggle ? (
         <Modal
@@ -4002,7 +5097,7 @@ export default function ClassPage() {
                       <input
                         style={{ width: "20px", height: "20px" }}
                         type="checkbox"
-                        onChange={onClickStudents(el?.id)}
+                        onChange={onClickStudents(el?.id, el?.korName)}
                         checked={addList.includes(Number(el?.id))}
                       ></input>
                     </S.ModalHeadRight>
@@ -4233,366 +5328,284 @@ export default function ClassPage() {
             setBarcode("");
           }}
         >
-          <S.ModalTitle
-            style={{ fontWeight: 600, fontFamily: "Spoqa Han Sans Neo" }}
-          >
-            {selectChild.origin +
-              " - " +
-              selectChild.korName +
-              " 도서 예약 (" +
-              reservationBookData?.studentReservedBooks.length +
-              "권 예약 중)"}
-          </S.ModalTitle>
+          <div style={{ overflowX: "scroll" }}>
+            <S.ModalTitle
+              style={{ fontWeight: 600, fontFamily: "Spoqa Han Sans Neo" }}
+            >
+              {selectChild.origin +
+                " - " +
+                selectChild.korName +
+                " 도서 예약 (" +
+                reservationBookData?.studentReservedBooks.length +
+                "권 예약 중)"}
+            </S.ModalTitle>
 
-          <S.ModalButtonBox>
-            <S.ModalReturnButton onClick={onClickTotalReturn}>
-              일괄 반납
-            </S.ModalReturnButton>
-            <S.ModalCancelButton
-              onClick={() => {
-                setIsBook(false);
-                refetchBook({ minBl: 0, maxBl: 0, arQn: null });
-                setBookSearchWord("");
-                setReserveType("recommend");
-                setBarcode("");
-              }}
-            >
-              취소
-            </S.ModalCancelButton>
-          </S.ModalButtonBox>
-          <table style={{ width: "92rem" }}>
-            {reservationBookData?.studentReservedBooks.length === 0 ? (
-              <></>
-            ) : (
-              <thead style={{ height: "2.75rem" }}>
-                <tr>
-                  <th style={{ width: "2rem" }}>목차</th>
-                  <th style={{ width: "6rem" }}>박스 넘버</th>
-                  <th style={{ width: "6rem" }}>PLBN</th>
-                  <th style={{ width: "13rem" }}>도서 제목</th>
-                  <th style={{ width: "9rem" }}>저자</th>
-                  <th style={{ width: "6rem" }}>AR QUIZ No.</th>
-                  <th style={{ width: "1.8rem" }}>F/NF</th>
-                  <th style={{ width: "1.8rem" }}>AR</th>
-                  <th style={{ width: "2.5rem" }}>WC</th>
-                  <th style={{ width: "2rem" }}>IL</th>
-                  <th style={{ width: "2.5rem" }}>Lexile</th>
-                  <th style={{ width: "3rem" }}>반납</th>
-                </tr>
-              </thead>
-            )}
-            <tbody>
-              {reservationBookData?.studentReservedBooks?.map((el, index) => {
-                return (
-                  <tr style={{ height: "2.75rem" }}>
-                    <td>{index + 1}</td>
-                    <td>{el.boxNumber}</td>
-                    <td>{el.plbn}</td>
-                    {el.booktitle.length > 25 ? (
-                      <td
-                        onMouseEnter={() => {
-                          setIsViewTitle(true);
-                          setViewTitle(el?.booktitle);
-                        }}
-                        onMouseLeave={() => {
-                          setIsViewTitle(false);
-                        }}
-                      >
-                        {longWord(el.booktitle)}
-                      </td>
-                    ) : (
-                      <td>{longWord(el.booktitle)}</td>
-                    )}
-                    {el.book.authorAr.length > 15 ? (
-                      <td
-                        onMouseEnter={() => {
-                          setIsViewTitle(true);
-                          setViewTitle(el.book.authorAr);
-                        }}
-                        onMouseLeave={() => {
-                          setIsViewTitle(false);
-                        }}
-                      >
-                        {longAuthor(el.book.authorAr)}
-                      </td>
-                    ) : (
-                      <td>{longAuthor(el.book.authorAr)}</td>
-                    )}
-                    {/* <td>{longAuthor(el.book.authorAr)}</td> */}
-                    <td>{"#" + el.book.arQuiz}</td>
-                    <td>{el.book.fnfStatus}</td>
-                    <td>{arFrame(el.book.bl)}</td>
-                    <td>{el.book.wcAr}</td>
-                    <td>{el.book.ilStatus.slice(3, 5)}</td>
-                    <td>
-                      {(el.book.lexileLex > 0
-                        ? el.book.lexileLex + "L"
-                        : "B" + -1 * el.book.lexileLex + "L") ||
-                        el.book.lexileAr}
-                    </td>
-
-                    <td>
-                      <button onClick={onClickReturnBook(Number(el.id))}>
-                        반납
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {selectBookData.length === 0 ? (
-            <></>
-          ) : (
-            <>
-              <S.ModalTag style={{ marginTop: "20px" }}>
-                {"예약 예정 도서 리스트"}
-              </S.ModalTag>
-              <S.ModalTag>
-                <S.ModalHeadLeft
-                  style={{
-                    width: "40%",
-                    background: "#42444e",
-                    color: "#fff",
-                    textAlign: "left",
-                    fontSize: "medium",
-                  }}
-                >
-                  도서 제목
-                </S.ModalHeadLeft>
-                <S.ModalHeadMiddle
-                  style={{
-                    width: "30%",
-                    background: "#42444e",
-                    color: "#fff",
-                    textAlign: "left",
-                    fontSize: "medium",
-                  }}
-                >
-                  AR
-                </S.ModalHeadMiddle>
-
-                <S.ModalHeadRight
-                  style={{
-                    width: "25%",
-                    background: "#42444e",
-                    color: "#fff",
-                    textAlign: "left",
-                    fontSize: "small",
-                  }}
-                >
-                  AR QUIZ No.
-                </S.ModalHeadRight>
-                <S.ModalHeadRight
-                  style={{
-                    width: "25%",
-                    background: "#42444e",
-                    color: "#fff",
-                    textAlign: "left",
-                    fontSize: "small",
-                  }}
-                >
-                  동작
-                </S.ModalHeadRight>
-              </S.ModalTag>
-            </>
-          )}
-          {selectBookData?.map((el) => {
-            return (
-              <S.ModalTag key={uuidv4()}>
-                <S.ModalHeadLeft style={{ width: "40%" }}>
-                  {el.titleAr}
-                </S.ModalHeadLeft>
-                <S.ModalHeadMiddle style={{ width: "30%" }}>
-                  {el.bl}
-                </S.ModalHeadMiddle>
-                <S.ModalHeadRight style={{ width: "25%" }}>
-                  {el.arQuiz}
-                </S.ModalHeadRight>
-                <S.ModalHeadRight style={{ width: "25%" }}>
-                  <S.ModalIcon
-                    onClick={onClickBookDelete(Number(el.books[0].id))}
-                  >
-                    삭제
-                  </S.ModalIcon>
-                </S.ModalHeadRight>
-              </S.ModalTag>
-            );
-          })}
-          <S.ModalTag>
-            <S.ModalTagHover
-              onClick={() => {
-                setReserveType("recommend");
-                refetchBook({ arQn: null });
-              }}
-              style={{
-                color: reserveType === "recommend" ? "#111111" : "#5F6268",
-                textDecoration: reserveType === "recommend" ? "underline" : "",
-              }}
-            >
-              추천 도서
-            </S.ModalTagHover>
-            <S.ModalTagHover
-              onClick={() => {
-                setReserveType("search");
-                refetchBook({ arQn: null });
-              }}
-              style={{
-                color: reserveType === "search" ? "#111111" : "#5F6268",
-                textDecoration: reserveType === "search" ? "underline" : "",
-              }}
-            >
-              도서 검색
-            </S.ModalTagHover>
-            <S.ModalTagHover
-              onClick={() => {
-                setReserveType("barcode");
-              }}
-              style={{
-                color: reserveType === "barcode" ? "#111111" : "#5F6268",
-                textDecoration: reserveType === "barcode" ? "underline" : "",
-              }}
-            >
-              바코드
-            </S.ModalTagHover>
-          </S.ModalTag>
-          {reserveType === "search" && (
-            <>
-              <S.ModalWrapper
-                style={{
-                  borderRadius: "0.25rem 0.25rem 0rem 0rem",
-                  background: "#F7F8FA",
-                  padding: "1.5rem",
-                  borderRadius: "9px",
-                  marginTop: "1.25rem",
+            <S.ModalButtonBox>
+              <S.ModalCancelButton
+                onClick={() => {
+                  setIsBook(false);
+                  refetchBook({ minBl: 0, maxBl: 0, arQn: null });
+                  setBookSearchWord("");
+                  setReserveType("recommend");
+                  setBarcode("");
                 }}
               >
-                <S.ModalButtonBox
+                취소
+              </S.ModalCancelButton>
+              <S.ModalReturnButton onClick={onClickTotalReturn}>
+                일괄 반납
+              </S.ModalReturnButton>
+            </S.ModalButtonBox>
+            <table style={{ width: "92rem" }}>
+              {reservationBookData?.studentReservedBooks.length === 0 ? (
+                <></>
+              ) : (
+                <thead style={{ height: "2.75rem" }}>
+                  <tr>
+                    <th style={{ width: "2rem" }}>No.</th>
+                    <th style={{ width: "6rem" }}>박스 넘버</th>
+                    <th style={{ width: "6rem" }}>PLBN</th>
+                    <th style={{ width: "13rem" }}>도서 제목</th>
+                    <th style={{ width: "9rem" }}>저자</th>
+                    <th style={{ width: "6rem" }}>AR QUIZ No.</th>
+                    <th style={{ width: "1.8rem" }}>F/NF</th>
+                    <th style={{ width: "1.8rem" }}>AR</th>
+                    <th style={{ width: "2.5rem" }}>WC</th>
+                    <th style={{ width: "2rem" }}>IL</th>
+                    <th style={{ width: "2.5rem" }}>Lexile</th>
+                    <th style={{ width: "3rem" }}>반납</th>
+                  </tr>
+                </thead>
+              )}
+              <tbody>
+                {reservationBookData?.studentReservedBooks?.map((el, index) => {
+                  return (
+                    <tr style={{ height: "2.75rem" }}>
+                      <td>{index + 1}</td>
+                      <td>{el.boxNumber}</td>
+                      <td>{el.plbn}</td>
+                      {el.booktitle.length > 25 ? (
+                        <td
+                          onMouseEnter={() => {
+                            setIsViewTitle(true);
+                            setViewTitle(el?.booktitle);
+                          }}
+                          onMouseLeave={() => {
+                            setIsViewTitle(false);
+                          }}
+                        >
+                          {longWord(el.booktitle)}
+                        </td>
+                      ) : (
+                        <td>{longWord(el.booktitle)}</td>
+                      )}
+                      {el.book.authorAr.length > 15 ? (
+                        <td
+                          onMouseEnter={() => {
+                            setIsViewTitle(true);
+                            setViewTitle(el.book.authorAr);
+                          }}
+                          onMouseLeave={() => {
+                            setIsViewTitle(false);
+                          }}
+                        >
+                          {longAuthor(el.book.authorAr)}
+                        </td>
+                      ) : (
+                        <td>{longAuthor(el.book.authorAr)}</td>
+                      )}
+                      {/* <td>{longAuthor(el.book.authorAr)}</td> */}
+                      <td>{"#" + el.book.arQuiz}</td>
+                      <td>{el.book.fnfStatus}</td>
+                      <td>{arFrame(el.book.bl)}</td>
+                      <td>{el.book.wcAr}</td>
+                      <td>{el.book.ilStatus.slice(3, 5)}</td>
+                      <td>
+                        {(el.book.lexileLex > 0
+                          ? el.book.lexileLex + "L"
+                          : "B" + -1 * el.book.lexileLex + "L") ||
+                          el.book.lexileAr}
+                      </td>
+
+                      <td>
+                        <button onClick={onClickReturnBook(Number(el.id))}>
+                          반납
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {selectBookData.length === 0 ? (
+              <></>
+            ) : (
+              <>
+                <S.ModalTag style={{ marginTop: "20px" }}>
+                  {"예약 예정 도서 리스트"}
+                </S.ModalTag>
+                <S.ModalTag>
+                  <S.ModalHeadLeft
+                    style={{
+                      width: "40%",
+                      background: "#42444e",
+                      color: "#fff",
+                      textAlign: "left",
+                      fontSize: "medium",
+                    }}
+                  >
+                    도서 제목
+                  </S.ModalHeadLeft>
+                  <S.ModalHeadMiddle
+                    style={{
+                      width: "30%",
+                      background: "#42444e",
+                      color: "#fff",
+                      textAlign: "left",
+                      fontSize: "medium",
+                    }}
+                  >
+                    AR
+                  </S.ModalHeadMiddle>
+
+                  <S.ModalHeadRight
+                    style={{
+                      width: "25%",
+                      background: "#42444e",
+                      color: "#fff",
+                      textAlign: "left",
+                      fontSize: "small",
+                    }}
+                  >
+                    AR QUIZ No.
+                  </S.ModalHeadRight>
+                  <S.ModalHeadRight
+                    style={{
+                      width: "25%",
+                      background: "#42444e",
+                      color: "#fff",
+                      textAlign: "left",
+                      fontSize: "small",
+                    }}
+                  >
+                    동작
+                  </S.ModalHeadRight>
+                </S.ModalTag>
+              </>
+            )}
+            {selectBookData?.map((el) => {
+              return (
+                <S.ModalTag key={uuidv4()}>
+                  <S.ModalHeadLeft style={{ width: "40%" }}>
+                    {el.titleAr}
+                  </S.ModalHeadLeft>
+                  <S.ModalHeadMiddle style={{ width: "30%" }}>
+                    {el.bl}
+                  </S.ModalHeadMiddle>
+                  <S.ModalHeadRight style={{ width: "25%" }}>
+                    {el.arQuiz}
+                  </S.ModalHeadRight>
+                  <S.ModalHeadRight style={{ width: "25%" }}>
+                    <S.ModalIcon
+                      onClick={onClickBookDelete(Number(el.books[0].id))}
+                    >
+                      삭제
+                    </S.ModalIcon>
+                  </S.ModalHeadRight>
+                </S.ModalTag>
+              );
+            })}
+            <S.ModalTag>
+              <S.ModalTagHover
+                onClick={() => {
+                  setReserveType("recommend");
+                  refetchBook({ arQn: null });
+                }}
+                style={{
+                  backgroundColor:
+                    reserveType === "recommend" ? "#FABF8F" : "#dddddd",
+                  color: reserveType === "recommend" ? "#111111" : "#111111",
+                  padding: "1rem",
+                  borderRadius: "10px",
+                  // textDecoration: reserveType === "recommend" ? "underline" : "",
+                }}
+              >
+                추천 도서
+              </S.ModalTagHover>
+              <S.ModalTagHover
+                onClick={() => {
+                  setReserveType("search");
+                  refetchBook({ arQn: null });
+                }}
+                style={{
+                  backgroundColor:
+                    reserveType === "search" ? "#FABF8F" : "#dddddd",
+                  color: reserveType === "search" ? "#111111" : "#111111",
+                  padding: "1rem",
+                  borderRadius: "10px",
+                }}
+              >
+                도서 검색
+              </S.ModalTagHover>
+              <S.ModalTagHover
+                onClick={() => {
+                  setReserveType("barcode");
+                }}
+                style={{
+                  backgroundColor:
+                    reserveType === "barcode" ? "#FABF8F" : "#dddddd",
+                  color: reserveType === "barcode" ? "#111111" : "#111111",
+                  padding: "1rem",
+                  borderRadius: "10px",
+                }}
+              >
+                바코드
+              </S.ModalTagHover>
+            </S.ModalTag>
+            {reserveType === "search" && (
+              <>
+                <S.ModalWrapper
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "flex-start",
-                    alignItems: "flex-start",
+                    borderRadius: "0.25rem 0.25rem 0rem 0rem",
+                    background: "#F7F8FA",
+                    padding: "1.5rem",
+                    borderRadius: "9px",
+                    marginTop: "1.25rem",
                   }}
                 >
-                  <div
+                  <S.ModalButtonBox
                     style={{
                       display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
+                      flexDirection: "column",
+                      justifyContent: "flex-start",
+                      alignItems: "flex-start",
                     }}
                   >
                     <div
                       style={{
                         display: "flex",
-                        color: "#000",
-                        fontSize: "15px",
-                        fontWeight: "bold",
-                        flexDirection: "column",
-                        marginRight: "1.87rem",
+                        justifyContent: "center",
+                        alignItems: "center",
                       }}
                     >
-                      <div>AR 점수</div>
-                      <div>
-                        최소
-                        <S.InputInput
-                          type="number"
-                          style={{ marginLeft: "10px", marginTop: "10px" }}
-                          onChange={(e) => {
-                            setMinScore(e.target.value);
-                          }}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              onClickSearchBooks();
-                            }
-                          }}
-                        ></S.InputInput>
-                      </div>
-                      <div>
-                        최대
-                        <S.InputInput
-                          type="number"
-                          style={{ marginLeft: "10px", marginTop: "10px" }}
-                          onChange={(e) => {
-                            setMaxScore(e.target.value);
-                          }}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              onClickSearchBooks();
-                            }
-                          }}
-                        ></S.InputInput>
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        color: "#000",
-                        fontSize: "15px",
-                        fontWeight: "bold",
-                        flexDirection: "column",
-                        marginRight: "1.87rem",
-                      }}
-                    >
-                      <div>Word Count</div>
-                      <div>
-                        최소
-                        <S.InputInput
-                          type="number"
-                          style={{ marginLeft: "10px", marginTop: "10px" }}
-                          onChange={(e) => {
-                            setMinWc(Number(e.target.value));
-                          }}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              onClickSearchBooks();
-                            }
-                          }}
-                        ></S.InputInput>
-                      </div>
-                      <div>
-                        최대
-                        <S.InputInput
-                          type="number"
-                          style={{ marginLeft: "10px", marginTop: "10px" }}
-                          onChange={(e) => {
-                            setMaxWc(
-                              Number(
-                                e.target.value === ""
-                                  ? 100000000
-                                  : e.target.value
-                              )
-                            );
-                          }}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              onClickSearchBooks();
-                            }
-                          }}
-                        ></S.InputInput>
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        color: "#000",
-                        fontSize: "15px",
-                        fontWeight: "bold",
-                        flexDirection: "column",
-                        float: "left",
-                        height: "100px",
-                        marginRight: "1.87rem",
-                      }}
-                    >
-                      <div>Lexile 점수</div>
-                      <div>
+                      <div
+                        style={{
+                          display: "flex",
+                          color: "#000",
+                          fontSize: "15px",
+                          fontWeight: "bold",
+                          flexDirection: "column",
+                          marginRight: "1.87rem",
+                        }}
+                      >
+                        <div>AR 점수</div>
                         <div>
                           최소
                           <S.InputInput
                             type="number"
                             style={{ marginLeft: "10px", marginTop: "10px" }}
                             onChange={(e) => {
-                              setMinLex(Number(e.target.value));
+                              setMinScore(e.target.value);
                             }}
                             onKeyPress={(e) => {
                               if (e.key === "Enter") {
@@ -4607,7 +5620,7 @@ export default function ClassPage() {
                             type="number"
                             style={{ marginLeft: "10px", marginTop: "10px" }}
                             onChange={(e) => {
-                              setMaxLex(Number(e.target.value));
+                              setMaxScore(e.target.value);
                             }}
                             onKeyPress={(e) => {
                               if (e.key === "Enter") {
@@ -4617,213 +5630,635 @@ export default function ClassPage() {
                           ></S.InputInput>
                         </div>
                       </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          color: "#000",
+                          fontSize: "15px",
+                          fontWeight: "bold",
+                          flexDirection: "column",
+                          marginRight: "1.87rem",
+                        }}
+                      >
+                        <div>Word Count</div>
+                        <div>
+                          최소
+                          <S.InputInput
+                            type="number"
+                            style={{ marginLeft: "10px", marginTop: "10px" }}
+                            onChange={(e) => {
+                              setMinWc(Number(e.target.value));
+                            }}
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                onClickSearchBooks();
+                              }
+                            }}
+                          ></S.InputInput>
+                        </div>
+                        <div>
+                          최대
+                          <S.InputInput
+                            type="number"
+                            style={{ marginLeft: "10px", marginTop: "10px" }}
+                            onChange={(e) => {
+                              setMaxWc(
+                                Number(
+                                  e.target.value === ""
+                                    ? 100000000
+                                    : e.target.value
+                                )
+                              );
+                            }}
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                onClickSearchBooks();
+                              }
+                            }}
+                          ></S.InputInput>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          color: "#000",
+                          fontSize: "15px",
+                          fontWeight: "bold",
+                          flexDirection: "column",
+                          float: "left",
+                          height: "100px",
+                          marginRight: "1.87rem",
+                        }}
+                      >
+                        <div>Lexile 점수</div>
+                        <div>
+                          <div>
+                            최소
+                            <S.InputInput
+                              type="number"
+                              style={{ marginLeft: "10px", marginTop: "10px" }}
+                              onChange={(e) => {
+                                setMinLex(Number(e.target.value));
+                              }}
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter") {
+                                  onClickSearchBooks();
+                                }
+                              }}
+                            ></S.InputInput>
+                          </div>
+                          <div>
+                            최대
+                            <S.InputInput
+                              type="number"
+                              style={{ marginLeft: "10px", marginTop: "10px" }}
+                              onChange={(e) => {
+                                setMaxLex(Number(e.target.value));
+                              }}
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter") {
+                                  onClickSearchBooks();
+                                }
+                              }}
+                            ></S.InputInput>
+                          </div>
+                        </div>
+                      </div>
+                      <S.ModalAddButton
+                        onClick={onClickSearchBooks}
+                        style={{
+                          borderRadius: "0.5rem",
+                          background: "#333",
+                          height: "2.75rem",
+                        }}
+                      >
+                        검색
+                      </S.ModalAddButton>
                     </div>
-                    <S.ModalAddButton
-                      onClick={onClickSearchBooks}
-                      style={{
-                        borderRadius: "0.5rem",
-                        background: "#333",
-                        height: "2.75rem",
-                      }}
-                    >
-                      검색
-                    </S.ModalAddButton>
-                  </div>
-                </S.ModalButtonBox>
-              </S.ModalWrapper>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
+                  </S.ModalButtonBox>
+                </S.ModalWrapper>
                 <div
                   style={{
-                    display: "inline-block",
-                    textAlign: "right",
-                    fontWeight: "bold",
-                    width: "92rem",
+                    display: "flex",
+                    flexDirection: "column",
                   }}
                 >
-                  검색
-                  <S.InputInput
+                  <div
                     style={{
-                      marginLeft: "10px",
-                      marginTop: "10px",
-                      marginBottom: "10px",
+                      display: "inline-block",
+                      textAlign: "right",
+                      fontWeight: "bold",
+                      width: "92rem",
                     }}
-                    onChange={(e) => {
-                      setBookSearchWord(e.target.value);
-                    }}
-                  ></S.InputInput>
+                  >
+                    검색
+                    <S.InputInput
+                      style={{
+                        marginLeft: "10px",
+                        marginTop: "10px",
+                        marginBottom: "10px",
+                      }}
+                      onChange={(e) => {
+                        setBookSearchWord(e.target.value);
+                      }}
+                    ></S.InputInput>
+                  </div>
                 </div>
-              </div>
-              {isLoading ? <Spin></Spin> : <></>}
-              {isLoading ? (
-                <></>
-              ) : (
-                <>
-                  <table style={{ width: "92rem" }}>
-                    {bookData?.getBooksByBl.length === 0 ||
-                    bookData === undefined ? (
+                {isLoading ? <Spin></Spin> : <></>}
+                {isLoading ? (
+                  <></>
+                ) : (
+                  <>
+                    <table style={{ width: "92rem" }}>
+                      {bookData?.getBooksByBl.length === 0 ||
+                      bookData === undefined ? (
+                        <></>
+                      ) : (
+                        <thead style={{ height: "2.75rem" }}>
+                          <tr>
+                            <th style={{ width: "6%" }}>No.</th>
+                            <th style={{ width: "10%" }}>박스 넘버</th>
+                            <th style={{ width: "10.5%" }}>
+                              PLBN{" "}
+                              {sortType === "plbn" ? (
+                                <UpOutlined
+                                  onClick={onClickSortType("plbnReverse")}
+                                />
+                              ) : (
+                                <DownOutlined
+                                  onClick={onClickSortType("plbn")}
+                                />
+                              )}
+                            </th>
+                            <th style={{ width: "15%" }}>
+                              도서 제목{" "}
+                              {sortType === "title" ? (
+                                <UpOutlined
+                                  onClick={onClickSortType("titleReverse")}
+                                />
+                              ) : (
+                                <DownOutlined
+                                  onClick={onClickSortType("title")}
+                                />
+                              )}
+                            </th>
+                            <th style={{ width: "13%" }}>
+                              저자{" "}
+                              {sortType === "author" ? (
+                                <UpOutlined
+                                  onClick={onClickSortType("authorReverse")}
+                                />
+                              ) : (
+                                <DownOutlined
+                                  onClick={onClickSortType("author")}
+                                />
+                              )}
+                            </th>
+                            <th style={{ width: "9%" }}>AR QUIZ No.</th>
+                            <th style={{ width: "3%" }}>F/NF</th>
+                            <th style={{ width: "6%" }}>
+                              AR{" "}
+                              {sortType === "ar" ? (
+                                <UpOutlined
+                                  onClick={onClickSortType("arReverse")}
+                                />
+                              ) : (
+                                <DownOutlined onClick={onClickSortType("ar")} />
+                              )}
+                            </th>
+
+                            <th style={{ width: "6.5%" }}>
+                              WC{" "}
+                              {sortType === "wordCount" ? (
+                                <UpOutlined
+                                  onClick={onClickSortType("wordCountReverse")}
+                                />
+                              ) : (
+                                <DownOutlined
+                                  onClick={onClickSortType("wordCount")}
+                                />
+                              )}
+                            </th>
+                            <th style={{ width: "3%" }}>IL</th>
+                            <th style={{ width: "7.2%" }}>
+                              Lexile{" "}
+                              {sortType === "lexile" ? (
+                                <UpOutlined
+                                  onClick={onClickSortType("lexileReverse")}
+                                />
+                              ) : (
+                                <DownOutlined
+                                  onClick={onClickSortType("lexile")}
+                                />
+                              )}
+                            </th>
+                            <th style={{ width: "6.4%" }}>예약</th>
+                          </tr>
+                        </thead>
+                      )}
+                      <tbody>
+                        {bookArray
+                          ?.filter((el) => {
+                            return (
+                              reservationBookData?.studentReservedBooks.filter(
+                                (ele) => {
+                                  return ele.titleAr === el.titleAr;
+                                }
+                              ).length === 0
+                            );
+                          })
+                          ?.map((el, index) => {
+                            return (
+                              <tr style={{ height: "2.75rem" }}>
+                                <td>{(bookPage - 1) * 20 + index + 1}</td>
+                                <td>{el.books?.[0].boxNumber}</td>
+                                {/* <td>{kplbnFrame(el.kplbn)}</td> */}
+                                <td>{el.books?.[0].plbn}</td>
+                                {el.titleAr?.length > 25 ? (
+                                  <td
+                                    onMouseEnter={() => {
+                                      setIsViewTitle(true);
+                                      setViewTitle(el?.titleAr);
+                                    }}
+                                    onMouseLeave={() => {
+                                      setIsViewTitle(false);
+                                    }}
+                                  >
+                                    {longWord(el.titleAr)}
+                                  </td>
+                                ) : (
+                                  <td>{longWord(el.titleAr)}</td>
+                                )}
+                                {el.authorAr.length > 15 ? (
+                                  <td
+                                    onMouseEnter={() => {
+                                      setIsViewTitle(true);
+                                      setViewTitle(el?.authorAr);
+                                    }}
+                                    onMouseLeave={() => {
+                                      setIsViewTitle(false);
+                                    }}
+                                  >
+                                    {longAuthor(el.authorAr)}
+                                  </td>
+                                ) : (
+                                  <td>{longAuthor(el.authorAr)}</td>
+                                )}
+                                <td>{"#" + el.arQuiz}</td>
+                                <td>{el.fnfStatus}</td>
+                                <td>{arFrame(el.bl)}</td>
+
+                                <td>{addComma(el.wcAr)}</td>
+                                <th>{el?.ilStatus.slice(3, 5)}</th>
+                                <td>
+                                  {el.lexileLex === null
+                                    ? lexileFrame(el.lexileAr)
+                                    : lexileFrame(el.lexileLex)}
+                                </td>
+                                <td>
+                                  <button
+                                    onClick={onClickBookingBooks(
+                                      Number(el?.books?.[0]?.id),
+                                      el.titleAr
+                                    )}
+                                  >
+                                    예약
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+                {isLoading ? (
+                  <></>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      marginTop: "20px",
+                    }}
+                  >
+                    {bookData === undefined ||
+                    bookData?.getBooksByBl.length === 0 ? (
                       <></>
                     ) : (
-                      <thead style={{ height: "2.75rem" }}>
-                        <tr>
-                          {/* <th style={{ width: "2rem" }}>목차</th>
-                    <th style={{ width: "6rem" }}>박스 넘버</th>
-                    <th style={{ width: "6rem" }}>PLBN</th>
-                    <th style={{ width: "13rem" }}>도서 제목</th>
-                    <th style={{ width: "9rem" }}>저자</th>
-                    <th style={{ width: "6rem" }}>AR QUIZ No.</th>
-                    <th style={{ width: "1.8rem" }}>F/NF</th>
-                    <th style={{ width: "1.8rem" }}>AR</th>
-                    <th style={{ width: "2.5rem" }}>WC</th>
-                    <th style={{ width: "2rem" }}>IL</th>
-                    <th style={{ width: "2.5rem" }}>Lexile</th>
-                    <th style={{ width: "3rem" }}>예약</th> */}
-                          <th style={{ width: "6%" }}>목차</th>
-                          <th style={{ width: "10%" }}>박스 넘버</th>
-                          <th style={{ width: "10.5%" }}>
-                            PLBN{" "}
-                            {sortType === "plbn" ? (
-                              <UpOutlined
-                                onClick={onClickSortType("plbnReverse")}
-                              />
+                      <>
+                        <S.MoveIcon
+                          onClick={() => {
+                            if (bookPage - 10 > 0) {
+                              setBookPage(bookPage - 10);
+                            }
+                          }}
+                        >
+                          {"<<"}
+                        </S.MoveIcon>
+                        <S.MoveIcon
+                          onClick={() => {
+                            if (bookPage > 1) {
+                              setBookPage(bookPage - 1);
+                            }
+                          }}
+                          style={{ margin: "0 8px" }}
+                        >
+                          {"<"}
+                        </S.MoveIcon>
+                      </>
+                    )}
+                    {Array.from({ length: bookMaxPage }).map((_, index) => {
+                      if (
+                        index === 0 ||
+                        index === bookMaxPage - 1 ||
+                        (index + 3 >= bookPage && index - 1 <= bookPage)
+                      ) {
+                        return (
+                          <>
+                            {bookPage > 4 && bookPage === index + 3 ? (
+                              <span
+                                style={{
+                                  width: "17px",
+                                  color: "black",
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                }}
+                              >
+                                ...
+                              </span>
                             ) : (
-                              <DownOutlined onClick={onClickSortType("plbn")} />
+                              <></>
                             )}
-                          </th>
-                          <th style={{ width: "15%" }}>
-                            도서 제목{" "}
-                            {sortType === "title" ? (
-                              <UpOutlined
-                                onClick={onClickSortType("titleReverse")}
-                              />
+                            <S.NumberIcon
+                              onClick={() => {
+                                setBookPage(index + 1);
+                              }}
+                              style={
+                                index + 1 + bookPageList * 10 === bookPage
+                                  ? {
+                                      width: "27px",
+                                      color: "white",
+                                      backgroundColor: "#333",
+                                      // border: "1px solid black",
+                                      display: "flex",
+                                      justifyContent: "center",
+                                      alignItems: "center",
+                                      borderRadius: "5px",
+                                    }
+                                  : {
+                                      width: "27px",
+                                      color: "black",
+                                      // border: "1px solid black",
+                                      display: "flex",
+                                      justifyContent: "center",
+                                      alignItems: "center",
+                                      borderRadius: "5px",
+                                    }
+                              }
+                            >
+                              {index + 1}
+                            </S.NumberIcon>
+                            {bookPage < bookMaxPage - 3 &&
+                            bookPage === index - 1 ? (
+                              <span
+                                style={{
+                                  width: "17px",
+                                  color: "black",
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                }}
+                              >
+                                ...
+                              </span>
                             ) : (
-                              <DownOutlined
-                                onClick={onClickSortType("title")}
-                              />
+                              <></>
                             )}
-                          </th>
-                          <th style={{ width: "13%" }}>
-                            저자{" "}
-                            {sortType === "author" ? (
-                              <UpOutlined
-                                onClick={onClickSortType("authorReverse")}
-                              />
-                            ) : (
-                              <DownOutlined
-                                onClick={onClickSortType("author")}
-                              />
-                            )}
-                          </th>
-                          <th style={{ width: "9%" }}>AR QUIZ No.</th>
-                          <th style={{ width: "3%" }}>F/NF</th>
-                          <th style={{ width: "6%" }}>
-                            AR{" "}
-                            {sortType === "ar" ? (
-                              <UpOutlined
-                                onClick={onClickSortType("arReverse")}
-                              />
-                            ) : (
-                              <DownOutlined onClick={onClickSortType("ar")} />
-                            )}
-                          </th>
+                          </>
+                        );
+                      }
+                    })}
 
-                          <th style={{ width: "6.5%" }}>
-                            WC{" "}
-                            {sortType === "wordCount" ? (
-                              <UpOutlined
-                                onClick={onClickSortType("wordCountReverse")}
-                              />
-                            ) : (
-                              <DownOutlined
-                                onClick={onClickSortType("wordCount")}
-                              />
-                            )}
-                          </th>
-                          <th style={{ width: "3%" }}>IL</th>
-                          <th style={{ width: "7.2%" }}>
-                            Lexile{" "}
-                            {sortType === "lexile" ? (
-                              <UpOutlined
-                                onClick={onClickSortType("lexileReverse")}
-                              />
-                            ) : (
-                              <DownOutlined
-                                onClick={onClickSortType("lexile")}
-                              />
-                            )}
-                          </th>
-                          <th style={{ width: "6.4%" }}>예약</th>
+                    {bookData === undefined ||
+                    bookData?.getBooksByBl.length === 0 ? (
+                      <></>
+                    ) : (
+                      <>
+                        <S.MoveIcon
+                          onClick={() => {
+                            if (bookPage < bookMaxPage) {
+                              setBookPage(bookPage + 1);
+                            }
+                          }}
+                          style={{ margin: "0 8px" }}
+                        >
+                          {">"}
+                        </S.MoveIcon>
+                        <S.MoveIcon
+                          onClick={() => {
+                            if (bookPage + 10 < bookMaxPage) {
+                              setBookPage(bookPage + 10);
+                            }
+                          }}
+                        >
+                          {">>"}
+                        </S.MoveIcon>
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+            {reserveType === "barcode" && (
+              <>
+                <S.ModalWrapper
+                  style={{
+                    borderRadius: "0.25rem 0.25rem 0rem 0rem",
+                    background: "#F7F8FA",
+                    padding: "1.5rem",
+                    borderRadius: "9px",
+                    marginTop: "1.25rem",
+                  }}
+                >
+                  <S.ModalButtonBox
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "flex-start",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          color: "#000",
+                          fontSize: "15px",
+                          fontWeight: "bold",
+                          flexDirection: "column",
+                          marginRight: "1.87rem",
+                        }}
+                      >
+                        <div>PLBN</div>
+                        <div>
+                          <S.InputInput
+                            type="text"
+                            style={{ marginLeft: "10px", marginTop: "10px" }}
+                            onChange={(e) => {
+                              setBarcode(e.target.value);
+                            }}
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                onClickBarcode();
+                              }
+                            }}
+                            value={barcode}
+                          ></S.InputInput>
+                        </div>
+                      </div>
+                      <S.ModalAddButton
+                        onClick={onClickBarcode}
+                        style={{
+                          borderRadius: "0.5rem",
+                          background: "#333",
+                          height: "2.75rem",
+                        }}
+                      >
+                        예약
+                      </S.ModalAddButton>
+                    </div>
+                  </S.ModalButtonBox>
+                </S.ModalWrapper>
+              </>
+            )}
+            {reserveType === "recommend" && (
+              <>
+                {fictionData?.getRecommendBooks?.length !== 0 ? (
+                  <>
+                    <div
+                      style={{
+                        fontFamily: "Spoqa Han Sans Neo",
+                        fontSize: "2rem",
+                        fontWeight: 500,
+                        margin: "1rem 0",
+                      }}
+                    >
+                      Fiction 남은 도서{" "}
+                      {fictionData?.getRecommendBooks?.[0]?.inventoryNum + "권"}
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        width: "93rem",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <S.ModalCancelButton
+                        style={{
+                          backgroundColor: "#ddd",
+                          color: "#333",
+                          margin: "1rem",
+                          padding: "1.3rem",
+                        }}
+                        onClick={onClickChangePeriod("1")}
+                      >
+                        F-package
+                      </S.ModalCancelButton>
+                      <S.ModalCancelButton
+                        style={{
+                          backgroundColor: "#ddd",
+                          color: "#333",
+                          margin: "1rem",
+                          padding: "1.3rem",
+                        }}
+                        onClick={onClickFetch("1")}
+                      >
+                        F-list
+                      </S.ModalCancelButton>
+                    </div>
+                    <table style={{ width: "92rem" }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: "2rem" }}>No.</th>
+                          <th style={{ width: "6rem" }}>박스 넘버</th>
+                          <th style={{ width: "6rem" }}>PLBN</th>
+                          <th style={{ width: "13rem" }}>도서 제목</th>
+                          <th style={{ width: "9rem" }}>저자</th>
+                          <th style={{ width: "6rem" }}>AR QUIZ No.</th>
+                          <th style={{ width: "1.8rem" }}>F/NF</th>
+                          <th style={{ width: "1.8rem" }}>AR</th>
+                          <th style={{ width: "2.5rem" }}>WC</th>
+                          <th style={{ width: "2rem" }}>IL</th>
+                          <th style={{ width: "2.5rem" }}>Lexile</th>
+                          <th style={{ width: "3rem" }}>예약</th>
                         </tr>
                       </thead>
-                    )}
-                    <tbody>
-                      {bookArray
-                        ?.filter((el) => {
+                      <tbody>
+                        {fictionData?.getRecommendBooks?.map((el, index) => {
                           return (
-                            reservationBookData?.studentReservedBooks.filter(
-                              (ele) => {
-                                return ele.titleAr === el.titleAr;
-                              }
-                            ).length === 0
-                          );
-                        })
-                        ?.map((el, index) => {
-                          return (
-                            <tr style={{ height: "2.75rem" }}>
-                              <td>{(bookPage - 1) * 20 + index + 1}</td>
-                              <td>{el.books?.[0].boxNumber}</td>
-                              {/* <td>{kplbnFrame(el.kplbn)}</td> */}
-                              <td>{el.books?.[0].plbn}</td>
-                              {el.titleAr?.length > 25 ? (
+                            <tr>
+                              <td>{index + 1}</td>
+                              <td>{el.boxNumber}</td>
+                              <td>{el.plbn}</td>
+                              {el.booktitle.length > 25 ? (
                                 <td
                                   onMouseEnter={() => {
                                     setIsViewTitle(true);
-                                    setViewTitle(el?.titleAr);
+                                    setViewTitle(el?.booktitle);
                                   }}
                                   onMouseLeave={() => {
                                     setIsViewTitle(false);
                                   }}
                                 >
-                                  {longWord(el.titleAr)}
+                                  {longWord(el.booktitle)}
                                 </td>
                               ) : (
-                                <td>{longWord(el.titleAr)}</td>
+                                <td>{longWord(el.booktitle)}</td>
                               )}
-                              {el.authorAr.length > 15 ? (
+                              {el.book.authorAr.length > 15 ? (
                                 <td
                                   onMouseEnter={() => {
                                     setIsViewTitle(true);
-                                    setViewTitle(el?.authorAr);
+                                    setViewTitle(el.book.authorAr);
                                   }}
                                   onMouseLeave={() => {
                                     setIsViewTitle(false);
                                   }}
                                 >
-                                  {longAuthor(el.authorAr)}
+                                  {longAuthor(el.book.authorAr)}
                                 </td>
                               ) : (
-                                <td>{longAuthor(el.authorAr)}</td>
+                                <td>{longAuthor(el.book.authorAr)}</td>
                               )}
-                              <td>{"#" + el.arQuiz}</td>
-                              <td>{el.fnfStatus}</td>
-                              <td>{arFrame(el.bl)}</td>
-
-                              <td>{addComma(el.wcAr)}</td>
-                              <th>{el?.ilStatus.slice(3, 5)}</th>
+                              {/* <td>{longAuthor(el.book.authorAr)}</td> */}
+                              <td>{"#" + el.book.arQuiz}</td>
+                              <td>{el.book.fnfStatus}</td>
+                              <td>{arFrame(el.book.bl)}</td>
+                              <td>{el.book.wcAr || el.book.wcLex}</td>
+                              <td>{el.book.ilStatus.slice(3, 5)}</td>
                               <td>
-                                {el.lexileLex === null
-                                  ? lexileFrame(el.lexileAr)
-                                  : lexileFrame(el.lexileLex)}
+                                {(el.book.lexileLex > 0
+                                  ? el.book.lexileLex + "L"
+                                  : "B" + el.book.lexileLex * -1 + "L") ||
+                                  (el.book.lexileAr > 0
+                                    ? el.book.lexileAr + "L"
+                                    : "B" + el.book.lexileAr * -1 + "L")}
                               </td>
+
+                              {/* <td>{el.book.litproStatus}</td> */}
                               <td>
                                 <button
                                   onClick={onClickBookingBooks(
-                                    Number(el?.books?.[0]?.id),
-                                    el.titleAr
+                                    el.id,
+                                    el.booktitle
                                   )}
                                 >
                                   예약
@@ -4832,484 +6267,210 @@ export default function ClassPage() {
                             </tr>
                           );
                         })}
-                    </tbody>
-                  </table>
-                </>
-              )}
-              {isLoading ? (
-                <></>
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    marginTop: "20px",
-                  }}
-                >
-                  {bookData === undefined ||
-                  bookData?.getBooksByBl.length === 0 ? (
-                    <></>
-                  ) : (
-                    <>
-                      <S.MoveIcon
-                        onClick={() => {
-                          if (bookPage - 10 > 0) {
-                            setBookPage(bookPage - 10);
-                          }
-                        }}
-                      >
-                        {"<<"}
-                      </S.MoveIcon>
-                      <S.MoveIcon
-                        onClick={() => {
-                          if (bookPage > 1) {
-                            setBookPage(bookPage - 1);
-                          }
-                        }}
-                        style={{ margin: "0 8px" }}
-                      >
-                        {"<"}
-                      </S.MoveIcon>
-                    </>
-                  )}
-                  {Array.from({ length: bookMaxPage }).map((_, index) => {
-                    if (
-                      index === 0 ||
-                      index === bookMaxPage - 1 ||
-                      (index + 3 >= bookPage && index - 1 <= bookPage)
-                    ) {
-                      return (
-                        <>
-                          {bookPage > 4 && bookPage === index + 3 ? (
-                            <span
-                              style={{
-                                width: "17px",
-                                color: "black",
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                              }}
-                            >
-                              ...
-                            </span>
-                          ) : (
-                            <></>
-                          )}
-                          <S.NumberIcon
-                            onClick={() => {
-                              setBookPage(index + 1);
-                            }}
-                            style={
-                              index + 1 + bookPageList * 10 === bookPage
-                                ? {
-                                    width: "27px",
-                                    color: "white",
-                                    backgroundColor: "#333",
-                                    // border: "1px solid black",
-                                    display: "flex",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    borderRadius: "5px",
-                                  }
-                                : {
-                                    width: "27px",
-                                    color: "black",
-                                    // border: "1px solid black",
-                                    display: "flex",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    borderRadius: "5px",
-                                  }
-                            }
-                          >
-                            {index + 1}
-                          </S.NumberIcon>
-                          {bookPage < bookMaxPage - 3 &&
-                          bookPage === index - 1 ? (
-                            <span
-                              style={{
-                                width: "17px",
-                                color: "black",
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                              }}
-                            >
-                              ...
-                            </span>
-                          ) : (
-                            <></>
-                          )}
-                        </>
-                      );
-                    }
-                  })}
-
-                  {bookData === undefined ||
-                  bookData?.getBooksByBl.length === 0 ? (
-                    <></>
-                  ) : (
-                    <>
-                      <S.MoveIcon
-                        onClick={() => {
-                          if (bookPage < bookMaxPage) {
-                            setBookPage(bookPage + 1);
-                          }
-                        }}
-                        style={{ margin: "0 8px" }}
-                      >
-                        {">"}
-                      </S.MoveIcon>
-                      <S.MoveIcon
-                        onClick={() => {
-                          if (bookPage + 10 < bookMaxPage) {
-                            setBookPage(bookPage + 10);
-                          }
-                        }}
-                      >
-                        {">>"}
-                      </S.MoveIcon>
-                    </>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-          {reserveType === "barcode" && (
-            <>
-              <S.ModalWrapper
-                style={{
-                  borderRadius: "0.25rem 0.25rem 0rem 0rem",
-                  background: "#F7F8FA",
-                  padding: "1.5rem",
-                  borderRadius: "9px",
-                  marginTop: "1.25rem",
-                }}
-              >
-                <S.ModalButtonBox
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "flex-start",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
+                      </tbody>
+                    </table>
+                  </>
+                ) : (
+                  <>
+                    <div
+                      style={{
+                        fontFamily: "Spoqa Han Sans Neo",
+                        fontSize: "2rem",
+                        fontWeight: 500,
+                        margin: "1rem 0",
+                      }}
+                    >
+                      추천 도서 패키지가 없습니다. 패키지를 새로 받아주십시오.
+                    </div>
+                    <S.ModalCancelButton
+                      style={{
+                        backgroundColor: "#ddd",
+                        color: "#333",
+                        margin: "1rem",
+                        padding: "1.3rem",
+                      }}
+                      onClick={onClickChangePeriod("1")}
+                    >
+                      F-package
+                    </S.ModalCancelButton>
+                  </>
+                )}
+                {nonFictionData?.getRecommendBooks?.length !== 0 ? (
+                  <>
+                    {" "}
+                    <div
+                      style={{
+                        fontFamily: "Spoqa Han Sans Neo",
+                        fontSize: "2rem",
+                        fontWeight: 500,
+                        margin: "1rem 0",
+                      }}
+                    >
+                      NonFiction 남은 도서{" "}
+                      {nonFictionData?.getRecommendBooks?.[0]?.inventoryNum +
+                        "권"}
+                    </div>
                     <div
                       style={{
                         display: "flex",
-                        color: "#000",
-                        fontSize: "15px",
-                        fontWeight: "bold",
-                        flexDirection: "column",
-                        marginRight: "1.87rem",
+                        width: "93rem",
+                        justifyContent: "flex-end",
                       }}
                     >
-                      <div>PLBN</div>
-                      <div>
-                        <S.InputInput
-                          type="text"
-                          style={{ marginLeft: "10px", marginTop: "10px" }}
-                          onChange={(e) => {
-                            setBarcode(e.target.value);
-                          }}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              onClickBarcode();
-                            }
-                          }}
-                          value={barcode}
-                        ></S.InputInput>
-                      </div>
+                      <S.ModalCancelButton
+                        style={{
+                          backgroundColor: "#ddd",
+                          color: "#333",
+                          margin: "1rem",
+                          padding: "1.3rem",
+                        }}
+                        onClick={onClickChangePeriod("2")}
+                      >
+                        NF-package
+                      </S.ModalCancelButton>
+                      <S.ModalCancelButton
+                        style={{
+                          backgroundColor: "#ddd",
+                          color: "#333",
+                          margin: "1rem",
+                          padding: "1.3rem",
+                        }}
+                        onClick={onClickFetch("2")}
+                      >
+                        NF-list
+                      </S.ModalCancelButton>
                     </div>
-                    <S.ModalAddButton
-                      onClick={onClickBarcode}
+                    <table style={{ width: "92rem" }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: "2rem" }}>No.</th>
+                          <th style={{ width: "6rem" }}>박스 넘버</th>
+                          <th style={{ width: "6rem" }}>PLBN</th>
+                          <th style={{ width: "13rem" }}>도서 제목</th>
+                          <th style={{ width: "9rem" }}>저자</th>
+                          <th style={{ width: "6rem" }}>AR QUIZ No.</th>
+                          <th style={{ width: "1.8rem" }}>F/NF</th>
+                          <th style={{ width: "1.8rem" }}>AR</th>
+                          <th style={{ width: "2.5rem" }}>WC</th>
+                          <th style={{ width: "2rem" }}>IL</th>
+                          <th style={{ width: "2.5rem" }}>Lexile</th>
+                          <th style={{ width: "3rem" }}>예약</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {nonFictionData?.getRecommendBooks?.map((el, index) => {
+                          return (
+                            <tr>
+                              <td>{index + 1}</td>
+                              <td>{el.boxNumber}</td>
+                              <td>{el.plbn}</td>
+                              {el.booktitle.length > 25 ? (
+                                <td
+                                  onMouseEnter={() => {
+                                    setIsViewTitle(true);
+                                    setViewTitle(el?.booktitle);
+                                  }}
+                                  onMouseLeave={() => {
+                                    setIsViewTitle(false);
+                                  }}
+                                >
+                                  {longWord(el.booktitle)}
+                                </td>
+                              ) : (
+                                <td>{longWord(el.booktitle)}</td>
+                              )}
+                              {el.book.authorAr.length > 15 ? (
+                                <td
+                                  onMouseEnter={() => {
+                                    setIsViewTitle(true);
+                                    setViewTitle(el.book.authorAr);
+                                  }}
+                                  onMouseLeave={() => {
+                                    setIsViewTitle(false);
+                                  }}
+                                >
+                                  {longAuthor(el.book.authorAr)}
+                                </td>
+                              ) : (
+                                <td>{longAuthor(el.book.authorAr)}</td>
+                              )}
+                              {/* <td>{longAuthor(el.book.authorAr)}</td> */}
+                              <td>{"#" + el.book.arQuiz}</td>
+                              <td>{el.book.fnfStatus}</td>
+                              <td>{arFrame(el.book.bl)}</td>
+                              <td>{el.book.wcAr || el.book.wcLex}</td>
+                              <td>{el.book.ilStatus.slice(3, 5)}</td>
+                              <td>
+                                {(el.book.lexileLex > 0
+                                  ? el.book.lexileLex + "L"
+                                  : "B" + el.book.lexileLex * -1 + "L") ||
+                                  (el.book.lexileAr > 0
+                                    ? el.book.lexileAr + "L"
+                                    : "B" + el.book.lexileAr * -1 + "L")}
+                              </td>
+
+                              {/* <td>{el.book.litproStatus}</td> */}
+                              <td>
+                                <button
+                                  onClick={onClickBookingBooks(
+                                    el.id,
+                                    el.booktitle
+                                  )}
+                                >
+                                  예약
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </>
+                ) : (
+                  <>
+                    <div
                       style={{
-                        borderRadius: "0.5rem",
-                        background: "#333",
-                        height: "2.75rem",
+                        fontFamily: "Spoqa Han Sans Neo",
+                        fontSize: "2rem",
+                        fontWeight: 500,
+                        margin: "1rem 0",
                       }}
                     >
-                      예약
-                    </S.ModalAddButton>
-                  </div>
-                </S.ModalButtonBox>
-              </S.ModalWrapper>
-            </>
-          )}
-          {reserveType === "recommend" && (
-            <>
-              <div
+                      추천 도서 패키지가 없습니다. 패키지를 새로 받아주십시오.
+                    </div>
+                    <S.ModalCancelButton
+                      style={{
+                        backgroundColor: "#ddd",
+                        color: "#333",
+                        margin: "1rem",
+                        padding: "1.3rem",
+                      }}
+                      onClick={onClickChangePeriod("2")}
+                    >
+                      NF-package
+                    </S.ModalCancelButton>
+                  </>
+                )}
+              </>
+            )}
+            {isViewTitle ? (
+              <span
                 style={{
-                  fontFamily: "Spoqa Han Sans Neo",
-                  fontSize: "2rem",
-                  fontWeight: 500,
-                  margin: "1rem 0",
+                  position: "fixed",
+                  left: mousePosition.x,
+                  top: mousePosition.y,
+                  backgroundColor: "#dedede",
+                  border: "2px solid #333333",
+                  borderRadius: "3px",
+                  zIndex: 99999,
                 }}
               >
-                Fiction 남은 도서{" "}
-                {fictionData?.getRecommendBooks?.[0]?.inventoryNum + "권"}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  width: "93rem",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <S.ModalCancelButton
-                  style={{
-                    backgroundColor: "#ddd",
-                    color: "#333",
-                    margin: "1rem",
-                    padding: "1.3rem",
-                  }}
-                  onClick={onClickChangePeriod("1")}
-                >
-                  F-package
-                </S.ModalCancelButton>
-                <S.ModalCancelButton
-                  style={{
-                    backgroundColor: "#ddd",
-                    color: "#333",
-                    margin: "1rem",
-                    padding: "1.3rem",
-                  }}
-                  onClick={onClickFetch("1")}
-                >
-                  F-list
-                </S.ModalCancelButton>
-              </div>
-              <table style={{ width: "92rem" }}>
-                <thead>
-                  <tr>
-                    <th style={{ width: "2rem" }}>목차</th>
-                    <th style={{ width: "6rem" }}>박스 넘버</th>
-                    <th style={{ width: "6rem" }}>PLBN</th>
-                    <th style={{ width: "13rem" }}>도서 제목</th>
-                    <th style={{ width: "9rem" }}>저자</th>
-                    <th style={{ width: "6rem" }}>AR QUIZ No.</th>
-                    <th style={{ width: "1.8rem" }}>F/NF</th>
-                    <th style={{ width: "1.8rem" }}>AR</th>
-                    <th style={{ width: "2.5rem" }}>WC</th>
-                    <th style={{ width: "2rem" }}>IL</th>
-                    <th style={{ width: "2.5rem" }}>Lexile</th>
-                    <th style={{ width: "3rem" }}>예약</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fictionData?.getRecommendBooks?.map((el, index) => {
-                    return (
-                      <tr>
-                        <td>{index + 1}</td>
-                        <td>{el.boxNumber}</td>
-                        <td>{el.plbn}</td>
-                        {el.booktitle.length > 25 ? (
-                          <td
-                            onMouseEnter={() => {
-                              setIsViewTitle(true);
-                              setViewTitle(el?.booktitle);
-                            }}
-                            onMouseLeave={() => {
-                              setIsViewTitle(false);
-                            }}
-                          >
-                            {longWord(el.booktitle)}
-                          </td>
-                        ) : (
-                          <td>{longWord(el.booktitle)}</td>
-                        )}
-                        {el.book.authorAr.length > 15 ? (
-                          <td
-                            onMouseEnter={() => {
-                              setIsViewTitle(true);
-                              setViewTitle(el.book.authorAr);
-                            }}
-                            onMouseLeave={() => {
-                              setIsViewTitle(false);
-                            }}
-                          >
-                            {longAuthor(el.book.authorAr)}
-                          </td>
-                        ) : (
-                          <td>{longAuthor(el.book.authorAr)}</td>
-                        )}
-                        {/* <td>{longAuthor(el.book.authorAr)}</td> */}
-                        <td>{"#" + el.book.arQuiz}</td>
-                        <td>{el.book.fnfStatus}</td>
-                        <td>{arFrame(el.book.bl)}</td>
-                        <td>{el.book.wcAr || el.book.wcLex}</td>
-                        <td>{el.book.ilStatus.slice(3, 5)}</td>
-                        <td>
-                          {(el.book.lexileLex > 0
-                            ? el.book.lexileLex + "L"
-                            : "B" + el.book.lexileLex * -1 + "L") ||
-                            (el.book.lexileAr > 0
-                              ? el.book.lexileAr + "L"
-                              : "B" + el.book.lexileAr * -1 + "L")}
-                        </td>
-
-                        {/* <td>{el.book.litproStatus}</td> */}
-                        <td>
-                          <button
-                            onClick={onClickBookingBooks(el.id, el.booktitle)}
-                          >
-                            예약
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              <div
-                style={{
-                  fontFamily: "Spoqa Han Sans Neo",
-                  fontSize: "2rem",
-                  fontWeight: 500,
-                  margin: "1rem 0",
-                }}
-              >
-                NonFiction 남은 도서{" "}
-                {nonFictionData?.getRecommendBooks?.[0]?.inventoryNum + "권"}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  width: "93rem",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <S.ModalCancelButton
-                  style={{
-                    backgroundColor: "#ddd",
-                    color: "#333",
-                    margin: "1rem",
-                    padding: "1.3rem",
-                  }}
-                  onClick={onClickChangePeriod("2")}
-                >
-                  NF-package
-                </S.ModalCancelButton>
-                <S.ModalCancelButton
-                  style={{
-                    backgroundColor: "#ddd",
-                    color: "#333",
-                    margin: "1rem",
-                    padding: "1.3rem",
-                  }}
-                  onClick={onClickFetch("2")}
-                >
-                  NF-list
-                </S.ModalCancelButton>
-              </div>
-              <table style={{ width: "92rem" }}>
-                <thead>
-                  <tr>
-                    <th style={{ width: "2rem" }}>목차</th>
-                    <th style={{ width: "6rem" }}>박스 넘버</th>
-                    <th style={{ width: "6rem" }}>PLBN</th>
-                    <th style={{ width: "13rem" }}>도서 제목</th>
-                    <th style={{ width: "9rem" }}>저자</th>
-                    <th style={{ width: "6rem" }}>AR QUIZ No.</th>
-                    <th style={{ width: "1.8rem" }}>F/NF</th>
-                    <th style={{ width: "1.8rem" }}>AR</th>
-                    <th style={{ width: "2.5rem" }}>WC</th>
-                    <th style={{ width: "2rem" }}>IL</th>
-                    <th style={{ width: "2.5rem" }}>Lexile</th>
-                    <th style={{ width: "3rem" }}>예약</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {nonFictionData?.getRecommendBooks?.map((el, index) => {
-                    return (
-                      <tr>
-                        <td>{index + 1}</td>
-                        <td>{el.boxNumber}</td>
-                        <td>{el.plbn}</td>
-                        {el.booktitle.length > 25 ? (
-                          <td
-                            onMouseEnter={() => {
-                              setIsViewTitle(true);
-                              setViewTitle(el?.booktitle);
-                            }}
-                            onMouseLeave={() => {
-                              setIsViewTitle(false);
-                            }}
-                          >
-                            {longWord(el.booktitle)}
-                          </td>
-                        ) : (
-                          <td>{longWord(el.booktitle)}</td>
-                        )}
-                        {el.book.authorAr.length > 15 ? (
-                          <td
-                            onMouseEnter={() => {
-                              setIsViewTitle(true);
-                              setViewTitle(el.book.authorAr);
-                            }}
-                            onMouseLeave={() => {
-                              setIsViewTitle(false);
-                            }}
-                          >
-                            {longAuthor(el.book.authorAr)}
-                          </td>
-                        ) : (
-                          <td>{longAuthor(el.book.authorAr)}</td>
-                        )}
-                        {/* <td>{longAuthor(el.book.authorAr)}</td> */}
-                        <td>{"#" + el.book.arQuiz}</td>
-                        <td>{el.book.fnfStatus}</td>
-                        <td>{arFrame(el.book.bl)}</td>
-                        <td>{el.book.wcAr || el.book.wcLex}</td>
-                        <td>{el.book.ilStatus.slice(3, 5)}</td>
-                        <td>
-                          {(el.book.lexileLex > 0
-                            ? el.book.lexileLex + "L"
-                            : "B" + el.book.lexileLex * -1 + "L") ||
-                            (el.book.lexileAr > 0
-                              ? el.book.lexileAr + "L"
-                              : "B" + el.book.lexileAr * -1 + "L")}
-                        </td>
-
-                        {/* <td>{el.book.litproStatus}</td> */}
-                        <td>
-                          <button
-                            onClick={onClickBookingBooks(el.id, el.booktitle)}
-                          >
-                            예약
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </>
-          )}
-          {isViewTitle ? (
-            <span
-              style={{
-                position: "fixed",
-                left: mousePosition.x,
-                top: mousePosition.y,
-                backgroundColor: "#dedede",
-                border: "2px solid #333333",
-                borderRadius: "3px",
-                zIndex: 99999,
-              }}
-            >
-              {viewTitle}
-            </span>
-          ) : (
-            <></>
-          )}
+                {viewTitle}
+              </span>
+            ) : (
+              <></>
+            )}
+          </div>
         </Modal>
       ) : (
         <></>
@@ -5348,6 +6509,71 @@ export default function ClassPage() {
                 ? "원생의 출결 상태를 결석으로 변경합니다."
                 : "원생을 해당 일자/수업에서 삭제합니다."}
             </div>
+            {confirmState === "삭제" && (
+              <>
+                <div
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "1rem",
+                    justifyContent: "flex-start",
+                  }}
+                >
+                  <div>
+                    <span>현재 수업</span>
+                    <input
+                      type="radio"
+                      name="isAll"
+                      checked={!isAll}
+                      onClick={() => {
+                        setIsAll(false);
+                      }}
+                    ></input>
+                  </div>
+                  <div>
+                    <span> 전체 수업</span>
+                    <input
+                      type="radio"
+                      name="isAll"
+                      checked={isAll}
+                      onClick={() => {
+                        setIsAll(true);
+                      }}
+                    ></input>
+                  </div>
+                </div>
+                {isAll && (
+                  <div
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      marginBottom: "1rem",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span>삭제 시작일</span>
+                    <input
+                      type="date"
+                      style={{
+                        width: "57%",
+                        height: "2rem",
+                        fontSize: "14px",
+                        border: "1px solid #DBDDE1",
+                        borderRadius: "8px",
+                        fontFamily: "Spoqa Han Sans Neo",
+                        paddingLeft: "10px",
+                      }}
+                      value={deleteDate}
+                      onChange={(e) => {
+                        setDeleteDate(e.target.value);
+                      }}
+                    ></input>
+                  </div>
+                )}
+              </>
+            )}
             <div>
               <S.DeleteButton
                 onClick={() => {
@@ -5438,6 +6664,7 @@ export default function ClassPage() {
               >
                 기간 재설정
               </div>
+
               <div
                 style={{
                   textDecoration: isPeriod ? "" : "underline",
@@ -5493,13 +6720,21 @@ export default function ClassPage() {
                 기록 재설정
               </div>
             </div>
-            {/* <div
+            <div
               style={{
-                border: "1px solid #333333",
                 width: "100%",
-                marginTop: "1rem",
+                display: "flex",
+                justifyContent: "flex-end",
+                fontFamily: "Spoqa Han Sans Neo",
+                fontSize: "1.2rem",
+                fontWeight: 500,
               }}
-            ></div> */}
+            >
+              {packageData?.studentBookRecordWithPkg?.bookPkg?.createdAt !==
+                undefined &&
+                "최근 패키지 변경일 : " +
+                  packageData?.studentBookRecordWithPkg?.bookPkg?.createdAt}
+            </div>
             {!isPeriod && (
               <div style={{ width: "100%", margin: "1rem 0" }}>
                 <span
@@ -6147,7 +7382,7 @@ export default function ClassPage() {
                   onChange={(e) => {
                     setLateTime(e.target.value);
                   }}
-                  defaultValue={dateToClock(date)}
+                  value={lateTime}
                 ></S.ClassSmallTimeInput>
 
                 <S.ClassSmallTimeBtn
@@ -6186,7 +7421,7 @@ export default function ClassPage() {
                   onChange={(e) => {
                     setLateTime(e.target.value);
                   }}
-                  defaultValue={dateToClock(date)}
+                  value={lateTime}
                 ></S.ClassSmallTimeInput>
                 <S.ClassSmallTimeBtn
                   onClick={() => {
@@ -6224,7 +7459,7 @@ export default function ClassPage() {
                   onChange={(e) => {
                     setLateTime(e.target.value);
                   }}
-                  defaultValue={dateToClock(date)}
+                  value={lateTime}
                 ></S.ClassSmallTimeInput>
                 <S.ClassSmallTimeBtn
                   onClick={() => {
@@ -6305,10 +7540,11 @@ export default function ClassPage() {
           onCancel={() => {
             setIsEdit(false);
             setEditDate(dateToInput(date));
-            setEditStartTime(dateToClock(date));
-            setEditEndTime(dateToClockOneHour(date));
+            // setEditStartTime(dateToClock(date));
+            // setEditEndTime(dateToClockOneHour(date));
             setEditInfo("");
             setEditAcademy(Number(router.query.branch));
+            setIsAll(false);
             setTeacherId(
               userData?.allUsers
                 .filter((el) => el.userCategory === "선생님")
@@ -6322,181 +7558,440 @@ export default function ClassPage() {
           }}
           footer={null}
           closable={false}
-          width={"25%"}
+          width={"60%"}
         >
-          <div>
-            <S.EditModalTitle>수업 수정</S.EditModalTitle>
+          <S.EditModalTitle>수업 수정</S.EditModalTitle>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div style={{ width: "48%" }}>
+              <S.EditModalTagTitle>원생 수업 목록</S.EditModalTagTitle>
+              <table>
+                <thead>
+                  <tr>
+                    <th>날짜</th>
+                    <th>반복 요일</th>
+                    <th>수업 시간</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lectureInfoData?.studentLectures
+                    ?.filter((el, i, callback) => {
+                      return (
+                        i ===
+                        callback.findIndex(
+                          (t) =>
+                            t.lecture.lectureInfo.id ===
+                            el.lecture.lectureInfo.id
+                        )
+                      );
+                    })
+                    ?.map((el) => {
+                      return (
+                        <tr>
+                          <td
+                            style={{
+                              color:
+                                Number(el?.lecture?.lectureInfo?.id) ===
+                                Number(checkList[0].lectureInfoId)
+                                  ? "tomato"
+                                  : "",
+                            }}
+                          >
+                            {el?.lecture?.lectureInfo?.repeatDay.includes(-1)
+                              ? el?.lecture?.date
+                              : el?.lecture?.lectureInfo?.autoAdd
+                              ? el?.lecture?.date + "~"
+                              : el?.lecture?.date +
+                                "~" +
+                                lastDate(
+                                  el?.lecture?.date,
+                                  el?.lecture?.lectureInfo?.repeatWeeks,
+                                  el?.lecture?.lectureInfo?.repeatDay?.[
+                                    el?.lecture?.lectureInfo?.repeatDay
+                                      ?.length - 1
+                                  ]
+                                )}
+                          </td>
+                          <td>
+                            {el?.lecture?.lectureInfo?.repeatDay.includes(-1)
+                              ? "없음"
+                              : el?.lecture?.lectureInfo?.repeatDay
+                                  ?.sort((a, b) => {
+                                    return a - b;
+                                  })
+                                  .map((ele) => {
+                                    return week[ele];
+                                  })}
+                          </td>
+                          <td>
+                            {el?.lecture?.startTime.slice(0, 5) +
+                              "-" +
+                              el?.lecture?.endTime.slice(0, 5)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ width: "48%" }}>
+              <S.EditModalTag>
+                <S.EditModalTagTitle>수정 범위</S.EditModalTagTitle>
+                <div style={{ display: "flex" }}>
+                  <S.EditModalTagTitle>현재 수업</S.EditModalTagTitle>
+                  <input
+                    type="radio"
+                    name="isAll"
+                    checked={!isAll}
+                    onChange={() => {
+                      setIsAll(false);
+                    }}
+                  ></input>
+                  <S.EditModalTagTitle>수업 전체</S.EditModalTagTitle>
+                  <input
+                    type="radio"
+                    name="isAll"
+                    checked={isAll}
+                    onChange={() => {
+                      setIsAll(true);
+                    }}
+                  ></input>
+                </div>
+              </S.EditModalTag>
 
-            <S.EditModalTag>
-              <S.EditModalTagTitle>담당 지점</S.EditModalTagTitle>
-              {myData?.me?.profile?.academies?.length > 0 ? (
+              <S.EditModalTag>
+                {myData?.me?.profile?.academies?.length > 0 ? (
+                  <>
+                    <S.EditModalTagTitle>담당 지점</S.EditModalTagTitle>
+                    <select
+                      onChange={(e) => {
+                        setEditAcademy(Number(e.target.value));
+                      }}
+                      style={{
+                        borderRadius: "0.5rem",
+                        border: "1px solid #DBDDE1",
+                        width: "100%",
+                        padding: "0.5rem 0.5rem",
+                        paddingLeft: "10px",
+                        fontFamily: "Spoqa Han Sans Neo",
+                      }}
+                    >
+                      {myData?.me?.profile?.academies?.map((el) => {
+                        return (
+                          <option
+                            value={Number(el.id)}
+                            selected={
+                              Number(router.query.branch) === Number(el.id)
+                            }
+                          >
+                            {el.location}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </>
+                ) : (
+                  <></>
+                )}
+              </S.EditModalTag>
+              <S.EditModalTag>
+                <S.EditModalTagTitle>담당 선생님</S.EditModalTagTitle>
                 <select
-                  onChange={(e) => {
-                    setEditAcademy(Number(e.target.value));
+                  onChange={(event) => {
+                    setTeacherId(event.target.value);
                   }}
                   style={{
                     borderRadius: "0.5rem",
                     border: "1px solid #DBDDE1",
                     width: "100%",
                     padding: "0.5rem 0.5rem",
-                    paddingLeft: "10px",
                     fontFamily: "Spoqa Han Sans Neo",
+                  }}
+                  value={teacherId}
+                >
+                  {userData?.allUsers
+                    .filter((el) => el.userCategory === "선생님")
+                    .filter((el) => {
+                      return (
+                        Number(el.profile.academy.id) ===
+                        Number(router.query.branch)
+                      );
+                    })
+                    .map((el) => {
+                      return (
+                        <option key={uuidv4()} value={el.profile.id}>
+                          {el.profile.korName}
+                        </option>
+                      );
+                    })}
+                </select>
+              </S.EditModalTag>
+              <S.EditModalTag>
+                <S.EditModalTagTitle>수정 날짜</S.EditModalTagTitle>
+                <input
+                  type="date"
+                  defaultValue={dateToInput(date)}
+                  onChange={(e) => {
+                    setEditDate(e.target.value);
+                  }}
+                  style={{
+                    width: "97%",
+                    height: "2rem",
+                    fontSize: "14px",
+                    border: "1px solid #DBDDE1",
+                    borderRadius: "8px",
+                    fontFamily: "Spoqa Han Sans Neo",
+                    paddingLeft: "10px",
+                  }}
+                ></input>
+              </S.EditModalTag>
+              <S.EditModalTag>
+                <S.EditModalTagTitle>수업 시간</S.EditModalTagTitle>
+                <S.EditModalTimeTag>
+                  <input
+                    type="time"
+                    value={editStartTime}
+                    onChange={(e) => {
+                      setEditStartTime(e.target.value);
+                    }}
+                    style={{
+                      width: "40%",
+                      height: "2rem",
+                      fontSize: "14px",
+                      border: "1px solid #DBDDE1",
+                      borderRadius: "8px",
+                      fontFamily: "Spoqa Han Sans Neo",
+                      paddingLeft: "10px",
+                    }}
+                  ></input>
+                  <span>-</span>
+                  <input
+                    type="time"
+                    value={editEndTime}
+                    onChange={(e) => {
+                      setEditEndTime(e.target.value);
+                    }}
+                    style={{
+                      width: "40%",
+                      height: "2rem",
+                      fontSize: "14px",
+                      border: "1px solid #DBDDE1",
+                      borderRadius: "8px",
+                      fontFamily: "Spoqa Han Sans Neo",
+                      paddingLeft: "10px",
+                    }}
+                  ></input>
+                </S.EditModalTimeTag>
+              </S.EditModalTag>
+
+              {isAll && (
+                <>
+                  <S.EditModalTag>
+                    <S.EditModalTagTitle>수업 반복</S.EditModalTagTitle>
+                    <input
+                      type="checkbox"
+                      checked={isEditRepeat}
+                      onChange={() => {
+                        setIsEditRepeat(!isEditRepeat);
+                      }}
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                      }}
+                    ></input>
+                  </S.EditModalTag>
+                  {isEditRepeat && (
+                    <>
+                      <S.EditModalTag>
+                        <S.EditModalTagTitle>반복 주</S.EditModalTagTitle>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            width: "100%",
+                          }}
+                        >
+                          <input
+                            type="number"
+                            style={{
+                              width: "70%",
+                              height: "2rem",
+                              fontSize: "14px",
+                              border: "1px solid #DBDDE1",
+                              borderRadius: "8px",
+                              fontFamily: "Spoqa Han Sans Neo",
+                              paddingLeft: "10px",
+                              backgroundColor: isEditAuto ? "#dddddd" : "",
+                            }}
+                            disabled={isEditAuto}
+                            onChange={(e) => {
+                              setEditRepeatCount(e.target.value);
+                            }}
+                            value={editRepeatCount}
+                          ></input>
+                          <span style={{ marginLeft: "1rem" }}>자동 추가</span>
+                          <input
+                            type="checkbox"
+                            checked={isEditAuto}
+                            onChange={() => {
+                              setIsEditAuto(!isEditAuto);
+                            }}
+                            style={{
+                              width: "20px",
+                              height: "20px",
+                            }}
+                          ></input>
+                        </div>
+                      </S.EditModalTag>
+                      <S.EditModalTag>
+                        <S.EditModalTagTitle>반복 요일</S.EditModalTagTitle>
+                        <S.ModalRoutineDates>
+                          {week.map((el, index) => {
+                            return (
+                              <>
+                                <S.ModalRoutineDate
+                                  key={uuidv4()}
+                                  onClick={onClickEditDates(index)}
+                                  style={
+                                    editRepeatWeek.includes(index)
+                                      ? {
+                                          backgroundColor: "#333",
+                                          color: "#eeeeee",
+                                        }
+                                      : {}
+                                  }
+                                >
+                                  {el}
+                                </S.ModalRoutineDate>
+                              </>
+                            );
+                          })}
+                        </S.ModalRoutineDates>
+                      </S.EditModalTag>
+                    </>
+                  )}
+                </>
+              )}
+
+              <S.EditModalTag>
+                <S.EditModalTagTitle>수업 정보</S.EditModalTagTitle>
+                <S.EditTextArea
+                  disabled={!isAll}
+                  onChange={(e) => {
+                    setEditInfo(e.target.value);
+                  }}
+                  style={{
+                    width: "97%",
+                    height: "10rem",
+                    fontSize: "14px",
+                    border: "1px solid #DBDDE1",
+                    borderRadius: "8px",
+                    fontFamily: "Spoqa Han Sans Neo",
+                    paddingLeft: "10px",
+                  }}
+                ></S.EditTextArea>
+              </S.EditModalTag>
+
+              <S.EditModalButtonContainer>
+                <S.EditModalCancelButton
+                  onClick={() => {
+                    setIsEdit(false);
+                    setEditDate(dateToInput(date));
+                    // setEditStartTime(dateToClock(date));
+                    // setEditEndTime(dateToClockOneHour(date));
+                    setEditInfo("");
+                    setEditAcademy(Number(router.query.branch));
+                    setTeacherId(
+                      userData?.allUsers
+                        .filter((el) => el.userCategory === "선생님")
+                        .filter((el) => {
+                          return (
+                            Number(el.profile.academy.id) ===
+                            Number(router.query.branch)
+                          );
+                        })[0].id
+                    );
                   }}
                 >
-                  {myData?.me?.profile?.academies?.map((el) => {
-                    return (
-                      <option
-                        value={Number(el.id)}
-                        selected={Number(router.query.branch) === Number(el.id)}
-                      >
-                        {el.location}
-                      </option>
-                    );
-                  })}
-                </select>
-              ) : (
-                <></>
-              )}
-            </S.EditModalTag>
-            <S.EditModalTag>
-              <S.EditModalTagTitle>담당 선생님</S.EditModalTagTitle>
-              <select
-                onChange={(event) => {
-                  setTeacherId(event.target.value);
-                }}
-                style={{
-                  borderRadius: "0.5rem",
-                  border: "1px solid #DBDDE1",
-                  width: "100%",
-                  padding: "0.5rem 0.5rem",
-                  fontFamily: "Spoqa Han Sans Neo",
-                }}
-                value={teacherId}
-              >
-                {userData?.allUsers
-                  .filter((el) => el.userCategory === "선생님")
-                  .filter((el) => {
-                    return (
-                      Number(el.profile.academy.id) ===
-                      Number(router.query.branch)
-                    );
-                  })
-                  .map((el) => {
-                    return (
-                      <option key={uuidv4()} value={el.profile.id}>
-                        {el.profile.korName}
-                      </option>
-                    );
-                  })}
-              </select>
-            </S.EditModalTag>
-            <S.EditModalTag>
-              <S.EditModalTagTitle>수정 날짜</S.EditModalTagTitle>
-              <input
-                type="date"
-                defaultValue={dateToInput(date)}
-                onChange={(e) => {
-                  setEditDate(e.target.value);
-                }}
-                style={{
-                  width: "97%",
-                  height: "2rem",
-                  fontSize: "14px",
-                  border: "1px solid #DBDDE1",
-                  borderRadius: "8px",
-                  fontFamily: "Spoqa Han Sans Neo",
-                  paddingLeft: "10px",
-                }}
-              ></input>
-            </S.EditModalTag>
-            <S.EditModalTag>
-              <S.EditModalTagTitle>수정 시간</S.EditModalTagTitle>
-              <S.EditModalTimeTag>
-                <input
-                  type="time"
-                  defaultValue={dateToClock(date)}
-                  onChange={(e) => {
-                    setEditStartTime(e.target.value);
-                  }}
-                  style={{
-                    width: "40%",
-                    height: "2rem",
-                    fontSize: "14px",
-                    border: "1px solid #DBDDE1",
-                    borderRadius: "8px",
-                    fontFamily: "Spoqa Han Sans Neo",
-                    paddingLeft: "10px",
-                  }}
-                ></input>
-                <span>-</span>
-                <input
-                  type="time"
-                  defaultValue={dateToClockOneHour(date)}
-                  onChange={(e) => {
-                    setEditEndTime(e.target.value);
-                  }}
-                  style={{
-                    width: "40%",
-                    height: "2rem",
-                    fontSize: "14px",
-                    border: "1px solid #DBDDE1",
-                    borderRadius: "8px",
-                    fontFamily: "Spoqa Han Sans Neo",
-                    paddingLeft: "10px",
-                  }}
-                ></input>
-              </S.EditModalTimeTag>
-            </S.EditModalTag>
-
-            <S.EditModalTag>
-              <S.EditModalTagTitle>수업 메모</S.EditModalTagTitle>
-              <S.EditTextArea
-                onChange={(e) => {
-                  setEditInfo(e.target.value);
-                }}
-                style={{
-                  width: "97%",
-                  height: "10rem",
-                  fontSize: "14px",
-                  border: "1px solid #DBDDE1",
-                  borderRadius: "8px",
-                  fontFamily: "Spoqa Han Sans Neo",
-                  paddingLeft: "10px",
-                }}
-              ></S.EditTextArea>
-            </S.EditModalTag>
-
-            <S.EditModalButtonContainer>
-              <S.EditModalCancelButton
-                onClick={() => {
-                  setIsEdit(false);
-                  setEditDate(dateToInput(date));
-                  setEditStartTime(dateToClock(date));
-                  setEditEndTime(dateToClockOneHour(date));
-                  setEditInfo("");
-                  setEditAcademy(Number(router.query.branch));
-                  setTeacherId(
-                    userData?.allUsers
-                      .filter((el) => el.userCategory === "선생님")
-                      .filter((el) => {
-                        return (
-                          Number(el.profile.academy.id) ===
-                          Number(router.query.branch)
-                        );
-                      })[0].id
-                  );
-                }}
-              >
-                취소
-              </S.EditModalCancelButton>
-              <S.EditModalOKButton onClick={onClickUpdateLecture}>
-                저장
-              </S.EditModalOKButton>
-            </S.EditModalButtonContainer>
+                  취소
+                </S.EditModalCancelButton>
+                <S.EditModalOKButton onClick={onClickUpdateLecture}>
+                  저장
+                </S.EditModalOKButton>
+              </S.EditModalButtonContainer>
+            </div>
           </div>
         </Modal>
       ) : (
         <></>
+      )}
+      {isDup && (
+        <Modal
+          open={isDup}
+          footer={null}
+          closable={false}
+          onCancel={() => {
+            setIsDup(false);
+            setBarcode("");
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "Spoqa Han Sans Neo",
+              fontSize: "1.5rem",
+              fontWeight: 500,
+            }}
+          >
+            이미 읽은 도서입니다. 정말 예약하시겠습니까?
+          </div>
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              marginTop: "1rem",
+            }}
+          >
+            <button
+              onClick={() => {
+                setIsDup(false);
+                setBarcode("");
+              }}
+              style={{
+                borderRadius: "0.5rem",
+                background: "#333",
+                height: "2.75rem",
+                border: "none",
+                color: "#ffffff",
+                width: "5rem",
+                cursor: "pointer",
+                marginRight: "1rem",
+                fontFamily: "Spoqa Han Sans Neo",
+                fontSize: "1.2rem",
+                fontWeight: "500",
+              }}
+            >
+              취소
+            </button>
+            <button
+              style={{
+                borderRadius: "0.5rem",
+                background: "#dddddd",
+                height: "2.75rem",
+                border: "none",
+                width: "5rem",
+                cursor: "pointer",
+                fontFamily: "Spoqa Han Sans Neo",
+                fontSize: "1.2rem",
+                fontWeight: "500",
+              }}
+              onClick={onClickConfirmBarcode}
+            >
+              확인
+            </button>
+          </div>
+        </Modal>
       )}
     </S.ClassWrapper>
   );

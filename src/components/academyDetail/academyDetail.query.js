@@ -25,6 +25,11 @@ export const GET_STUDENT = gql`
           birthDate
           gender
           registerDate
+          academies {
+            id
+            branchName
+            name
+          }
           lectures(academyId: $academyId) {
             id
             date
@@ -41,6 +46,7 @@ export const GET_STUDENT = gql`
               exitTime
               statusDisplay
             }
+
             teacher {
               korName
               engName
@@ -151,28 +157,28 @@ export const CREATE_ATTENDANCE = gql`
 
 export const CREATE_MAKE_UP = gql`
   mutation createMakeup(
-    $academyId: Int!
+    $lectureId: Int!
     $date: Date!
     $startTime: Time!
     $endTime: Time!
-    $lectureInfo: String!
+    $lectureMemo: String
     $teacherId: Int!
-    $repeatDays: [Int]!
-    $repeatWeeks: Int!
     $studentIds: [Int]!
   ) {
     createMakeup(
-      academyId: $academyId
+      lectureId: $lectureId
       date: $date
       startTime: $startTime
       endTime: $endTime
-      lectureInfo: $lectureInfo
+      lectureMemo: $lectureMemo
       teacherId: $teacherId
-      repeatDays: $repeatDays
-      repeatWeeks: $repeatWeeks
       studentIds: $studentIds # 이 부분을 추가하려는 학생들의 ID 목록으로 교체하세요.
     ) {
-      lectureIds
+      lecture {
+        students {
+          id
+        }
+      }
     }
   }
 `;
@@ -372,6 +378,48 @@ export const GET_ME = gql`
             name
             location
           }
+        }
+      }
+    }
+  }
+`;
+
+export const CREATE_ACADEMY_TO_USER = gql`
+  mutation addAcademyToUser($userIds: [Int]!, $academyId: Int!) {
+    addAcademyToUser(userIds: $userIds, academyId: $academyId) {
+      studentProfile {
+        id
+        korName
+        engName
+        origin
+        pmobileno
+        mobileno
+        birthDate
+        gender
+        academies {
+          id
+          name
+        }
+      }
+    }
+  }
+`;
+
+export const EDIT_ACADEMY_LIST = gql`
+  mutation updateAcademyToUser($userId: ID!, $academyIds: [Int]!) {
+    updateAcademyToUser(userId: $userId, academyIds: $academyIds) {
+      studentProfile {
+        id
+        korName
+        engName
+        origin
+        pmobileno
+        mobileno
+        birthDate
+        gender
+        academies {
+          id
+          name
         }
       }
     }

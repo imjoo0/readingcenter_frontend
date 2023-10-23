@@ -423,7 +423,7 @@ export const ModalCancelButton = styled.button`
   font-style: normal;
   font-weight: 500;
   line-height: normal;
-  margin-left: 0.75rem;
+  margin-right: 0.75rem;
   :hover {
     cursor: pointer;
     filter: brightness(80%);
@@ -636,6 +636,7 @@ export const CalendarLeft = styled.div`
   align-items: flex-start;
   justify-content: flex-start;
   border-right: 1px solid #dbdde1;
+  height: 58.5rem;
 `;
 
 export const CalendarLeftSelect = styled.select`
@@ -807,5 +808,9 @@ export const EditModalCancelButton = styled.div`
   justify-content: center;
   align-items: center;
   color: #333;
+  cursor: pointer;
+`;
+
+export const HoverButton = styled.div`
   cursor: pointer;
 `;

@@ -114,7 +114,7 @@ export default function LoginPageComponent() {
       }
     } catch (error) {
       console.error("로그인 오류:", error);
-      alert("로그인에 실패했습니다.");
+      alert("잘못된 ID/PW 입니다.");
     }
   };
 

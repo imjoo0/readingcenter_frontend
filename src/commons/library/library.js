@@ -225,10 +225,33 @@ export const getMonthZero = (date) => {
   }
 };
 
+export const getDateZero = (date) => {
+  if (date.getDate() < 10) {
+    return "0" + date.getDate();
+  } else {
+    return String(date.getDate());
+  }
+};
+
 export const getNumberZero = (number) => {
   if (number < 10) {
     return "0" + number;
   } else {
     return String(number);
   }
+};
+
+export const dateInputToNumber = (dateInput) => {
+  return Number(dateInput.replaceAll("-", ""));
+};
+
+export const lastDate = (dateInput, count, weekDays) => {
+  let currentDate = new Date(dateInput);
+  const targetDay = (weekDays - currentDate.getDay() + 6) % 7;
+  const targetDate = currentDate.getDate() + targetDay + 7 * (count - 1);
+
+  currentDate.setDate(targetDate);
+
+  console.log(currentDate);
+  return dateToInput(currentDate);
 };

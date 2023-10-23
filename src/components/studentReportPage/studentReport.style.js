@@ -31,7 +31,7 @@ export const ReportSubTitle = styled.div`
   width: 100%;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   margin: 1rem;
   font-size: 1.7rem;
   font-family: Spoqa Han Sans Neo;
@@ -65,19 +65,19 @@ export const ReportMemoBox = styled.div`
 export const ReportInputBox = styled.div`
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  align-items: center;
+
   /* border-radius: 5px;
   border: 1px solid #333333; */
 `;
 
 export const ReportTextArea = styled.textarea`
-  width: 93rem;
-  height: 30rem;
+  width: 50rem;
+  height: 10rem;
   border-radius: 1rem;
   padding: 1rem;
   font-family: Spoqa Han Sans Neo;
   font-size: 1.3rem;
-  margin-left: 2rem;
 `;
 
 export const ReportSubContainer = styled.div`
