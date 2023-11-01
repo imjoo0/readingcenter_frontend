@@ -80,7 +80,7 @@ export default function StudentReportPage() {
       averageCorrects: 87,
       books: 22,
       days: 15,
-      color: "gray",
+      color: "#A8AAAE",
     },
     {
       name: "이번 달",
@@ -89,7 +89,7 @@ export default function StudentReportPage() {
       averageCorrects: 99,
       books: 24,
       days: 17,
-      color: "#CC1071",
+      color: "#862991",
     },
   ]);
   const [halfYearData, setHalfYearData] = useState([
@@ -309,7 +309,7 @@ export default function StudentReportPage() {
             <p
               style={{
                 fontSize: "1rem",
-                color: "#3B3BFF",
+                color: "#578537",
                 fontFamily: "Spoqa Han Sans Neo",
               }}
               className="data"
@@ -317,7 +317,7 @@ export default function StudentReportPage() {
             <p
               style={{
                 fontSize: "1rem",
-                color: "#FC480D",
+                color: "#FE7445",
                 fontFamily: "Spoqa Han Sans Neo",
               }}
               className="data"
@@ -325,7 +325,7 @@ export default function StudentReportPage() {
             <p
               style={{
                 fontSize: "1rem",
-                color: "#8AEE96",
+                color: "#8FC5FB",
                 fontFamily: "Spoqa Han Sans Neo",
               }}
               className="data"
@@ -371,7 +371,7 @@ export default function StudentReportPage() {
             <p
               style={{
                 fontSize: "1rem",
-                color: "#3B3BFF",
+                color: "#578537",
                 fontFamily: "Spoqa Han Sans Neo",
               }}
               className="data"
@@ -379,7 +379,7 @@ export default function StudentReportPage() {
             <p
               style={{
                 fontSize: "1rem",
-                color: "#FC480D",
+                color: "#293391",
                 fontFamily: "Spoqa Han Sans Neo",
               }}
               className="data"
@@ -476,7 +476,7 @@ export default function StudentReportPage() {
           wcPerBook: summaryData?.getSummaryReport?.lastPerWc
             ? summaryData?.getSummaryReport?.lastPerWc
             : 0,
-          color: "gray",
+          color: "#A8AAAE",
         },
         {
           name: "이번 달",
@@ -502,7 +502,7 @@ export default function StudentReportPage() {
           wcPerBook: summaryData?.getSummaryReport?.thisPerWc
             ? summaryData?.getSummaryReport?.thisPerWc
             : 0,
-          color: "#CC1071",
+          color: "#862991",
         },
       ];
       setLatestData(newLatestData);
@@ -860,7 +860,7 @@ export default function StudentReportPage() {
                     }}
                     tickLine={false}
                   />
-                  <Bar dataKey="books" barSize={50} fill="#2F86A6">
+                  <Bar dataKey="books" barSize={70} fill="#862991">
                     {latestData?.map((el, index) => {
                       return (
                         <Cell key={`cell-${index}`} fill={el.color}></Cell>
@@ -896,7 +896,7 @@ export default function StudentReportPage() {
                     }}
                     tickLine={false}
                   />
-                  <Bar dataKey="wc" barSize={50} fill="#2F86A6">
+                  <Bar dataKey="wc" barSize={70} fill="#2F86A6">
                     {latestData?.map((el, index) => {
                       return (
                         <Cell key={`cell-${index}`} fill={el.color}></Cell>
@@ -931,7 +931,7 @@ export default function StudentReportPage() {
                     }}
                     tickLine={false}
                   />
-                  <Bar dataKey="days" barSize={50} fill="#2F86A6">
+                  <Bar dataKey="days" barSize={70} fill="#2F86A6">
                     {latestData?.map((el, index) => {
                       return (
                         <Cell key={`cell-${index}`} fill={el.color}></Cell>
@@ -968,7 +968,7 @@ export default function StudentReportPage() {
                     }}
                     tickLine={false}
                   />
-                  <Bar dataKey="sr" barSize={50} fill="#2F86A6">
+                  <Bar dataKey="sr" barSize={70} fill="#2F86A6">
                     {latestData?.map((el, index) => {
                       return (
                         <Cell key={`cell-${index}`} fill={el.color}></Cell>
@@ -1002,7 +1002,7 @@ export default function StudentReportPage() {
                     }}
                     tickLine={false}
                   />
-                  <Bar dataKey="ar" barSize={50} fill="#CC1071">
+                  <Bar dataKey="ar" barSize={70} fill="#CC1071">
                     {latestData?.map((el, index) => {
                       return (
                         <Cell key={`cell-${index}`} fill={el.color}></Cell>
@@ -1036,7 +1036,7 @@ export default function StudentReportPage() {
                     }}
                     tickLine={false}
                   />
-                  <Bar dataKey="wcPerBook" barSize={50} fill="#2F86A6">
+                  <Bar dataKey="wcPerBook" barSize={70} fill="#2F86A6">
                     {latestData?.map((el, index) => {
                       return (
                         <Cell key={`cell-${index}`} fill={el.color}></Cell>
@@ -1070,7 +1070,7 @@ export default function StudentReportPage() {
                     }}
                     tickLine={false}
                   />
-                  <Bar dataKey="averageCorrects" barSize={50} fill="#2F86A6">
+                  <Bar dataKey="averageCorrects" barSize={70} fill="#2F86A6">
                     {latestData?.map((el, index) => {
                       return (
                         <Cell key={`cell-${index}`} fill={el.color}></Cell>
@@ -1084,19 +1084,19 @@ export default function StudentReportPage() {
             </S.ReportInfoBox>
           </S.ReportInfoContainer>
           <S.ReportInfoContainer>
-            <S.ReportInfoDoubleBox>
+            <S.ReportInfoDoubleBox style={{ alignItems: "flex-end" }}>
               <S.ReportSubTitle>월별 독서량</S.ReportSubTitle>
 
-              <ResponsiveContainer width={"100%"} height={300}>
+              <ResponsiveContainer width={"87%"} height={300}>
                 <ComposedChart width={100} height={300} data={halfYearData}>
-                  <XAxis
+                  {/* <XAxis
                     dataKey="name"
                     label={{
                       position: "insideBottom",
                       offset: 0,
                     }}
                     tickLine={false}
-                  />
+                  /> */}
                   <CartesianGrid stroke="#dedede" />
                   <YAxis
                     dataKey={"wc"}
@@ -1175,19 +1175,19 @@ export default function StudentReportPage() {
                 </tbody>
               </table>
             </S.ReportInfoDoubleBox>
-            <S.ReportInfoDoubleBox>
+            <S.ReportInfoDoubleBox style={{ alignItems: "flex-end" }}>
               <S.ReportSubTitle>월별 지수변화</S.ReportSubTitle>
 
-              <ResponsiveContainer width={"100%"} height={300}>
+              <ResponsiveContainer width={"87%"} height={300}>
                 <ComposedChart data={halfYearData}>
-                  <XAxis
+                  {/* <XAxis
                     dataKey="name"
                     label={{
                       position: "insideBottom",
                       offset: 0,
                     }}
                     tickLine={false}
-                  />
+                  /> */}
                   <CartesianGrid stroke="#dedede" />
                   <YAxis
                     dataKey={"WCPerBooks"}
@@ -1233,17 +1233,17 @@ export default function StudentReportPage() {
                       {
                         value: "AR",
                         type: "line",
-                        color: "#3B3BFF",
+                        color: "#578537",
                       },
-                      { value: "WC/권", type: "line", color: "#FC480D" },
-                      { value: "정답률", type: "rect", color: "#8AEE96 " },
+                      { value: "WC/권", type: "line", color: "#FE7445" },
+                      { value: "정답률", type: "rect", color: "#8FC5FB " },
                     ]}
                     wrapperStyle={{ fontSize: "1.25rem", fontWeight: 500 }}
                   />
                   <Bar
                     dataKey={"correct"}
                     barSize={50}
-                    fill="#8AEE96"
+                    fill="#8FC5FB"
                     yAxisId={"correct"}
                     name="correct"
                   />
@@ -1252,12 +1252,12 @@ export default function StudentReportPage() {
                     yAxisId={"right"}
                     name="WCPerBooks"
                     strokeWidth={3}
-                    stroke="#FC480D"
+                    stroke="#FE7445"
                   ></Line>
                   <Line
                     dataKey={"ar"}
                     yAxisId={"left"}
-                    stroke="#3B3BFF"
+                    stroke="#578537"
                     name="ar"
                     strokeWidth={3}
                   ></Line>
@@ -1301,19 +1301,19 @@ export default function StudentReportPage() {
             </S.ReportInfoDoubleBox>
           </S.ReportInfoContainer>
           <S.ReportInfoContainer>
-            <S.ReportInfoDoubleBox>
+            <S.ReportInfoDoubleBox style={{ alignItems: "flex-end" }}>
               <S.ReportSubTitle>월별 지수변화</S.ReportSubTitle>
 
-              <ResponsiveContainer width={"100%"} height={300}>
+              <ResponsiveContainer width={"87%"} height={300}>
                 <ComposedChart data={halfYearData}>
-                  <XAxis
+                  {/* <XAxis
                     dataKey="name"
                     label={{
                       position: "insideBottom",
                       offset: 0,
                     }}
                     tickLine={false}
-                  />
+                  /> */}
                   <CartesianGrid stroke="#dedede" />
                   <YAxis
                     dataKey={"sr"}
@@ -1359,9 +1359,9 @@ export default function StudentReportPage() {
                       {
                         value: "AR",
                         type: "line",
-                        color: "#3B3BFF",
+                        color: "#578537",
                       },
-                      { value: "SR", type: "line", color: "#FC480D" },
+                      { value: "SR", type: "line", color: "#293391" },
                     ]}
                     wrapperStyle={{ fontSize: "1.25rem", fontWeight: 500 }}
                   />
@@ -1370,12 +1370,12 @@ export default function StudentReportPage() {
                     yAxisId={"right"}
                     name="sr"
                     strokeWidth={3}
-                    stroke="#FC480D"
+                    stroke="#293391"
                   ></Line>
                   <Line
                     dataKey={"ar"}
                     yAxisId={"left"}
-                    stroke="#3B3BFF"
+                    stroke="#578537"
                     name="ar"
                     strokeWidth={3}
                   ></Line>
@@ -2149,17 +2149,17 @@ export default function StudentReportPage() {
                       {
                         value: "AR",
                         type: "line",
-                        color: "#3B3BFF",
+                        color: "#578537",
                       },
-                      { value: "WC/권", type: "line", color: "#FC480D" },
-                      { value: "정답률", type: "rect", color: "#8AEE96 " },
+                      { value: "WC/권", type: "line", color: "#FE7445" },
+                      { value: "정답률", type: "rect", color: "#8FC5FB " },
                     ]}
                     wrapperStyle={{ fontSize: "1.25rem", fontWeight: 500 }}
                   />
                   <Bar
                     dataKey={"correct"}
                     barSize={50}
-                    fill="#8AEE96"
+                    fill="#8FC5FB"
                     yAxisId={"correct"}
                     name="correct"
                   />
@@ -2168,12 +2168,12 @@ export default function StudentReportPage() {
                     yAxisId={"right"}
                     name="WCPerBooks"
                     strokeWidth={3}
-                    stroke="#FC480D"
+                    stroke="#FE7445"
                   ></Line>
                   <Line
                     dataKey={"ar"}
                     yAxisId={"left"}
-                    stroke="#3B3BFF"
+                    stroke="#578537"
                     name="ar"
                     strokeWidth={3}
                   ></Line>

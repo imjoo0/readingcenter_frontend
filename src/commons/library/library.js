@@ -371,3 +371,20 @@ export const lastCount = (dateInput, count, weekDays) => {
 
   // return dateToInput(currentDate);
 };
+
+export const calculateLectureDate = (dateInput) => {
+  let currentDate = new Date(dateInput);
+
+  let currentDayOfWeek = currentDate.getDay();
+
+  let oneWeekAgoMonday = new Date(currentDate);
+  oneWeekAgoMonday.setDate(currentDate.getDate() - currentDayOfWeek - 6);
+
+  let fourWeeksLaterSunday = new Date(currentDate);
+  fourWeeksLaterSunday.setDate(currentDate.getDate() - currentDayOfWeek + 28);
+
+  return [
+    oneWeekAgoMonday.toISOString().slice(0, 10),
+    fourWeeksLaterSunday.toISOString().slice(0, 10),
+  ];
+};

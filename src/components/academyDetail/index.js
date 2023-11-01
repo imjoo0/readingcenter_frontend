@@ -31,6 +31,7 @@ import {
   EDIT_LECTURE_INFO,
 } from "./academyDetail.query";
 import {
+  calculateLectureDate,
   dateInputToNumber,
   dateToClock,
   dateToClockOneHour,
@@ -43,6 +44,7 @@ import { ConsultingTable } from "@/src/commons/library/academyDetailTable";
 
 const addressList = ["gmail.com", "naver.com", "daum.net"];
 const week = ["월", "화", "수", "목", "금", "토", "일"];
+const lecturePage = 15;
 
 export default function AcademyDetailPage() {
   const router = useRouter();
@@ -108,6 +110,8 @@ export default function AcademyDetailPage() {
   const [memoLecture, setMemoLecture] = useState("");
   const [memoContents, setMemoContents] = useState();
   const [memoText, setMemoText] = useState("");
+  const [lecturePageNum, setLecturePageNum] = useState(0);
+  const [lectureMaxNum, setLectureMaxNum] = useState(0);
 
   // 수업 수정 부분
   const [editLectureInfo] = useMutation(EDIT_LECTURE_INFO);
@@ -389,20 +393,32 @@ export default function AcademyDetailPage() {
 
   useEffect(() => {
     if (data) {
-      setLectureList(
-        data?.userDetails?.profile?.lectures
-          ?.filter((el) => {
-            return dateInputToNumber(el.date) <= dateInputToNumber(listDate);
-          })
-          ?.sort((a, b) => {
-            const dateA = new Date(a.date);
-            const dateB = new Date(b.date);
-            return dateB - dateA;
-          })
-          ?.filter((el, index) => {
-            return index < 20;
-          })
+      setLecturePageNum(0);
+      const [mondayDate, sunDayDate] = calculateLectureDate(listDate);
+      console.log(mondayDate, sunDayDate, "계산");
+      const newLectureList = data?.userDetails?.profile?.lectures?.filter(
+        (el) => {
+          const start = new Date(mondayDate);
+          const end = new Date(sunDayDate);
+          const k = new Date(el.date);
+          return k - start >= 0 && end - k >= 0;
+        }
       );
+      setLectureMaxNum(
+        Math.ceil(
+          data?.userDetails?.profile?.lectures?.filter((el) => {
+            const start = new Date(mondayDate);
+            const end = new Date(sunDayDate);
+            const k = new Date(el.date);
+            return k - start >= 0 && end - k >= 0;
+          }).length / lecturePage
+        )
+      );
+      setLectureList(newLectureList);
+
+      // ?.filter((el, index) => {
+      //   return index < 20;
+      // })
     }
   }, [data, listDate]);
 
@@ -1081,7 +1097,7 @@ export default function AcademyDetailPage() {
           ?.sort((a, b) => {
             const dateA = new Date(a.date);
             const dateB = new Date(b.date);
-            return dateB - dateA;
+            return dateA - dateB;
           })
           ?.sort((a, b) => {
             if (
@@ -1092,6 +1108,12 @@ export default function AcademyDetailPage() {
             } else {
               return 1;
             }
+          })
+          ?.filter((_, index) => {
+            return (
+              index >= lecturePage * lecturePageNum &&
+              index < lecturePage * (lecturePageNum + 1)
+            );
           })
           ?.map((el) => {
             return (
@@ -1151,6 +1173,30 @@ export default function AcademyDetailPage() {
             );
           })}
       </S.Table>
+      <div style={{ display: "flex" }}>
+        {Array(lectureMaxNum)
+          .fill(0)
+          .map((_, index) => (
+            <div
+              onClick={() => {
+                setLecturePageNum(index);
+              }}
+              style={
+                lecturePageNum === index
+                  ? {
+                      color: "#fff",
+                      background: "#111",
+                      width: "1rem",
+                      display: "flex",
+                      justifyContent: "center",
+                    }
+                  : { width: "1rem", display: "flex", justifyContent: "center" }
+              }
+            >
+              {index + 1}
+            </div>
+          ))}
+      </div>
       <S.Box>상담 정보</S.Box>
       <div>
         <button

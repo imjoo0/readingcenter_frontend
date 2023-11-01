@@ -5516,7 +5516,7 @@ export default function ClassPage() {
                   }}
                 >
                   <S.AlarmDiv>원생 리스트</S.AlarmDiv>
-                  <table>
+                  <table style={{ width: "100%" }}>
                     <thead>
                       <tr>
                         <th>원번</th>

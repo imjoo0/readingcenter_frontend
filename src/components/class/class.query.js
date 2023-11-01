@@ -347,8 +347,6 @@ export const GET_STUDENTS_BY_DATE = gql`
         korName
         engName
         origin
-        pmobileno
-        birthDate
         reservedBooksCount
       }
       lecture {
