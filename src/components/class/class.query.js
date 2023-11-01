@@ -212,8 +212,10 @@ export const CREATE_CLASS = gql`
     $repeatWeeks: Int!
     $autoAdd: Boolean!
     $studentIds: [Int]!
+    $repeatTimes: Int
   ) {
     createLecture(
+      repeatTimes: $repeatTimes
       academyId: $academyId
       date: $date
       startTime: $startTime
@@ -357,6 +359,9 @@ export const GET_STUDENTS_BY_DATE = gql`
         lectureMemo
         lectureInfo {
           about
+          id
+        }
+        teacher {
           id
         }
       }
@@ -609,45 +614,87 @@ export const UPDATE_LECTURE = gql`
 `;
 
 export const GET_MONTH_CLASS = gql`
-  query getLecturesByAcademyAndMonth($academyId: Int!, $month: Int!) {
-    getLecturesByAcademyAndMonth(academyId: $academyId, month: $month) {
-      id
+  query getLecturestudentsByAcademyAndMonth(
+    $academyId: Int!
+    $month: Int!
+    $year: Int!
+  ) {
+    getLecturestudentsByAcademyAndMonth(
+      academyId: $academyId
+      month: $month
+      year: $year
+    ) {
       date
-      startTime
-      endTime
-      lectureInfo {
-        id
-        about
-        repeatDay
-        repeatWeeks
-        autoAdd
-      }
-      teacher {
-        id
-        korName
-        engName
-      }
       students {
-        # 여기에서 학생들의 정보를 가져옵니다.
-        id
-        korName
-        engName
-        origin
-        pmobileno
-        mobileno
-        birthDate
-        gender
-        reservedBooksCount
-        attendances {
-          lecture {
+        student {
+          id
+          korName
+          engName
+          origin
+          pmobileno
+          birthDate
+          reservedBooksCount
+        }
+        lecture {
+          id
+          date
+          startTime
+          endTime
+          lectureInfo {
             id
+            autoAdd
+            repeatDay
+            repeatWeeks
+            about
+            repeatTimes
           }
-          status
-          statusDisplay
+        }
+        attendanceStatus {
+          id
           entryTime
           exitTime
+          statusDisplay
+          memo
         }
       }
+      # id
+      # date
+      # startTime
+      # endTime
+      # lectureInfo {
+      #   id
+      #   about
+      #   repeatDay
+      #   repeatWeeks
+      #   autoAdd
+      #   repeatTimes
+      # }
+      # teacher {
+      #   id
+      #   korName
+      #   engName
+      # }
+      # students {
+      #   # 여기에서 학생들의 정보를 가져옵니다.
+      #   id
+      #   korName
+      #   engName
+      #   origin
+      #   pmobileno
+      #   mobileno
+      #   birthDate
+      #   gender
+      #   reservedBooksCount
+      #   attendances {
+      #     lecture {
+      #       id
+      #     }
+      #     status
+      #     statusDisplay
+      #     entryTime
+      #     exitTime
+      #   }
+      # }
     }
   }
 `;
@@ -825,8 +872,10 @@ export const EDIT_LECTURE_INFO = gql`
     $endTime: Time!
     $academyId: Int!
     $teacherId: Int!
+    $repeatTimes: Int
   ) {
     updateLectureInfo(
+      repeatTimes: $repeatTimes
       lectureInfoId: $lectureInfoId
       date: $date
       about: $about
@@ -900,6 +949,7 @@ export const GET_LECTURE_INFO = gql`
         date
         startTime
         endTime
+        id
         academy {
           id
           name
@@ -908,11 +958,11 @@ export const GET_LECTURE_INFO = gql`
           about
           repeatDay
           repeatWeeks
+          repeatTimes
           id
           autoAdd
         }
-        id
-        date
+
         teacher {
           id
         }
@@ -922,6 +972,31 @@ export const GET_LECTURE_INFO = gql`
         statusDisplay
         entryTime
         exitTime
+      }
+    }
+  }
+`;
+
+export const GET_TEACHER = gql`
+  query staffInAcademy($academyId: Int!) {
+    staffInAcademy(academyId: $academyId) {
+      ... on ManagerType {
+        id
+        user {
+          isActive
+          userCategory
+        }
+        korName
+        engName
+      }
+      ... on TeacherType {
+        id
+        user {
+          isActive
+          userCategory
+        }
+        korName
+        engName
       }
     }
   }

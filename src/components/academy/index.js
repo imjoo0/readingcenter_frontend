@@ -21,6 +21,8 @@ import {
 } from "./academy.query";
 import { Modal, Switch } from "antd";
 
+const addressList = ["gmail.com", "naver.com", "daum.net"];
+
 export default function AcademyPage() {
   const router = useRouter();
   const { data, refetch } = useQuery(GET_STUDENTS, {
@@ -33,14 +35,16 @@ export default function AcademyPage() {
   const [date] = useState(new Date());
   const [addId, setAddId] = useState("");
   const [addKorName, setAddKorName] = useState("");
-  const [addEmail, setAddEmail] = useState("");
+  const [addEmail1, setAddEmail1] = useState("");
+  const [addEmail2, setAddEmail2] = useState("gmail.com");
+  const [isTyped, setIsTyped] = useState(false);
   const [password, setPassword] = useState("");
   const [addEngName, setAddEngName] = useState("");
   const [addGender, setAddGender] = useState("M");
-  const [addMobileNumber1, setAddMobileNumber1] = useState("");
+  const [addMobileNumber1, setAddMobileNumber1] = useState("010");
   const [addMobileNumber2, setAddMobileNumber2] = useState("");
   const [addMobileNumber3, setAddMobileNumber3] = useState("");
-  const [addPMobileNumber1, setAddPMobileNumber1] = useState("");
+  const [addPMobileNumber1, setAddPMobileNumber1] = useState("010");
   const [addPMobileNumber2, setAddPMobileNumber2] = useState("");
   const [addPMobileNumber3, setAddPMobileNumber3] = useState("");
   const [addBirthDay, setAddBirthDay] = useState(dateToInput(date));
@@ -108,6 +112,11 @@ export default function AcademyPage() {
   const onClickStop = async () => {
     try {
       await stopAcademy({ variables: { userId: Number(selectId.id) } });
+      if (!isStop) {
+        alert("휴원 처리 완료했습니다.");
+      } else {
+        alert("재원 처리 완료했습니다.");
+      }
     } catch {
       alert("실패");
     }
@@ -133,7 +142,7 @@ export default function AcademyPage() {
       const result1 = await createUser({
         variables: {
           username: addId,
-          email: addEmail,
+          email: addEmail1 + "@" + addEmail2,
           password: password,
           userCategory: "학생",
         },
@@ -200,7 +209,8 @@ export default function AcademyPage() {
     }
     refetch();
     setAddKorName("");
-    setAddEmail("");
+    setAddEmail1("");
+    setAddEmail2("gmail.com");
     setPassword("");
     setAddEngName("");
     setAddGender("M");
@@ -371,7 +381,7 @@ export default function AcademyPage() {
               onChange={onChangeSearchWord}
               onKeyPress={onKeyPress}
             />
-            <S.SearchButton onClick={onClickSearch}>검색하기</S.SearchButton>
+            <S.SearchButton onClick={onClickSearch}>검색</S.SearchButton>
           </S.SearchTag>
         </S.SearchBox>
         <S.CountBox>
@@ -380,11 +390,11 @@ export default function AcademyPage() {
           </S.CountLeft>
           <S.CountRight>
             <S.ContinueOrRest>
-              재원 / 휴원
+              휴원 / 재원
               <Switch
-                defaultChecked={false}
+                defaultChecked={true}
                 onChange={(checked) => {
-                  setIsStop(checked);
+                  setIsStop(!checked);
                 }}
               ></Switch>
             </S.ContinueOrRest>
@@ -401,7 +411,7 @@ export default function AcademyPage() {
         <S.Table>
           <S.TableHeaderRound>
             <S.TableHeadLeft style={{ width: "40%" }}>
-              원번{" "}
+              원번
               {sortType !== "origin" || sortType === "" ? (
                 <DownOutlined
                   style={{ marginLeft: "5px" }}
@@ -414,7 +424,7 @@ export default function AcademyPage() {
                 />
               )}
             </S.TableHeadLeft>
-            <S.TableHead style={{ width: "40%" }}>
+            <S.TableHead style={{ width: "45%" }}>
               원생명
               {sortType !== "name" || sortType === "" ? (
                 <DownOutlined
@@ -442,6 +452,7 @@ export default function AcademyPage() {
                 />
               )}
             </S.TableHead>
+            <S.TableHead style={{ width: "30%" }}>성별</S.TableHead>
             <S.TableHead style={{ width: "50%" }}>
               등록일{" "}
               {sortType !== "register" || sortType === "" ? (
@@ -456,36 +467,48 @@ export default function AcademyPage() {
                 />
               )}
             </S.TableHead>
-            <S.TableHead style={{ width: "100%" }}>연락처</S.TableHead>
-            <S.TableHead style={{ width: "30%" }}>성별</S.TableHead>
-            <S.TableHeadRight style={{ width: "30%" }}>
+            <S.TableHead style={{ width: "70%" }}>연락처</S.TableHead>
+
+            {/* <S.TableHeadRight style={{ width: "30%" }}>
               상세 보기
-            </S.TableHeadRight>
+            </S.TableHeadRight> */}
             <S.TableHeadRight style={{ width: "30%" }}>
               리딩 이력
             </S.TableHeadRight>
-            <S.TableHeadRight style={{ width: "30%" }}>상태</S.TableHeadRight>
+            <S.TableHeadRight style={{ width: "35%" }}>상태</S.TableHeadRight>
           </S.TableHeaderRound>
           {array?.map((el) => {
             return (
               <S.TableRound key={uuidv4()}>
-                <S.TableHeadLeft style={{ width: "40%" }}>
+                <S.TableHeadLeft
+                  style={{
+                    width: "40%",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => {
+                    window.open(
+                      "/" + router.query.branch + "/academy/" + el.id,
+                      "_blank"
+                    );
+                  }}
+                >
                   {el.origin}
                 </S.TableHeadLeft>
-                <S.TableHead style={{ width: "40%" }}>{el.korName}</S.TableHead>
-                <S.TableHead style={{ width: "40%" }}>
-                  {el.birthDate}
-                </S.TableHead>
-                <S.TableHead style={{ width: "50%" }}>
-                  {dateChange(el.registerDate)}
-                </S.TableHead>
-                <S.TableHead2 style={{ width: "100%" }}>
-                  <div>{el.pmobileno}</div>
-                </S.TableHead2>
-                <S.TableHead style={{ width: "30%" }}>
-                  {el.gender === "M" ? "남" : "여"}
-                </S.TableHead>
-                <S.TableHeadRight style={{ width: "30%" }}>
+                <S.TableHead
+                  style={{
+                    width: "45%",
+                    cursor: "pointer",
+                    // display: "flex",
+                    // justifyContent: "space-between",
+                  }}
+                  onClick={() => {
+                    window.open(
+                      "/" + router.query.branch + "/academy/" + el.id,
+                      "_blank"
+                    );
+                  }}
+                >
+                  <div>{el.korName + "(" + el.engName + ")"}</div>
                   <SearchOutlined
                     onClick={() => {
                       window.open(
@@ -494,7 +517,23 @@ export default function AcademyPage() {
                       );
                     }}
                   ></SearchOutlined>
-                </S.TableHeadRight>
+                </S.TableHead>
+                <S.TableHead style={{ width: "40%" }}>
+                  {el.birthDate}
+                </S.TableHead>
+                <S.TableHead style={{ width: "30%" }}>
+                  {el.gender === "M" ? "남" : "여"}
+                </S.TableHead>
+                <S.TableHead style={{ width: "50%" }}>
+                  {dateChange(el.registerDate)}
+                </S.TableHead>
+                <S.TableHead2 style={{ width: "70%" }}>
+                  <div>{el.pmobileno}</div>
+                </S.TableHead2>
+
+                {/* <S.TableHeadRight style={{ width: "30%" }}>
+                  
+                </S.TableHeadRight> */}
                 <S.TableHeadRight style={{ width: "30%" }}>
                   <svg
                     width="24"
@@ -524,8 +563,14 @@ export default function AcademyPage() {
                     />
                   </svg>
                 </S.TableHeadRight>
-                <S.TableHeadRight style={{ width: "30%" }}>
-                  <button
+                <S.TableHeadRight style={{ width: "35%" }}>
+                  휴원
+                  <Switch
+                    defaultChecked={el.user.isActive}
+                    onClick={onClickCheck(el.id, el.user.isActive)}
+                  ></Switch>
+                  재원
+                  {/* <button
                     style={{
                       backgroundColor: "transparent",
                       border: 0,
@@ -534,7 +579,7 @@ export default function AcademyPage() {
                     onClick={onClickCheck(el.id, el.user.isActive)}
                   >
                     {el.user.isActive ? "재원 " : "휴원"}
-                  </button>
+                  </button> */}
                 </S.TableHeadRight>
               </S.TableRound>
             );
@@ -542,14 +587,15 @@ export default function AcademyPage() {
         </S.Table>
       </S.AcademyWrapper>
 
-      {addToggle ? (
+      {addToggle && (
         <Modal
           closable={false}
           open={addToggle}
           onCancel={() => {
             setAddToggle(false);
             setAddKorName("");
-            setAddEmail("");
+            setAddEmail1("");
+            setAddEmail1("gmail.com");
             setPassword("");
             setAddEngName("");
             setAddGender("M");
@@ -625,8 +671,55 @@ export default function AcademyPage() {
               ></S.ModalInput>
             </S.ModalTag>
             <S.ModalTag>
-              <S.ModalTitle>E-Mail</S.ModalTitle>
-              <S.ModalInput
+              <S.ModalTitle>이메일</S.ModalTitle>
+              <div>
+                <S.ModalSmall
+                  type="text"
+                  onChange={(e) => {
+                    setAddEmail1(e.target.value);
+                  }}
+                  value={addEmail1}
+                ></S.ModalSmall>{" "}
+                @{" "}
+                <S.ModalSmall
+                  type="text"
+                  onChange={(e) => {
+                    setAddEmail2(e.target.value);
+                  }}
+                  value={addEmail2}
+                  disabled={!isTyped}
+                ></S.ModalSmall>{" "}
+                <select
+                  style={{
+                    padding: "0.81rem 0",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #dbdde1",
+                    width: "calc(25% - 1rem)",
+                    color: "#333",
+                  }}
+                  onChange={(e) => {
+                    if (e.target.value === "") {
+                      setAddEmail2("");
+                      setIsTyped(true);
+                    } else {
+                      setAddEmail2(e.target.value);
+                      setIsTyped(false);
+                    }
+                  }}
+                >
+                  {addressList.map((el) => {
+                    return (
+                      <option value={el} selected={el === addEmail2}>
+                        {el}
+                      </option>
+                    );
+                  })}
+                  <option value={""} selected={isTyped}>
+                    {"직접 입력"}
+                  </option>
+                </select>
+              </div>
+              {/* <S.ModalInput
                 type="text"
                 onChange={(e) => {
                   setAddEmail(e.target.value);
@@ -636,7 +729,7 @@ export default function AcademyPage() {
                     onClickAddStudent();
                   }
                 }}
-              ></S.ModalInput>
+              ></S.ModalInput> */}
             </S.ModalTag>
             <S.ModalTag>
               <S.ModalTitle>성별</S.ModalTitle>
@@ -817,7 +910,8 @@ export default function AcademyPage() {
               onClick={() => {
                 setAddToggle(false);
                 setAddKorName("");
-                setAddEmail("");
+                setAddEmail1("");
+                setAddEmail2("");
                 setPassword("");
                 setAddEngName("");
                 setAddGender("M");
@@ -838,8 +932,6 @@ export default function AcademyPage() {
             <S.ModalOkButton onClick={onClickAddStudent}>저장</S.ModalOkButton>
           </S.ModalButtonBox>
         </Modal>
-      ) : (
-        <></>
       )}
       {isCheck ? (
         <Modal
@@ -851,8 +943,11 @@ export default function AcademyPage() {
           footer={null}
         >
           <div>
-            <div>{"휴원 처리 하시겠습니까?"}</div>
-            <button onClick={onClickStop}>확인</button>
+            <div>
+              {isStop
+                ? "재원으로 변경하시겠습니까?"
+                : "휴원으로 변경하시겠습니까?"}
+            </div>
             <button
               onClick={() => {
                 setIsCheck(false);
@@ -860,6 +955,7 @@ export default function AcademyPage() {
             >
               취소
             </button>
+            <button onClick={onClickStop}>확인</button>
           </div>
         </Modal>
       ) : (

@@ -1,6 +1,10 @@
 import { useQuery } from "@apollo/client";
 import { useRouter } from "next/router";
-import { GET_ALL_STUDENTS, GET_ME } from "./report.query";
+import {
+  GET_ALL_STUDENTS,
+  GET_ME,
+  GET_STUDENTS_REPORT_LIST,
+} from "./report.query";
 import { useEffect, useState } from "react";
 import * as S from "./report.style";
 
@@ -9,6 +13,11 @@ export default function ReportPage() {
   const { data } = useQuery(GET_ALL_STUDENTS, {
     variables: { academyId: Number(router.query.branch) },
   });
+
+  const { data: listData } = useQuery(GET_STUDENTS_REPORT_LIST, {
+    variables: { academyId: Number(router.query.branch) },
+  });
+
   const { data: myData } = useQuery(GET_ME);
   const [searchWord, setSearchWord] = useState("");
   const [studentArray, setStudentArray] = useState([]);
@@ -19,9 +28,10 @@ export default function ReportPage() {
 
   useEffect(() => {
     setStudentArray(
-      data?.studentsInAcademy?.filter((el) => {
+      listData?.studentsInAcademyWithConsulting?.filter((el) => {
         return (
-          el.origin.includes(searchWord) || el.korName.includes(searchWord)
+          el.student.origin.includes(searchWord) ||
+          el.student.korName.includes(searchWord)
         );
       })
     );
@@ -75,7 +85,7 @@ export default function ReportPage() {
           onChange={(e) => {
             setSearchWord(e.target.value);
           }}
-          placeholder="       원번 혹은 이름을 입력하세요."
+          placeholder="      원번 혹은 이름을 입력하세요."
         ></S.ReportInput>
       </S.ReportSearchBox>
       <style>{`
@@ -115,16 +125,20 @@ export default function ReportPage() {
             <th>생년월일</th>
             <th>학습 리포트</th>
             <th>리딩 이력</th>
+            <th>상담 횟수</th>
+            <th>최근 상담 날짜</th>
           </tr>
         </thead>
         <tbody>
           {studentArray?.map((el) => {
             return (
               <tr>
-                <td>{el?.origin}</td>
-                <td>{el?.korName + "(" + el?.engName + ")"}</td>
-                <td>{el?.registerDate.slice(0, 10)}</td>
-                <td>{el?.birthDate?.slice(0, 10)}</td>
+                <td>{el?.student?.origin}</td>
+                <td>
+                  {el?.student?.korName + "(" + el?.student?.engName + ")"}
+                </td>
+                <td>{el?.student?.registerDate.slice(0, 10)}</td>
+                <td>{el?.student?.birthDate?.slice(0, 10)}</td>
                 <td>
                   <svg
                     width="24"
@@ -138,7 +152,7 @@ export default function ReportPage() {
                         "/" +
                           router.query.branch +
                           "/report/reportDetail/" +
-                          el?.id
+                          el?.student?.id
                       );
                     }}
                   >
@@ -167,7 +181,7 @@ export default function ReportPage() {
                     style={{ cursor: "pointer" }}
                     onClick={() => {
                       window.open(
-                        "/" + router.query.branch + "/report/" + el?.id
+                        "/" + router.query.branch + "/report/" + el?.student?.id
                       );
                     }}
                   >
@@ -185,6 +199,10 @@ export default function ReportPage() {
                       stroke-linejoin="round"
                     />
                   </svg>
+                </td>
+                <td>{el.consultingCount}</td>
+                <td>
+                  {el.lastConsultingDate === null ? "-" : el.lastConsultingDate}
                 </td>
               </tr>
             );

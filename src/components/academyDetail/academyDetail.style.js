@@ -73,6 +73,14 @@ export const InputInput = styled.input`
   color: #333;
 `;
 
+export const InputPhoneInput = styled.input`
+  padding: 0.81rem 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #dbdde1;
+  width: calc(25% - 1rem);
+  color: #333;
+`;
+
 export const CalenderDiv = styled.div`
   width: 10vw;
   display: flex;

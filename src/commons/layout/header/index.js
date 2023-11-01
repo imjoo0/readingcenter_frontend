@@ -62,7 +62,7 @@ export default function Header() {
     ["도서 관리", "books"],
     // ["수업 목록", "classList"],
     ["학습 리포트", "report"],
-    // ["도서 대여", "library"],
+    ["상담 관리", "consulting"],
   ];
   const router = useRouter();
   const { data: myData } = useQuery(GET_ME);

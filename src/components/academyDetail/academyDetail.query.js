@@ -38,7 +38,11 @@ export const GET_STUDENT = gql`
             lectureMemo
             lectureInfo {
               id
+              autoAdd
+              repeatDay
+              repeatWeeks
               about
+              repeatTimes
             }
             attendanceStatus(studentId: $userId) {
               id
@@ -75,6 +79,56 @@ export const GET_USERS = gql`
             id
             name
             location
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const EDIT_USER = gql`
+  mutation updateUserInfo($email: String, $userId: ID!, $categoryId: Int!) {
+    updateUserInfo(categoryId: $categoryId, userId: $userId, email: $email) {
+      user {
+        id
+        username
+        email
+        userCategory
+        isStaff
+        isActive
+        memos {
+          memo
+          academy {
+            id
+          }
+        }
+        profile {
+          ... on StudentType {
+            korName
+            engName
+            origin
+            pmobileno
+            mobileno
+            birthDate
+            gender
+            registerDate
+            lectures {
+              id
+              date
+              startTime
+              endTime
+              attendanceStatus {
+                id
+                lectureId
+                entryTime
+                exitTime
+                statusDisplay
+              }
+              teacher {
+                korName
+                engName
+              }
+            }
           }
         }
       }
@@ -422,6 +476,204 @@ export const EDIT_ACADEMY_LIST = gql`
           name
         }
       }
+    }
+  }
+`;
+
+export const GET_CONSULTING = gql`
+  query getConsulting($studentId: ID!, $userId: ID!) {
+    getConsulting(studentId: $studentId, userId: $userId) {
+      id
+      title
+      contents
+      createdAt
+      student {
+        id
+        korName
+        engName
+        pmobileno
+        origin
+      }
+      writer {
+        userCategory
+        profile {
+          ... on TeacherType {
+            id
+            korName
+            engName
+            academy {
+              id
+              name
+              location
+            }
+          }
+          ... on ManagerType {
+            id
+            korName
+            engName
+            academies {
+              id
+              name
+              location
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const CREATE_CONSULTING = gql`
+  mutation createConsulting(
+    $title: String!
+    $contents: String!
+    $writerId: ID!
+    $studentId: ID!
+    $createdAt: Date!
+  ) {
+    createConsulting(
+      title: $title
+      contents: $contents
+      writerId: $writerId
+      studentId: $studentId
+      createdAt: $createdAt
+    ) {
+      consulting {
+        id
+        contents
+        createdAt
+      }
+    }
+  }
+`;
+
+export const UPDATE_CONSULTING = gql`
+  mutation updateConsulting(
+    $title: String!
+    $contents: String!
+    $writerId: ID!
+    $consultingId: ID!
+    $createdAt: Date!
+  ) {
+    updateConsulting(
+      title: $title
+      contents: $contents
+      writerId: $writerId
+      consultingId: $consultingId
+      createdAt: $createdAt
+    ) {
+      consulting {
+        id
+        contents
+        createdAt
+      }
+    }
+  }
+`;
+
+export const DELETE_CONSULTING = gql`
+  mutation deleteConsulting($consultingId: ID!) {
+    deleteConsulting(consultingId: $consultingId) {
+      success
+    }
+  }
+`;
+
+export const GET_LECTURE_INFO = gql`
+  query studentLectures($academyIds: [ID]!, $studentId: ID!) {
+    studentLectures(academyIds: $academyIds, studentId: $studentId) {
+      student {
+        id
+        korName
+      }
+      lecture {
+        date
+        startTime
+        endTime
+        id
+        academy {
+          id
+          name
+        }
+        lectureInfo {
+          about
+          repeatDay
+          repeatWeeks
+          repeatTimes
+          id
+          autoAdd
+        }
+
+        teacher {
+          id
+        }
+        lectureMemo
+      }
+      attendanceStatus {
+        statusDisplay
+        entryTime
+        exitTime
+      }
+    }
+  }
+`;
+
+export const GET_TEACHER = gql`
+  query staffInAcademy($academyId: Int!) {
+    staffInAcademy(academyId: $academyId) {
+      ... on ManagerType {
+        id
+        user {
+          isActive
+          userCategory
+        }
+        korName
+        engName
+      }
+      ... on TeacherType {
+        id
+        user {
+          isActive
+          userCategory
+        }
+        korName
+        engName
+      }
+    }
+  }
+`;
+
+export const EDIT_LECTURE_INFO = gql`
+  mutation updateLectureInfo(
+    $lectureInfoId: Int!
+    $date: Date!
+    $about: String!
+    $repeatDays: String!
+    $repeatWeeks: Int!
+    $autoAdd: Boolean!
+    $studentIds: [Int]!
+    $startTime: Time!
+    $endTime: Time!
+    $academyId: Int!
+    $teacherId: Int!
+    $repeatTimes: Int
+  ) {
+    updateLectureInfo(
+      repeatTimes: $repeatTimes
+      lectureInfoId: $lectureInfoId
+      date: $date
+      about: $about
+      repeatDays: $repeatDays
+      repeatWeeks: $repeatWeeks
+      autoAdd: $autoAdd
+      studentIds: $studentIds
+      startTime: $startTime
+      endTime: $endTime
+      academyId: $academyId
+      teacherId: $teacherId
+    ) {
+      success
+      message
     }
   }
 `;

@@ -1,3 +1,4 @@
+import { addDays, getDay, startOfWeek, endOfWeek } from "date-fns";
 import styles from "../../components/class/styles.module.css";
 export const longWord = (word) => {
   if (word.length > 25) {
@@ -112,6 +113,21 @@ export const dateToInput = (date) => {
   }
 
   return year + "-" + month + "-" + day;
+};
+
+export const dateToMonth = (date) => {
+  let year = String(date.getFullYear());
+  let month = String(date.getMonth() + 1);
+  let day = String(date.getDate());
+
+  if (Number(month) < 10) {
+    month = "0" + month;
+  }
+  if (Number(day) < 10) {
+    day = "0" + day;
+  }
+
+  return year + "-" + month;
 };
 
 export const dateToKoreanTime = (date) => {
@@ -245,13 +261,113 @@ export const dateInputToNumber = (dateInput) => {
   return Number(dateInput.replaceAll("-", ""));
 };
 
-export const lastDate = (dateInput, count, weekDays) => {
+export const startDate = (dateInput, weekDays) => {
   let currentDate = new Date(dateInput);
-  const targetDay = (weekDays - currentDate.getDay() + 6) % 7;
-  const targetDate = currentDate.getDate() + targetDay + 7 * (count - 1);
+  let startDay = currentDate.getDay();
+  let jsWeekDays = weekDays
+    .map((el) => (el + 1) % 7)
+    .sort((a, b) => {
+      return a - b;
+    });
+  let after = jsWeekDays.filter((el) => {
+    return el >= startDay;
+  });
+  let before = jsWeekDays.filter((el) => {
+    return el < startDay;
+  });
 
-  currentDate.setDate(targetDate);
-
-  console.log(currentDate);
+  let targetDay = [...after, ...before][0];
+  let dates = currentDate.getDate() - startDay + targetDay;
+  if (after.length === 0) {
+    console.log(after, "after");
+    dates = dates + 7;
+  }
+  currentDate.setDate(dates);
   return dateToInput(currentDate);
+};
+
+export const lastDate = (dateInput, weeks, weekDays) => {
+  if (weekDays.length === 0) {
+    return false;
+  }
+  let currentDate = new Date(dateInput);
+  let jsWeekDays = weekDays
+    .map((el) => (el + 1) % 7)
+    .sort((a, b) => {
+      return a - b;
+    });
+  let startDay = currentDate.getDay();
+  let after = jsWeekDays.filter((el) => {
+    return el > startDay;
+  });
+  let now = jsWeekDays.includes(startDay) ? [startDay] : [];
+  let before = jsWeekDays.filter((el) => {
+    return el < startDay;
+  });
+  const targetDate = [...now, ...after, ...before];
+
+  const targetDay = targetDate[targetDate.length - 1];
+
+  let dates = currentDate.getDate() + (weeks - 1) * 7 - startDay + targetDay;
+  if (targetDate[targetDate.length - 1] < startDay) {
+    dates = dates + 7;
+  }
+  console.log(jsWeekDays, startDay, dates, "day");
+  currentDate.setDate(dates);
+  return dateToInput(currentDate);
+};
+
+export const lastCount = (dateInput, count, weekDays) => {
+  const result = [];
+  let currentDate = new Date(dateInput);
+  let jsWeekDays = weekDays
+    .map((el) => (el + 1) % 7)
+    .sort((a, b) => {
+      return a - b;
+    });
+
+  if (jsWeekDays.includes(currentDate.getDay())) {
+    result.push(new Date(currentDate));
+  }
+  while (result.length < count) {
+    currentDate = addDays(currentDate, 1);
+    if (jsWeekDays.includes(currentDate.getDay())) {
+      result.push(new Date(currentDate));
+    }
+  }
+
+  // const k = new Date(
+  //   result[result.length - 1].setDate(result[result.length - 1].getDate() + 1)
+  // );
+  return dateToInput(result[result.length - 1]);
+
+  // let startDay = currentDate.getDay();
+
+  // let after = jsWeekDays.filter((el) => {
+  //   return el > startDay;
+  // });
+  // let now = jsWeekDays.includes(startDay) ? [startDay] : [];
+  // let before = jsWeekDays.filter((el) => {
+  //   return el < startDay;
+  // });
+
+  // let newWeek = [...now, ...after, ...before];
+  // let week = Math.floor(count / weekDays.length);
+  // let k = count % weekDays.length;
+
+  // let targetDate =
+  //   currentDate.getDate() +
+  //   week * 7 +
+  //   newWeek[(k - 1 + weekDays.length) % weekDays.length] -
+  //   startDay;
+
+  // if (before.length === 0 && now.length !== 0 && after.length === 0) {
+  //   targetDate = targetDate - 7;
+  // }
+  // // if (after.length !== 0 &&) {
+  // //   targetDate = targetDate + 7;
+  // // }
+  // currentDate.setDate(targetDate);
+
+  // return dateToInput(currentDate);
 };

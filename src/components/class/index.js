@@ -26,10 +26,11 @@ import {
   longTitle,
   getDateZero,
   lastDate,
+  lastCount,
+  startDate,
 } from "../../commons/library/library";
 import { Modal, Spin, Switch } from "antd";
 import {
-  CloseOutlined,
   DownOutlined,
   SearchOutlined,
   SettingOutlined,
@@ -64,7 +65,6 @@ import {
   UPDATE_LECTURE,
   GET_MONTH_CLASS,
   GET_FICTION_RECOMMEND,
-  GET_NONFICTION_RECOMMEND,
   CHANGE_RECOMMEND_BY_PERIOD,
   CHANGE_RECOMMEND_BY_RECORD,
   GET_READING_RECORD,
@@ -75,33 +75,12 @@ import {
   DELETE_LECTURE,
   DELETE_LECTURE_INFO,
   GET_LECTURE_INFO,
+  GET_TEACHER,
 } from "./class.query";
 import { TableClassListBody } from "@/src/commons/library/table";
-import { el } from "date-fns/locale";
 
 const week = ["월", "화", "수", "목", "금", "토", "일"];
 const itemsPerPage = 20; // 페이지당 항목 수
-
-const dummyData = [
-  {
-    repeatWeeks: [0, 2, 4],
-    date: "2023-10-01",
-    startTime: "15:20",
-    endTime: "16:40",
-  },
-  {
-    repeatWeeks: [-1],
-    date: "2023-10-17",
-    startTime: "13:20",
-    endTime: "14:40",
-  },
-  {
-    repeatWeeks: [-1],
-    date: "2023-10-21",
-    startTime: "14:20",
-    endTime: "15:40",
-  },
-];
 
 export default function ClassPage() {
   const router = useRouter();
@@ -114,6 +93,7 @@ export default function ClassPage() {
   const [isLate, setIsLate] = useState(false);
   const [isAttendance, setIsAttendance] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  // 수정 부분
   const [isEdit, setIsEdit] = useState(false);
   const [editAcademy, setEditAcademy] = useState(Number(router.query.branch));
   const [editDate, setEditDate] = useState(dateToInput(date));
@@ -171,13 +151,15 @@ export default function ClassPage() {
   const [readingList, setReadingList] = useState([]);
   const [isAlert, setIsAlert] = useState(false);
   const [isDup, setIsDup] = useState(false);
+  const [manager, setManager] = useState("");
 
   // 수업 수정 추가 지점
   const [isAll, setIsAll] = useState(false);
   const [isEditAuto, setIsEditAuto] = useState(false);
-  const [isEditRepeat, setIsEditRepeat] = useState(false);
+  const [isEditRepeat, setIsEditRepeat] = useState("once");
   const [editRepeatWeek, setEditRepeatWeek] = useState([]);
   const [editRepeatCount, setEditRepeatCount] = useState(0);
+  const [standardDate, setStandardDate] = useState("");
 
   // 수업 보강 추가 지점
   const [isMakeUp, setIsMakeUp] = useState(false);
@@ -195,17 +177,16 @@ export default function ClassPage() {
     setMakeUpId(sId);
     setMakeUpInfo("");
     setMakeUpTeacherId(
-      userData?.allUsers
-        .filter((el) => el.userCategory === "선생님")
-        .filter((el) => {
-          return Number(el.profile.academy.id) === Number(router.query.branch);
-        })[0].id
-    );
-    console.log(
-      userData?.allUsers
-        .filter((el) => el.userCategory === "선생님")
-        .filter((el) => {
-          return Number(el.profile.academy.id) === Number(router.query.branch);
+      teacherData?.staffInAcademy
+        ?.filter((el) => el.user.userCategory === "선생님")
+        ?.sort((a, b) => {
+          if (Number(a.id) === Number(myData.me.id)) {
+            return -1;
+          } else if (Number(b.id) === Number(myData.me.id)) {
+            return 1;
+          } else {
+            return Number(a.id) - Number(b.id);
+          }
         })[0].id
     );
     setMakeUpLectureId(lId);
@@ -252,6 +233,10 @@ export default function ClassPage() {
     GET_READING_RECORD,
     { variables: { studentId: 0 } }
   );
+
+  const { data: teacherData, refetch: refetchTeacher } = useQuery(GET_TEACHER, {
+    variables: { academyId: Number(router.query.branch) },
+  });
 
   const [changeRecommendPeriod] = useMutation(CHANGE_RECOMMEND_BY_PERIOD);
   const [changeRecommendRecord] = useMutation(CHANGE_RECOMMEND_BY_RECORD);
@@ -314,6 +299,7 @@ export default function ClassPage() {
       variables: {
         academyId: Number(router.query.branch),
         month: Number(date.getMonth() + 1),
+        year: Number(date.getFullYear()),
       },
     }
   );
@@ -407,7 +393,16 @@ export default function ClassPage() {
             return (
               Number(el.profile.academy.id) === Number(router.query.branch)
             );
-          })[0].id,
+          })
+          ?.sort((a, b) => {
+            if (Number(a.id) === Number(myData.me.id)) {
+              return -1;
+            } else if (Number(b.id) === Number(myData.me.id)) {
+              return 1;
+            } else {
+              return Number(a.id) - Number(b.id);
+            }
+          })?.[0].id,
         about: "",
       },
     ]);
@@ -464,9 +459,8 @@ export default function ClassPage() {
           return (
             Number(el?.profile?.academy?.id) === Number(router.query.branch)
           );
-        })[0].id;
+        })[0]?.id;
     });
-    console.log(newList);
     setAddRepeatInput(newList);
   }, [userData]);
 
@@ -518,50 +512,103 @@ export default function ClassPage() {
 
   useEffect(() => {
     setPage(1);
-    let students = Array.isArray(
-      studentListData?.getLecturesByAcademyAndDateStudents
-    )
-      ? [...studentListData?.getLecturesByAcademyAndDateStudents]
-      : [];
+    if (manager === "") {
+      let students = Array.isArray(
+        studentListData?.getLecturesByAcademyAndDateStudents
+      )
+        ? [...studentListData?.getLecturesByAcademyAndDateStudents]
+        : [];
 
-    const start = (page - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    setStudentArray(
-      students
-        .sort((a, b) =>
-          a.student.korName.localeCompare(b.student.korName, "ko-KR")
-        )
-        .sort((a, b) => {
-          let timeA = new Date(`1970-01-01T${a.lecture.startTime}`);
-          let timeB = new Date(`1970-01-01T${b.lecture.startTime}`);
-          if (
-            a?.attendanceStatus?.statusDisplay === "하원" ||
-            a?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
-            a?.attendanceStatus?.statusDisplay === "결석"
-          ) {
-            timeA = new Date(`1970-01-02T${a.lecture.startTime}`);
-          }
-          if (
-            b?.attendanceStatus?.statusDisplay === "하원" ||
-            b?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
-            b?.attendanceStatus?.statusDisplay === "결석"
-          ) {
-            timeB = new Date(`1970-01-02T${a.lecture.startTime}`);
-          }
-          return timeA - timeB;
-        })
-        ?.filter((el) => {
-          return (
-            el.student.korName.includes(searchWord) ||
-            el.student.origin
-              .toUpperCase()
-              .includes(searchWord.toUpperCase()) ||
-            el.student.engName.toUpperCase().includes(searchWord.toUpperCase())
-          );
-        })
-        ?.slice(start, end)
-    );
-  }, [studentListData, searchWord]);
+      const start = (page - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      setStudentArray(
+        students
+          .sort((a, b) =>
+            a.student.korName.localeCompare(b.student.korName, "ko-KR")
+          )
+          .sort((a, b) => {
+            let timeA = new Date(`1970-01-01T${a.lecture.startTime}`);
+            let timeB = new Date(`1970-01-01T${b.lecture.startTime}`);
+            if (
+              a?.attendanceStatus?.statusDisplay === "하원" ||
+              a?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+              a?.attendanceStatus?.statusDisplay === "결석"
+            ) {
+              timeA = new Date(`1970-01-02T${a.lecture.startTime}`);
+            }
+            if (
+              b?.attendanceStatus?.statusDisplay === "하원" ||
+              b?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+              b?.attendanceStatus?.statusDisplay === "결석"
+            ) {
+              timeB = new Date(`1970-01-02T${a.lecture.startTime}`);
+            }
+            return timeA - timeB;
+          })
+          ?.filter((el) => {
+            return (
+              el.student.korName.includes(searchWord) ||
+              el.student.origin
+                .toUpperCase()
+                .includes(searchWord.toUpperCase()) ||
+              el.student.engName
+                .toUpperCase()
+                .includes(searchWord.toUpperCase())
+            );
+          })
+        // ?.slice(start, end)
+      );
+    } else {
+      let students = Array.isArray(
+        studentListData?.getLecturesByAcademyAndDateStudents
+      )
+        ? [...studentListData?.getLecturesByAcademyAndDateStudents]
+        : [];
+
+      const start = (page - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      setStudentArray(
+        students
+          .sort((a, b) =>
+            a.student.korName.localeCompare(b.student.korName, "ko-KR")
+          )
+          .sort((a, b) => {
+            let timeA = new Date(`1970-01-01T${a.lecture.startTime}`);
+            let timeB = new Date(`1970-01-01T${b.lecture.startTime}`);
+            if (
+              a?.attendanceStatus?.statusDisplay === "하원" ||
+              a?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+              a?.attendanceStatus?.statusDisplay === "결석"
+            ) {
+              timeA = new Date(`1970-01-02T${a.lecture.startTime}`);
+            }
+            if (
+              b?.attendanceStatus?.statusDisplay === "하원" ||
+              b?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+              b?.attendanceStatus?.statusDisplay === "결석"
+            ) {
+              timeB = new Date(`1970-01-02T${a.lecture.startTime}`);
+            }
+            return timeA - timeB;
+          })
+          ?.filter((el) => {
+            return (
+              el.student.korName.includes(searchWord) ||
+              el.student.origin
+                .toUpperCase()
+                .includes(searchWord.toUpperCase()) ||
+              el.student.engName
+                .toUpperCase()
+                .includes(searchWord.toUpperCase())
+            );
+          })
+          ?.filter((el) => {
+            return Number(el.lecture.teacher.id) === Number(manager);
+          })
+        // ?.slice(start, end)
+      );
+    }
+  }, [studentListData, searchWord, manager]);
 
   const onClickMakeUpClass = async () => {
     // try {
@@ -603,11 +650,17 @@ export default function ClassPage() {
     }
     setClassToggle(false);
     setTeacherId(
-      userData?.allUsers
-        .filter((el) => el.userCategory === "선생님")
-        .filter((el) => {
-          return Number(el.profile.academy.id) === Number(router.query.branch);
-        })[0].id
+      teacherData?.staffInAcademy
+        ?.filter((el) => el.user.userCategory === "선생님")
+        ?.sort((a, b) => {
+          if (Number(a.id) === Number(myData.me.id)) {
+            return -1;
+          } else if (Number(b.id) === Number(myData.me.id)) {
+            return 1;
+          } else {
+            return Number(a.id) - Number(b.id);
+          }
+        })?.[0].id
     );
     setAddClassInfo("");
     setAddClassDate(dateToInput(date));
@@ -694,18 +747,16 @@ export default function ClassPage() {
   };
 
   const onClickOk = async () => {
-    addRepeatInput.map((el) => {
-      console.log(
-        el.startDate,
-        el.startTime,
-        el.endTime,
-        el.about,
-        Number(el.teacherId)
-      );
-    });
-
     addList.forEach((ele) => {
       addRepeatInput.forEach(async (el, index) => {
+        if (
+          addRepeatInput[index].isRepeat === "count" &&
+          Number(addRepeatInput[index].repeatsNum) <
+            addRepeatInput[index].week.length
+        ) {
+          alert("반복 횟수가 반복 요일보다 적습니다.");
+          return;
+        }
         try {
           await createLecture({
             variables: {
@@ -727,6 +778,10 @@ export default function ClassPage() {
                   : Number(addRepeatInput[index].repeatsNum),
               autoAdd: addRepeatInput[index].isAuto,
               studentIds: [ele],
+              repeatTimes:
+                addRepeatInput[index].isRepeat === "count"
+                  ? Number(addRepeatInput[index].repeatsNum)
+                  : null,
             },
           });
           setAddLectureId("");
@@ -742,13 +797,17 @@ export default function ClassPage() {
           setIsAuto(false);
           setClassToggle(false);
           setTeacherId(
-            userData?.allUsers
-              .filter((el) => el.userCategory === "선생님")
-              .filter((el) => {
-                return (
-                  Number(el.profile.academy.id) === Number(router.query.branch)
-                );
-              })[0].id
+            teacherData?.staffInAcademy
+              ?.filter((el) => el.user.userCategory === "선생님")
+              ?.sort((a, b) => {
+                if (Number(a.id) === Number(myData.me.id)) {
+                  return -1;
+                } else if (Number(b.id) === Number(myData.me.id)) {
+                  return 1;
+                } else {
+                  return Number(a.id) - Number(b.id);
+                }
+              })?.[0].id
           );
           setAddClassInfo("");
           setAddClassDate(dateToInput(date));
@@ -763,58 +822,58 @@ export default function ClassPage() {
     // }
   };
 
-  const onClickPage = (pageNumber) => () => {
-    setPage(pageNumber);
-    let students = Array.isArray(
-      studentListData?.getLecturesByAcademyAndDateStudents
-    )
-      ? [...studentListData?.getLecturesByAcademyAndDateStudents]
-      : [];
-    if (students.length !== 0) {
-      const start = (pageNumber - 1) * itemsPerPage;
-      const end = start + itemsPerPage;
-      setStudentArray(
-        students
-          .sort((a, b) =>
-            a.student.korName.localeCompare(b.student.korName, "ko-KR")
-          )
-          .sort((a, b) => {
-            let timeA = new Date(`1970-01-01T${a.lecture.startTime}`);
-            let timeB = new Date(`1970-01-01T${b.lecture.startTime}`);
-            if (
-              a?.attendanceStatus?.statusDisplay === "하원" ||
-              a?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
-              a?.attendanceStatus?.statusDisplay === "결석"
-            ) {
-              timeA = new Date(`1970-01-02T${a.lecture.startTime}`);
-            }
-            if (
-              b?.attendanceStatus?.statusDisplay === "하원" ||
-              b?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
-              b?.attendanceStatus?.statusDisplay === "결석"
-            ) {
-              timeB = new Date(`1970-01-02T${a.lecture.startTime}`);
-            }
-            return timeA - timeB;
-          })
-          ?.filter((el) => {
-            return (
-              el.student.korName.includes(searchWord) ||
-              el.student.origin
-                .toUpperCase()
-                .includes(searchWord.toUpperCase()) ||
-              el.student.engName
-                .toUpperCase()
-                .includes(searchWord.toUpperCase())
-            );
-          })
-          .slice(start, end)
-      );
-    } else {
-      setStudentArray(students);
-    }
-    setCheckList([]);
-  };
+  // const onClickPage = (pageNumber) => () => {
+  //   setPage(pageNumber);
+  //   let students = Array.isArray(
+  //     studentListData?.getLecturesByAcademyAndDateStudents
+  //   )
+  //     ? [...studentListData?.getLecturesByAcademyAndDateStudents]
+  //     : [];
+  //   if (students.length !== 0) {
+  //     const start = (pageNumber - 1) * itemsPerPage;
+  //     const end = start + itemsPerPage;
+  //     setStudentArray(
+  //       students
+  //         .sort((a, b) =>
+  //           a.student.korName.localeCompare(b.student.korName, "ko-KR")
+  //         )
+  //         .sort((a, b) => {
+  //           let timeA = new Date(`1970-01-01T${a.lecture.startTime}`);
+  //           let timeB = new Date(`1970-01-01T${b.lecture.startTime}`);
+  //           if (
+  //             a?.attendanceStatus?.statusDisplay === "하원" ||
+  //             a?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+  //             a?.attendanceStatus?.statusDisplay === "결석"
+  //           ) {
+  //             timeA = new Date(`1970-01-02T${a.lecture.startTime}`);
+  //           }
+  //           if (
+  //             b?.attendanceStatus?.statusDisplay === "하원" ||
+  //             b?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+  //             b?.attendanceStatus?.statusDisplay === "결석"
+  //           ) {
+  //             timeB = new Date(`1970-01-02T${a.lecture.startTime}`);
+  //           }
+  //           return timeA - timeB;
+  //         })
+  //         ?.filter((el) => {
+  //           return (
+  //             el.student.korName.includes(searchWord) ||
+  //             el.student.origin
+  //               .toUpperCase()
+  //               .includes(searchWord.toUpperCase()) ||
+  //             el.student.engName
+  //               .toUpperCase()
+  //               .includes(searchWord.toUpperCase())
+  //           );
+  //         })
+  //         .slice(start, end)
+  //     );
+  //   } else {
+  //     setStudentArray(students);
+  //   }
+  //   setCheckList([]);
+  // };
   const onClickDate = (value) => {
     const newDate = new Date(value);
     // refetchLecture({
@@ -929,11 +988,11 @@ export default function ClassPage() {
 
       if (status === "attendance") {
         // entryTime = new Date(lecture.date + " " + lecture.startTime);
-        entryTime = new Date(lecture.lecture.date + " " + lateTime);
+        entryTime = new Date(lecture?.lecture?.date + " " + lateTime);
       } else if (status === "completed") {
-        exitTime = new Date(lecture.lecture.date + " " + lateTime);
+        exitTime = new Date(lecture?.lecture?.date + " " + lateTime);
       } else if (status === "late") {
-        entryTime = new Date(lecture.lecture.date + " " + lateTime);
+        entryTime = new Date(lecture?.lecture?.date + " " + lateTime);
       }
       let variables = {
         lectureId: Number(lecture?.lecture?.id),
@@ -1312,7 +1371,6 @@ export default function ClassPage() {
 
   const onClickOpenEditModal = async () => {
     if (checkList.length === 1) {
-      console.log(checkList);
       if (monthClassData !== undefined) {
         try {
           await refetchLectureInfo({
@@ -1322,7 +1380,7 @@ export default function ClassPage() {
         setIsAll(false);
         setTodayDate(new Date());
         setIsEdit(true);
-        const setting = monthClassData?.getLecturesByAcademyAndMonth
+        const setting = monthClassData?.getLecturestudentsByAcademyAndMonth
           ?.filter((lecture) => {
             return (
               lecture.date ===
@@ -1332,17 +1390,27 @@ export default function ClassPage() {
                 "-" +
                 getDateZero(calendarDate)
             );
-          })
-          .filter((el) => {
-            return el.lectureInfo.id === checkList[0].lectureInfoId;
+          })?.[0]
+          ?.students?.filter((el) => {
+            return Number(el.student.id) === checkList[0].studentId;
           })[0];
-        setIsEditAuto(setting?.lectureInfo.autoAdd);
-        setIsEditRepeat(!setting?.lectureInfo.repeatDay.includes(-1));
-        setEditStartTime(setting?.startTime);
-        setEditEndTime(setting?.endTime);
-        if (!setting?.lectureInfo.repeatDay.includes(-1)) {
-          setEditRepeatWeek(setting?.lectureInfo.repeatDay);
-          setEditRepeatCount(setting?.lectureInfo.repeatWeeks);
+
+        setIsEditAuto(setting?.lecture?.lectureInfo.autoAdd);
+        setIsEditRepeat(
+          setting?.lecture?.lectureInfo.repeatDay.includes(-1)
+            ? "once"
+            : setting?.lecture?.lectureInfo.repeatTimes === null
+            ? "routine"
+            : "count"
+        );
+        setEditDate(setting?.lecture?.date);
+        setStandardDate(setting?.lecture?.date);
+        setEditStartTime(setting?.lecture?.startTime);
+        setEditEndTime(setting?.lecture?.endTime);
+        setEditInfo(setting?.lecture?.lectureInfo.about);
+        if (!setting?.lecture?.lectureInfo.repeatDay.includes(-1)) {
+          setEditRepeatWeek(setting?.lecture?.lectureInfo.repeatDay);
+          setEditRepeatCount(setting?.lecture?.lectureInfo.repeatWeeks);
         } else {
           setEditRepeatCount(1);
           setEditRepeatWeek([]);
@@ -1408,6 +1476,7 @@ export default function ClassPage() {
   const onChangeRepeatIsRepeat = (ind, value) => () => {
     const newInput = [...addRepeatInput];
     newInput[ind].isRepeat = value;
+    newInput[ind].isAuto = false;
     setAddRepeatInput(newInput);
     console.log(newInput);
   };
@@ -1457,6 +1526,7 @@ export default function ClassPage() {
   };
 
   const onChangeAcademy = (e) => {
+    setManager("");
     router.push("/" + e.target.value + "/class");
   };
 
@@ -1507,32 +1577,32 @@ export default function ClassPage() {
   // 수업 전체 수정
   const onClickUpdateLecture = async () => {
     if (isAll) {
-      console.log(
-        Number(checkList[0].lectureInfoId),
-        editDate,
-        editInfo,
-        isEditRepeat,
-        editRepeatWeek,
-        editRepeatCount,
-        isEditAuto,
-        [checkList[0].studentId]
-      );
+      if (
+        isEditRepeat === "count" &&
+        editRepeatWeek.length > Number(editRepeatCount)
+      ) {
+        alert("반복 횟수가 반복 요일보다 적습니다.");
+        return;
+      }
       try {
         await editLectureInfo({
           variables: {
             lectureInfoId: Number(checkList[0].lectureInfoId),
             date: editDate,
             about: editInfo,
-            repeatDays: isEditRepeat
-              ? JSON.stringify({ repeat_days: editRepeatWeek })
-              : JSON.stringify({ repeat_days: [-1] }),
-            repeatWeeks: isEditRepeat ? Number(editRepeatCount) : 1,
+            repeatDays:
+              isEditRepeat !== "once"
+                ? JSON.stringify({ repeat_days: editRepeatWeek })
+                : JSON.stringify({ repeat_days: [-1] }),
+            repeatWeeks: isEditRepeat !== "once" ? Number(editRepeatCount) : 1,
             autoAdd: isEditAuto,
             studentIds: [Number(checkList[0].studentId)],
             startTime: editStartTime,
             endTime: editEndTime,
             academyId: Number(editAcademy),
             teacherId: Number(teacherId),
+            repeatTimes:
+              isEditRepeat === "count" ? Number(editRepeatCount) : null,
           },
         });
         await refetchList();
@@ -1542,20 +1612,24 @@ export default function ClassPage() {
         refetchStudentList();
         refetchMonth();
         setIsEdit(false);
-        setEditDate(dateToInput(date));
+        // setEditDate(dateToInput(date));
         // setEditStartTime(dateToClock(date));
         // setEditEndTime(dateToClockOneHour(date));
         setEditInfo("");
         setCheckList([]);
         setEditAcademy(Number(router.query.branch));
         setTeacherId(
-          userData?.allUsers
-            .filter((el) => el.userCategory === "선생님")
-            .filter((el) => {
-              return (
-                Number(el.profile.academy.id) === Number(router.query.branch)
-              );
-            })[0].id
+          teacherData?.staffInAcademy
+            ?.filter((el) => el.user.userCategory === "선생님")
+            ?.sort((a, b) => {
+              if (Number(a.id) === Number(myData.me.id)) {
+                return -1;
+              } else if (Number(b.id) === Number(myData.me.id)) {
+                return 1;
+              } else {
+                return Number(a.id) - Number(b.id);
+              }
+            })?.[0].id
         );
       } catch (err) {}
     } else {
@@ -1590,20 +1664,24 @@ export default function ClassPage() {
           refetchStudentList();
           refetchMonth();
           setIsEdit(false);
-          setEditDate(dateToInput(date));
+          // setEditDate(dateToInput(date));
           // setEditStartTime(dateToClock(date));
           // setEditEndTime(dateToClockOneHour(date));
           setEditInfo("");
           setCheckList([]);
           setEditAcademy(Number(router.query.branch));
           setTeacherId(
-            userData?.allUsers
-              .filter((el) => el.userCategory === "선생님")
-              .filter((el) => {
-                return (
-                  Number(el.profile.academy.id) === Number(router.query.branch)
-                );
-              })[0].id
+            teacherData?.staffInAcademy
+              ?.filter((el) => el.user.userCategory === "선생님")
+              ?.sort((a, b) => {
+                if (Number(a.id) === Number(myData.me.id)) {
+                  return -1;
+                } else if (Number(b.id) === Number(myData.me.id)) {
+                  return 1;
+                } else {
+                  return Number(a.id) - Number(b.id);
+                }
+              })?.[0].id
           );
         } catch (err) {
           console.log(err);
@@ -2487,14 +2565,22 @@ export default function ClassPage() {
   }, [bookPage, bookSearchWord, minWc, maxWc, sortType]);
 
   useEffect(() => {
-    setTeacherId(
-      userData?.allUsers
-        .filter((el) => el.userCategory === "선생님")
-        .filter((el) => {
-          return Number(el.profile.academy.id) === Number(router.query.branch);
-        })?.[0]?.id
-    );
-  }, [userData]);
+    if (teacherData !== undefined && myData !== undefined) {
+      setTeacherId(
+        teacherData?.staffInAcademy
+          ?.filter((el) => el.user.userCategory === "선생님")
+          ?.sort((a, b) => {
+            if (Number(a.id) === Number(myData.me.id)) {
+              return -1;
+            } else if (Number(b.id) === Number(myData.me.id)) {
+              return 1;
+            } else {
+              return Number(a.id) - Number(b.id);
+            }
+          })?.[0]?.id
+      );
+    }
+  }, [teacherData, myData]);
 
   useEffect(() => {
     setIsNotificationCustom(settingData?.academyInfo?.endNotificationCustom);
@@ -2502,16 +2588,18 @@ export default function ClassPage() {
   }, [settingData]);
 
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      const x = e.clientX + 10;
-      const y = e.clientY;
-      setMousePosition({ x, y });
-    };
-    document.addEventListener("mousemove", handleMouseMove);
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-    };
-  }, []);
+    if (isViewTitle) {
+      const handleMouseMove = (e) => {
+        const x = e.clientX + 10;
+        const y = e.clientY;
+        setMousePosition({ x, y });
+      };
+      document.addEventListener("mousemove", handleMouseMove);
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+      };
+    }
+  }, [isViewTitle]);
 
   useEffect(() => {
     setEditAcademy(Number(router.query.branch));
@@ -2524,7 +2612,7 @@ export default function ClassPage() {
     <S.ClassWrapper>
       <div
         style={{
-          width: "100%",
+          width: "100rem",
           display: "flex",
           justifyContent: "flex-end",
         }}
@@ -2563,7 +2651,7 @@ export default function ClassPage() {
               border-spacing: 0;
               border-radius: 0.125rem;
               border: 1px solid #DBDDE1;
-              width: 100%;
+              width: 100rem;
             }
             thead{
               border-radius: 0.25rem 0.25rem 0rem 0rem;
@@ -2649,10 +2737,7 @@ export default function ClassPage() {
           <S.ClassMiddleBox>
             <S.ClassMiddleTag>
               <S.CountNumber style={{ marginRight: "1.37rem" }}>
-                {"전체 " +
-                  (studentListData?.getLecturesByAcademyAndDateStudents
-                    ?.length ?? 0) +
-                  "명"}
+                {"전체 " + (studentArray?.length ?? 0) + "명"}
               </S.CountNumber>
               <S.ClassSmallGreenButton
                 onClick={() => {
@@ -2754,6 +2839,23 @@ export default function ClassPage() {
                 삭제
               </S.ClassSmallBlackButton>
             </S.ClassMiddleTag>
+            {teacherData !== undefined && (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span>담당 선생님</span>
+                <select
+                  onChange={(e) => {
+                    setManager(e.target.value);
+                  }}
+                >
+                  <option value={""}>전체</option>
+                  {teacherData?.staffInAcademy
+                    ?.filter((el) => el.user.userCategory === "선생님")
+                    ?.map((el) => {
+                      return <option value={el?.id}>{el?.korName}</option>;
+                    })}
+                </select>
+              </div>
+            )}
             <S.ClassMiddleTag>
               <S.ClassInput
                 type="text"
@@ -2789,7 +2891,16 @@ export default function ClassPage() {
                               Number(el.profile.academy.id) ===
                               Number(router.query.branch)
                             );
-                          })[0].id
+                          })
+                          ?.sort((a, b) => {
+                            if (Number(a.id) === Number(myData.me.id)) {
+                              return -1;
+                            } else if (Number(b.id) === Number(myData.me.id)) {
+                              return 1;
+                            } else {
+                              return Number(a.id) - Number(b.id);
+                            }
+                          })?.[0]?.id
                       ),
                       about: "",
                     },
@@ -2832,221 +2943,77 @@ export default function ClassPage() {
               </S.SwitchDiv>
             </S.ClassMiddleTag>
           </S.ClassMiddleBox>
-          <table>
-            <thead>
-              <tr>
-                <th style={{ width: "20px", padding: "3px" }}>
-                  <input
-                    type="checkbox"
-                    style={{ width: "20px", height: "20px" }}
-                    checked={
-                      checkList.length !== 0 &&
-                      studentArray.length === checkList.length
-                    }
-                    onChange={onChangeAllSelect}
-                  ></input>
-                </th>
-                <th>원생 번호</th>
-                <th>원생명</th>
-                <th>시작 시간</th>
-                <th>종료 시간</th>
-                <th>출결 상태</th>
-                <th>등원 시간</th>
-                <th>하원 시간</th>
-                <th>강의 정보</th>
-                <th>수업 준비</th>
-                <th>예약 도서</th>
-                <th>원생 메모</th>
-                <th>원생 정보</th>
-              </tr>
-            </thead>
-            <tbody>
-              {studentArray?.map((el) => {
-                return (
-                  <tr key={el.id || uuidv4()}>
-                    <td style={{ width: "20px", padding: "3px" }}>
-                      <input
-                        type="checkbox"
-                        onChange={(e) =>
-                          onChangeEach(
-                            e,
-                            el.lecture.id,
-                            el.student.id,
-                            el.lecture.lectureInfo.id
-                          )
-                        }
-                        style={{ width: "20px", height: "20px" }}
-                        checked={checkList.some((ele) => {
-                          return (
-                            Number(ele.studentId) === Number(el.student.id) &&
-                            Number(ele.lectureId) === Number(el.lecture.id)
-                          );
-                        })}
-                      ></input>
-                    </td>
-                    <td>{el.student.origin}</td>
-                    <td>
-                      {el.student.korName + "(" + el.student.engName + ")"}
-                    </td>
-                    <td
-                      style={
-                        date.getDate() !== calendarDate.getDate() ||
-                        checkDate.getHours() * 60 +
-                          checkDate.getMinutes() -
-                          Number(el.lecture.startTime.slice(0, 2)) * 60 -
-                          Number(el.lecture.startTime.slice(3, 5)) <
-                          0 ||
-                        el?.attendanceStatus !== null
-                          ? {}
-                          : { color: "tomato" }
+          <div
+            style={{
+              height: "45rem",
+              overflowY: "scroll",
+            }}
+          >
+            <table style={{ marginBottom: "5rem" }}>
+              <thead
+                style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 0, // 스크롤 시 헤더가 다른 콘텐츠 위로 올라오도록 함
+                }}
+              >
+                <tr>
+                  <th style={{ width: "20px", padding: "3px" }}>
+                    <input
+                      type="checkbox"
+                      style={{ width: "20px", height: "20px" }}
+                      checked={
+                        checkList.length !== 0 &&
+                        studentArray.length === checkList.length
                       }
-                    >
-                      {timeToHour(el.lecture.startTime)}
-                    </td>
-                    <td>{timeToHour(el.lecture.endTime)}</td>
-                    <td>
-                      {el?.attendanceStatus?.statusDisplay ?? ""}
-                      {el?.attendanceStatus?.statusDisplay === "결석" && (
-                        // 여기서부터 보강
-                        <button
-                          onClick={onClickOpenMakeUp(
-                            el.student.id,
-                            el.lecture.id
-                          )}
-                        >
-                          보강
-                        </button>
-                      )}
-                    </td>
-                    <td>
-                      {el?.attendanceStatus?.entryTime
-                        ? timeToHour(
-                            dateToClock(
-                              dateToKoreanTime(el?.attendanceStatus?.entryTime)
+                      onChange={onChangeAllSelect}
+                    ></input>
+                  </th>
+                  <th>원생 번호</th>
+                  <th>원생명</th>
+                  <th>시작 시간</th>
+                  <th>종료 시간</th>
+                  <th>출결 상태</th>
+                  <th>등원 시간</th>
+                  <th>하원 시간</th>
+                  <th
+                    onMouseEnter={() => {
+                      setIsViewTitle(false);
+                    }}
+                  >
+                    강의 정보
+                  </th>
+                  <th>수업 준비</th>
+                  <th>예약 도서</th>
+                  <th>원생 메모</th>
+                </tr>
+              </thead>
+              <tbody>
+                {studentArray?.map((el) => {
+                  return (
+                    <tr key={el.id || uuidv4()}>
+                      <td style={{ width: "20px", padding: "3px" }}>
+                        <input
+                          type="checkbox"
+                          onChange={(e) =>
+                            onChangeEach(
+                              e,
+                              el.lecture.id,
+                              el.student.id,
+                              el.lecture.lectureInfo.id
                             )
-                          )
-                        : ""}
-                    </td>
-                    <td
-                      style={
-                        checkDate.getHours() * 60 +
-                          checkDate.getMinutes() -
-                          customAlarm(
-                            el?.attendanceStatus?.entryTime,
-                            el.lecture.startTime,
-                            el.lecture.endTime
-                          )?.getHours() *
-                            60 -
-                          customAlarm(
-                            el?.attendanceStatus?.entryTime,
-                            el.lecture.startTime,
-                            el.lecture.endTime
-                          )?.getMinutes() <
-                          0 ||
-                        el?.attendanceStatus?.exitTime !== null ||
-                        ["결석 (보강)", "결석"].includes(
-                          el?.attendanceStatus?.statusDisplay
-                        )
-                          ? {}
-                          : { color: "tomato" }
-                      }
-                    >
-                      {["결석 (보강)", "결석"].includes(
-                        el?.attendanceStatus?.statusDisplay
-                      )
-                        ? ""
-                        : el?.attendanceStatus?.exitTime
-                        ? timeToHour(
-                            dateToClock(
-                              dateToKoreanTime(el?.attendanceStatus?.exitTime)
-                            )
-                          )
-                        : isNotificationCustom
-                        ? timeToHour(
-                            dateToClock(
-                              customAlarm(
-                                el?.attendanceStatus?.entryTime,
-                                el.lecture.startTime,
-                                el.lecture.endTime
-                              )
-                            ) ?? el.lecture.endTime
-                          ) + "(예상)"
-                        : timeToHour(el.lecture.endTime) + "(예상)"}
-                    </td>
-                    <td
-                    // onMouseEnter={() => {
-                    //   setIsViewTitle(true);
-                    //   setViewTitle(el.lecture.lectureInfo.about);
-                    // }}
-                    // onMouseLeave={() => {
-                    //   setIsViewTitle(false);
-                    // }}
-                    >
-                      {el.lecture.lectureMemo === "" ? (
-                        <div>{longWord(el.lecture.lectureInfo.about)}</div>
-                      ) : (
-                        <div>
-                          {longWord(el.lecture.lectureInfo.about)}
-                          <div style={{ fontSize: "0.7rem", color: "#ababab" }}>
-                            {"(" + longWord(el.lecture.lectureMemo) + ")"}
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      <div>
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                          onClick={onClickBooks(el.student, el.lecture)}
-                          style={{ cursor: "pointer" }}
-                        >
-                          <path
-                            d="M5 19.5V5C5 4.46957 5.21071 3.96086 5.58579 3.58579C5.96086 3.21071 6.46957 3 7 3H18.4C18.5591 3 18.7117 3.06321 18.8243 3.17574C18.9368 3.28826 19 3.44087 19 3.6V21H6.5M9 7H15M6.5 15H19M6.5 18H19"
-                            stroke="#81858C"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                          />
-                          <path
-                            d="M6.5 15C5.5 15 5 15.672 5 16.5C5 17.328 5.5 18 6.5 18C5.5 18 5 18.672 5 19.5C5 20.328 5.5 21 6.5 21"
-                            stroke="#81858C"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </div>
-                    </td>
-                    <td>{el.student.reservedBooksCount + "권"}</td>
-                    <td>
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        onClick={onClickViewMemo(el.student.id, el.lecture.id)}
+                          }
+                          style={{ width: "20px", height: "20px" }}
+                          checked={checkList.some((ele) => {
+                            return (
+                              Number(ele.studentId) === Number(el.student.id) &&
+                              Number(ele.lectureId) === Number(el.lecture.id)
+                            );
+                          })}
+                        ></input>
+                      </td>
+                      <td
                         style={{ cursor: "pointer" }}
-                      >
-                        <path
-                          d="M7.08337 3.33334H5.00004C4.55801 3.33334 4.13409 3.50894 3.82153 3.8215C3.50897 4.13406 3.33337 4.55798 3.33337 5.00001V16.6667C3.33337 17.1087 3.50897 17.5326 3.82153 17.8452C4.13409 18.1577 4.55801 18.3333 5.00004 18.3333H15C15.4421 18.3333 15.866 18.1577 16.1786 17.8452C16.4911 17.5326 16.6667 17.1087 16.6667 16.6667V5.00001C16.6667 4.55798 16.4911 4.13406 16.1786 3.8215C15.866 3.50894 15.4421 3.33334 15 3.33334H12.9167"
-                          stroke="#81858C"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                        />
-                        <path
-                          d="M6.66663 5.33334V3.75001C6.66663 3.6395 6.71052 3.53352 6.78866 3.45538C6.8668 3.37724 6.97279 3.33334 7.08329 3.33334C7.31329 3.33334 7.50329 3.14668 7.54329 2.92001C7.66663 2.21001 8.14496 0.833344 9.99996 0.833344C11.855 0.833344 12.3333 2.21001 12.4566 2.92001C12.4966 3.14668 12.6866 3.33334 12.9166 3.33334C13.0271 3.33334 13.1331 3.37724 13.2113 3.45538C13.2894 3.53352 13.3333 3.6395 13.3333 3.75001V5.33334C13.3333 5.46595 13.2806 5.59313 13.1868 5.6869C13.0931 5.78066 12.9659 5.83334 12.8333 5.83334H7.16663C7.03402 5.83334 6.90684 5.78066 6.81307 5.6869C6.7193 5.59313 6.66663 5.46595 6.66663 5.33334Z"
-                          stroke="#81858C"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    </td>
-                    <td>
-                      <SearchOutlined
                         onClick={() => {
                           window.open(
                             "/" +
@@ -3055,14 +3022,206 @@ export default function ClassPage() {
                               el.student.id
                           );
                         }}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <S.PageContainer>
+                      >
+                        {el.student.origin}
+                      </td>
+                      <td
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          window.open(
+                            "/" +
+                              router.query.branch +
+                              "/academy/" +
+                              el.student.id
+                          );
+                        }}
+                      >
+                        {el.student.korName + "(" + el.student.engName + ")"}
+                        <SearchOutlined />
+                      </td>
+                      <td
+                        style={
+                          date.getDate() !== calendarDate.getDate() ||
+                          checkDate.getHours() * 60 +
+                            checkDate.getMinutes() -
+                            Number(el.lecture.startTime.slice(0, 2)) * 60 -
+                            Number(el.lecture.startTime.slice(3, 5)) <
+                            0 ||
+                          el?.attendanceStatus !== null
+                            ? {}
+                            : { color: "tomato" }
+                        }
+                      >
+                        {timeToHour(el.lecture.startTime)}
+                      </td>
+                      <td>{timeToHour(el.lecture.endTime)}</td>
+                      <td>
+                        {el?.attendanceStatus?.statusDisplay ?? ""}
+                        {el?.attendanceStatus?.statusDisplay === "결석" && (
+                          // 여기서부터 보강
+                          <button
+                            onClick={onClickOpenMakeUp(
+                              el.student.id,
+                              el.lecture.id
+                            )}
+                          >
+                            보강
+                          </button>
+                        )}
+                      </td>
+                      <td>
+                        {el?.attendanceStatus?.entryTime
+                          ? timeToHour(
+                              dateToClock(
+                                dateToKoreanTime(
+                                  el?.attendanceStatus?.entryTime
+                                )
+                              )
+                            )
+                          : ""}
+                      </td>
+                      <td
+                        onMouseEnter={() => {
+                          setIsViewTitle(false);
+                        }}
+                        style={
+                          checkDate.getHours() * 60 +
+                            checkDate.getMinutes() -
+                            customAlarm(
+                              el?.attendanceStatus?.entryTime,
+                              el.lecture.startTime,
+                              el.lecture.endTime
+                            )?.getHours() *
+                              60 -
+                            customAlarm(
+                              el?.attendanceStatus?.entryTime,
+                              el.lecture.startTime,
+                              el.lecture.endTime
+                            )?.getMinutes() <
+                            0 ||
+                          el?.attendanceStatus?.exitTime !== null ||
+                          ["결석 (보강)", "결석"].includes(
+                            el?.attendanceStatus?.statusDisplay
+                          )
+                            ? {}
+                            : { color: "tomato" }
+                        }
+                      >
+                        {["결석 (보강)", "결석"].includes(
+                          el?.attendanceStatus?.statusDisplay
+                        )
+                          ? ""
+                          : el?.attendanceStatus?.exitTime
+                          ? timeToHour(
+                              dateToClock(
+                                dateToKoreanTime(el?.attendanceStatus?.exitTime)
+                              )
+                            )
+                          : isNotificationCustom
+                          ? timeToHour(
+                              dateToClock(
+                                customAlarm(
+                                  el?.attendanceStatus?.entryTime,
+                                  el.lecture.startTime,
+                                  el.lecture.endTime
+                                )
+                              ) ?? el.lecture.endTime
+                            ) + "(예상)"
+                          : timeToHour(el.lecture.endTime) + "(예상)"}
+                      </td>
+                      <td
+                        onMouseEnter={() => {
+                          if (el.lecture.lectureInfo.about.length > 25) {
+                            setIsViewTitle(true);
+                            setViewTitle(el.lecture.lectureInfo.about);
+                          } else {
+                            setIsViewTitle(false);
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          setIsViewTitle(false);
+                        }}
+                      >
+                        {el.lecture.lectureMemo === "" ? (
+                          <div>{longWord(el.lecture.lectureInfo.about)}</div>
+                        ) : (
+                          <div>
+                            {longWord(el.lecture.lectureInfo.about)}
+                            <div
+                              style={{ fontSize: "0.7rem", color: "#ababab" }}
+                            >
+                              {"(" + longWord(el.lecture.lectureMemo) + ")"}
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                      <td
+                        onMouseEnter={() => {
+                          setIsViewTitle(false);
+                        }}
+                      >
+                        <div>
+                          <svg
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            onClick={onClickBooks(el.student, el.lecture)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <path
+                              d="M5 19.5V5C5 4.46957 5.21071 3.96086 5.58579 3.58579C5.96086 3.21071 6.46957 3 7 3H18.4C18.5591 3 18.7117 3.06321 18.8243 3.17574C18.9368 3.28826 19 3.44087 19 3.6V21H6.5M9 7H15M6.5 15H19M6.5 18H19"
+                              stroke="#81858C"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                            />
+                            <path
+                              d="M6.5 15C5.5 15 5 15.672 5 16.5C5 17.328 5.5 18 6.5 18C5.5 18 5 18.672 5 19.5C5 20.328 5.5 21 6.5 21"
+                              stroke="#81858C"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                      <td>{el.student.reservedBooksCount + "권"}</td>
+                      <td>
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickViewMemo(
+                            el.student.id,
+                            el.lecture.id
+                          )}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <path
+                            d="M7.08337 3.33334H5.00004C4.55801 3.33334 4.13409 3.50894 3.82153 3.8215C3.50897 4.13406 3.33337 4.55798 3.33337 5.00001V16.6667C3.33337 17.1087 3.50897 17.5326 3.82153 17.8452C4.13409 18.1577 4.55801 18.3333 5.00004 18.3333H15C15.4421 18.3333 15.866 18.1577 16.1786 17.8452C16.4911 17.5326 16.6667 17.1087 16.6667 16.6667V5.00001C16.6667 4.55798 16.4911 4.13406 16.1786 3.8215C15.866 3.50894 15.4421 3.33334 15 3.33334H12.9167"
+                            stroke="#81858C"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M6.66663 5.33334V3.75001C6.66663 3.6395 6.71052 3.53352 6.78866 3.45538C6.8668 3.37724 6.97279 3.33334 7.08329 3.33334C7.31329 3.33334 7.50329 3.14668 7.54329 2.92001C7.66663 2.21001 8.14496 0.833344 9.99996 0.833344C11.855 0.833344 12.3333 2.21001 12.4566 2.92001C12.4966 3.14668 12.6866 3.33334 12.9166 3.33334C13.0271 3.33334 13.1331 3.37724 13.2113 3.45538C13.2894 3.53352 13.3333 3.6395 13.3333 3.75001V5.33334C13.3333 5.46595 13.2806 5.59313 13.1868 5.6869C13.0931 5.78066 12.9659 5.83334 12.8333 5.83334H7.16663C7.03402 5.83334 6.90684 5.78066 6.81307 5.6869C6.7193 5.59313 6.66663 5.46595 6.66663 5.33334Z"
+                            stroke="#81858C"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ margin: "1rem 0" }}></div>
+          {/* <S.PageContainer>
             {Array.from({ length: totalPages }, (_, i) => (
               <S.PageBox
                 key={i}
@@ -3071,12 +3230,12 @@ export default function ClassPage() {
                     ? { backgroundColor: "#333", color: "#eeeeee" }
                     : {}
                 }
-                onClick={onClickPage(i + 1)}
+                // onClick={onClickPage(i + 1)}
               >
                 {i + 1}
               </S.PageBox>
             ))}
-          </S.PageContainer>
+          </S.PageContainer> */}
         </>
       ) : (
         //달력 시작
@@ -3084,7 +3243,7 @@ export default function ClassPage() {
           <S.CalendarWrapper>
             {isViewMore ? (
               <div style={{ display: "flex", flexDirection: "column" }}>
-                <div style={{ display: "flex", alignItems: "center" }}>
+                {/* <div style={{ display: "flex", alignItems: "center" }}>
                   <svg
                     width="30"
                     height="30"
@@ -3105,9 +3264,9 @@ export default function ClassPage() {
                     />
                   </svg>
                   <S.CalendarRightTitle>수업 목록</S.CalendarRightTitle>
-                </div>
+                </div> */}
 
-                <table style={{ display: "flex" }}>
+                {/* <table style={{ display: "flex" }}>
                   <tbody>
                     <thead>
                       <tr>
@@ -3117,10 +3276,10 @@ export default function ClassPage() {
                         <th>수업 자동 추가 여부</th>
                         <th>반복 주</th>
                         <th>반복 요일</th>
-                        {/* <th>수업 인원 수정</th> */}
+                        <th>수업 인원 수정</th>
                         <th>원생</th>
                         <th>담당 선생님</th>
-                        {/* <th>담당 지점</th> */}
+                        <th>담당 지점</th>
                         <th>수정</th>
                       </tr>
                     </thead>
@@ -3152,7 +3311,7 @@ export default function ClassPage() {
                       })}
                     </tbody>
                   </tbody>
-                </table>
+                </table> */}
               </div>
             ) : (
               <S.CalendarLeft>
@@ -3162,7 +3321,7 @@ export default function ClassPage() {
                     justifyContent: "space-between",
                     alignItems: "flex-start",
                     margin: "1rem 0",
-                    width: "100%",
+                    width: "60rem",
                   }}
                 >
                   <div>
@@ -3241,56 +3400,42 @@ export default function ClassPage() {
                                 display: "flex",
                                 flexDirection: "column",
                               }}
-                              onClick={() => {
-                                if (viewType === "class") {
-                                  if (
-                                    monthClassData?.getLecturesByAcademyAndMonth?.filter(
-                                      (lecture) => {
-                                        return (
-                                          lecture.date ===
-                                          calendarDate.getFullYear() +
-                                            "-" +
-                                            getMonthZero(calendarDate) +
-                                            "-" +
-                                            getNumberZero(ele)
-                                        );
-                                      }
-                                    )?.length > 0
-                                  ) {
-                                    setIsViewMore(true);
-                                    setViewMorePosition([index1, index2]);
-                                    // setViewDate("1");
-                                    setViewModalList(
-                                      monthClassData?.getLecturesByAcademyAndMonth?.filter(
-                                        (lecture) => {
-                                          return (
-                                            lecture.date ===
-                                            calendarDate.getFullYear() +
-                                              "-" +
-                                              getMonthZero(calendarDate) +
-                                              "-" +
-                                              getNumberZero(ele)
-                                          );
-                                        }
-                                      )
-                                    );
-                                  }
-                                }
-                                console.log(
-                                  monthClassData?.getLecturesByAcademyAndMonth?.filter(
-                                    (lecture) => {
-                                      return (
-                                        lecture.date ===
-                                        calendarDate.getFullYear() +
-                                          "-" +
-                                          getMonthZero(calendarDate) +
-                                          "-" +
-                                          getNumberZero(ele)
-                                      );
-                                    }
-                                  )
-                                );
-                              }}
+                              // onClick={() => {
+                              //   if (viewType === "class") {
+                              //     if (
+                              //       monthClassData?.getLecturestudentsByAcademyAndMonth?.filter(
+                              //         (lecture) => {
+                              //           return (
+                              //             lecture.date ===
+                              //             calendarDate.getFullYear() +
+                              //               "-" +
+                              //               getMonthZero(calendarDate) +
+                              //               "-" +
+                              //               getNumberZero(ele)
+                              //           );
+                              //         }
+                              //       )?.length > 0
+                              //     ) {
+                              //       setIsViewMore(true);
+                              //       setViewMorePosition([index1, index2]);
+                              //       // setViewDate("1");
+                              //       setViewModalList(
+                              //         monthClassData?.getLecturestudentsByAcademyAndMonth?.filter(
+                              //           (lecture) => {
+                              //             return (
+                              //               lecture.date ===
+                              //               calendarDate.getFullYear() +
+                              //                 "-" +
+                              //                 getMonthZero(calendarDate) +
+                              //                 "-" +
+                              //                 getNumberZero(ele)
+                              //             );
+                              //           }
+                              //         )
+                              //       );
+                              //     }
+                              //   }
+                              // }}
                             >
                               <div>
                                 {ele < 1
@@ -3341,39 +3486,31 @@ export default function ClassPage() {
                                       setCalendarDate(newDate);
                                     }}
                                   >
-                                    {monthClassData !== undefined
-                                      ? monthClassData?.getLecturesByAcademyAndMonth
-                                          ?.filter((lecture) => {
+                                    {monthClassData?.getLecturestudentsByAcademyAndMonth?.filter(
+                                      (el) => {
+                                        return (
+                                          el.date ===
+                                          calendarDate.getFullYear() +
+                                            "-" +
+                                            getMonthZero(calendarDate) +
+                                            "-" +
+                                            getNumberZero(ele)
+                                        );
+                                      }
+                                    )?.[0]?.students !== undefined &&
+                                      "총 인원 : " +
+                                        monthClassData?.getLecturestudentsByAcademyAndMonth?.filter(
+                                          (el) => {
                                             return (
-                                              lecture.date ===
+                                              el.date ===
                                               calendarDate.getFullYear() +
                                                 "-" +
                                                 getMonthZero(calendarDate) +
                                                 "-" +
                                                 getNumberZero(ele)
                                             );
-                                          })
-                                          ?.reduce((acc, cur) => {
-                                            return acc + cur.students.length;
-                                          }, 0) === 0 || undefined
-                                        ? ""
-                                        : "총 인원 : " +
-                                          monthClassData?.getLecturesByAcademyAndMonth
-                                            ?.filter((lecture) => {
-                                              return (
-                                                lecture.date ===
-                                                calendarDate.getFullYear() +
-                                                  "-" +
-                                                  getMonthZero(calendarDate) +
-                                                  "-" +
-                                                  getNumberZero(ele)
-                                              );
-                                            })
-                                            ?.reduce((acc, cur) => {
-                                              return acc + cur.students.length;
-                                            }, 0) +
-                                          "명"
-                                      : ""}
+                                          }
+                                        )?.[0]?.students?.length}
                                   </S.CalendarLecture>
                                   <S.CalendarLecture
                                     onClick={() => {
@@ -3398,8 +3535,116 @@ export default function ClassPage() {
                                       setCalendarDate(newDate);
                                     }}
                                   >
+                                    {monthClassData?.getLecturestudentsByAcademyAndMonth?.filter(
+                                      (el) => {
+                                        return (
+                                          el.date ===
+                                          calendarDate.getFullYear() +
+                                            "-" +
+                                            getMonthZero(calendarDate) +
+                                            "-" +
+                                            getNumberZero(ele)
+                                        );
+                                      }
+                                    )?.[0] !== undefined &&
+                                      "출석 인원 : " +
+                                        monthClassData?.getLecturestudentsByAcademyAndMonth
+                                          ?.filter((el) => {
+                                            return (
+                                              el.date ===
+                                              calendarDate.getFullYear() +
+                                                "-" +
+                                                getMonthZero(calendarDate) +
+                                                "-" +
+                                                getNumberZero(ele)
+                                            );
+                                          })?.[0]
+                                          ?.students?.filter((el) => {
+                                            return el.attendanceStatus;
+                                          }).length}
+                                  </S.CalendarLecture>
+                                  {/* <S.CalendarLecture
+                                    onClick={() => {
+                                      setViewDate(
+                                        calendarDate.getFullYear() +
+                                          "-" +
+                                          getMonthZero(calendarDate) +
+                                          "-" +
+                                          getNumberZero(ele)
+                                      );
+                                      const newDate = new Date(
+                                        calendarDate.getFullYear() +
+                                          "-" +
+                                          getMonthZero(calendarDate) +
+                                          "-" +
+                                          getNumberZero(ele)
+                                      );
+                                      refetchStudentList({
+                                        date: dateToInput(newDate),
+                                      });
+                                      setCheckList([]);
+                                      setCalendarDate(newDate);
+                                    }}
+                                  >
                                     {monthClassData !== undefined
-                                      ? monthClassData?.getLecturesByAcademyAndMonth
+                                      ? monthClassData?.getLecturestudentsByAcademyAndMonth
+                                          ?.filter((lecture) => {
+                                            return (
+                                              lecture.date ===
+                                              calendarDate.getFullYear() +
+                                                "-" +
+                                                getMonthZero(calendarDate) +
+                                                "-" +
+                                                getNumberZero(ele)
+                                            );
+                                          })
+                                          ?.reduce((acc, cur) => {
+                                            return acc + cur.students.length;
+                                          }, 0) === 0 || undefined
+                                        ? ""
+                                        : "총 인원 : " +
+                                          monthClassData?.getLecturestudentsByAcademyAndMonth
+                                            ?.filter((lecture) => {
+                                              return (
+                                                lecture.date ===
+                                                calendarDate.getFullYear() +
+                                                  "-" +
+                                                  getMonthZero(calendarDate) +
+                                                  "-" +
+                                                  getNumberZero(ele)
+                                              );
+                                            })
+                                            ?.reduce((acc, cur) => {
+                                              return acc + cur.students.length;
+                                            }, 0) +
+                                          "명"
+                                      : ""}
+                                  </S.CalendarLecture> */}
+                                  {/* <S.CalendarLecture
+                                    onClick={() => {
+                                      setViewDate(
+                                        calendarDate.getFullYear() +
+                                          "-" +
+                                          getMonthZero(calendarDate) +
+                                          "-" +
+                                          getNumberZero(ele)
+                                      );
+                                      const newDate = new Date(
+                                        calendarDate.getFullYear() +
+                                          "-" +
+                                          getMonthZero(calendarDate) +
+                                          "-" +
+                                          getNumberZero(ele)
+                                      );
+                                      refetchStudentList({
+                                        date: dateToInput(newDate),
+                                      });
+                                      setCheckList([]);
+                                      setCalendarDate(newDate);
+                                    }}
+                                  >
+                                    {monthClassData !== undefined
+                                      ? monthClassData?.getLecturestudentsByAcademyAndMonth
                                           ?.filter((lecture) => {
                                             return (
                                               lecture.date ===
@@ -3415,7 +3660,7 @@ export default function ClassPage() {
                                           }, 0) === 0 || undefined
                                         ? ""
                                         : "출석 인원 : " +
-                                          monthClassData?.getLecturesByAcademyAndMonth
+                                          monthClassData?.getLecturestudentsByAcademyAndMonth
                                             ?.filter((lecture) => {
                                               return (
                                                 lecture.date ===
@@ -3447,9 +3692,9 @@ export default function ClassPage() {
                                             }, 0) +
                                           "명"
                                       : ""}
-                                  </S.CalendarLecture>
+                                  </S.CalendarLecture> */}
                                 </>
-                              ) : monthClassData?.getLecturesByAcademyAndMonth?.filter(
+                              ) : monthClassData?.getLecturestudentsByAcademyAndMonth?.filter(
                                   (lecture) => {
                                     return (
                                       lecture.date ===
@@ -3462,7 +3707,7 @@ export default function ClassPage() {
                                   }
                                 ).length > 2 ? (
                                 <>
-                                  {monthClassData?.getLecturesByAcademyAndMonth
+                                  {monthClassData?.getLecturestudentsByAcademyAndMonth
                                     ?.filter((lecture) => {
                                       return (
                                         lecture.date ===
@@ -3520,7 +3765,7 @@ export default function ClassPage() {
                                     })}
                                   <S.CalendarLecture>
                                     {"+ " +
-                                      (monthClassData?.getLecturesByAcademyAndMonth?.filter(
+                                      (monthClassData?.getLecturestudentsByAcademyAndMonth?.filter(
                                         (lecture) => {
                                           return (
                                             lecture.date ===
@@ -3537,7 +3782,7 @@ export default function ClassPage() {
                                 </>
                               ) : (
                                 <>
-                                  {monthClassData?.getLecturesByAcademyAndMonth
+                                  {monthClassData?.getLecturestudentsByAcademyAndMonth
                                     ?.filter((lecture) => {
                                       return (
                                         lecture.date ===
@@ -3898,7 +4143,7 @@ export default function ClassPage() {
                             </td>
                             <td>
                               <button
-                                onClick={() => {
+                                onClick={async () => {
                                   setCheckList([
                                     {
                                       studentId: el.student.id,
@@ -3907,11 +4152,16 @@ export default function ClassPage() {
                                     },
                                   ]);
                                   if (monthClassData !== undefined) {
+                                    try {
+                                      await refetchLectureInfo({
+                                        studentId: Number(el.student.id),
+                                      });
+                                    } catch (err) {}
                                     setIsAll(false);
                                     setTodayDate(new Date());
                                     setIsEdit(true);
                                     const setting =
-                                      monthClassData?.getLecturesByAcademyAndMonth
+                                      monthClassData?.getLecturestudentsByAcademyAndMonth
                                         ?.filter((lecture) => {
                                           return (
                                             lecture.date ===
@@ -3921,31 +4171,48 @@ export default function ClassPage() {
                                               "-" +
                                               getDateZero(calendarDate)
                                           );
-                                        })
-                                        .filter((ele) => {
+                                        })?.[0]
+                                        ?.students?.filter((el) => {
                                           return (
-                                            Number(ele.lectureInfo.id) ===
-                                            Number(el.lecture.lectureInfo.id)
+                                            Number(el.student.id) ===
+                                            Number(el.student.id)
                                           );
                                         })[0];
-                                    setIsEditAuto(setting?.lectureInfo.autoAdd);
+
+                                    console.log(setting, "세팅");
+                                    setIsEditAuto(
+                                      setting?.lecture?.lectureInfo.autoAdd
+                                    );
                                     setIsEditRepeat(
-                                      !setting?.lectureInfo.repeatDay.includes(
+                                      setting?.lecture?.lectureInfo.repeatDay.includes(
                                         -1
                                       )
+                                        ? "once"
+                                        : setting?.lecture?.lectureInfo
+                                            .repeatTimes === null
+                                        ? "routine"
+                                        : "count"
                                     );
-                                    setEditStartTime(setting?.startTime);
-                                    setEditEndTime(setting?.endTime);
+                                    setEditDate(setting?.lecture?.date);
+                                    setStandardDate(setting?.lecture?.date);
+                                    setEditStartTime(
+                                      setting?.lecture?.startTime
+                                    );
+                                    setEditEndTime(setting?.lecture?.endTime);
+                                    setEditInfo(
+                                      setting?.lecture?.lectureInfo.about
+                                    );
                                     if (
-                                      !setting?.lectureInfo.repeatDay.includes(
+                                      !setting?.lecture?.lectureInfo.repeatDay.includes(
                                         -1
                                       )
                                     ) {
                                       setEditRepeatWeek(
-                                        setting?.lectureInfo.repeatDay
+                                        setting?.lecture?.lectureInfo.repeatDay
                                       );
                                       setEditRepeatCount(
-                                        setting?.lectureInfo.repeatWeeks
+                                        setting?.lecture?.lectureInfo
+                                          .repeatWeeks
                                       );
                                     } else {
                                       setEditRepeatCount(1);
@@ -4058,7 +4325,21 @@ export default function ClassPage() {
           )} */}
         </>
       )}
-
+      {isViewTitle && (
+        <span
+          style={{
+            position: "fixed",
+            left: mousePosition.x,
+            top: mousePosition.y,
+            backgroundColor: "#dedede",
+            border: "2px solid #333333",
+            borderRadius: "3px",
+            zIndex: 99999,
+          }}
+        >
+          {viewTitle}
+        </span>
+      )}
       {/*  모달 시작 */}
       {classToggle ? (
         <Modal
@@ -4066,6 +4347,10 @@ export default function ClassPage() {
           open={classToggle}
           width={"55vw"}
           height={"50vh"}
+          onOk={() => {
+            console.log(12345);
+          }}
+          keyboard={true}
           onCancel={() => {
             setClassToggle(false);
             setAddList([]);
@@ -4088,7 +4373,16 @@ export default function ClassPage() {
                       Number(el.profile.academy.id) ===
                       Number(router.query.branch)
                     );
-                  })[0].id,
+                  })
+                  ?.sort((a, b) => {
+                    if (Number(a.id) === Number(myData.me.id)) {
+                      return -1;
+                    } else if (Number(b.id) === Number(myData.me.id)) {
+                      return 1;
+                    } else {
+                      return Number(a.id) - Number(b.id);
+                    }
+                  })?.[0].id,
                 about: "",
               },
             ]);
@@ -4252,7 +4546,7 @@ export default function ClassPage() {
                       취소
                     </button>
                   </div>
-                  <table>
+                  <table style={{ width: "100%" }}>
                     <thead>
                       <tr>
                         <th>날짜</th>
@@ -4281,16 +4575,16 @@ export default function ClassPage() {
                                 )
                                   ? el?.lecture?.date
                                   : el?.lecture?.lectureInfo?.autoAdd
-                                  ? el?.lecture?.date + "~"
+                                  ? startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) + "~"
                                   : el?.lecture?.date +
                                     "~" +
                                     lastDate(
                                       el?.lecture?.date,
                                       el?.lecture?.lectureInfo?.repeatWeeks,
-                                      el?.lecture?.lectureInfo?.repeatDay?.[
-                                        el?.lecture?.lectureInfo?.repeatDay
-                                          ?.length - 1
-                                      ]
+                                      el?.lecture?.lectureInfo?.repeatDay
                                     )}
                               </td>
                               <td>
@@ -4347,7 +4641,16 @@ export default function ClassPage() {
                             Number(el.profile.academy.id) ===
                             Number(router.query.branch)
                           );
-                        })[0].id,
+                        })
+                        ?.sort((a, b) => {
+                          if (Number(a.id) === Number(myData.me.id)) {
+                            return -1;
+                          } else if (Number(b.id) === Number(myData.me.id)) {
+                            return 1;
+                          } else {
+                            return Number(a.id) - Number(b.id);
+                          }
+                        })?.[0].id,
                       about: "",
                     });
                     setAddRepeatInput(newList);
@@ -4389,29 +4692,19 @@ export default function ClassPage() {
                       }}
                       // value={teacherId}
                     >
-                      {userData?.allUsers
-                        .filter((el) => el.userCategory === "선생님")
-                        .filter((el) => {
-                          return (
-                            Number(el.profile.academy.id) ===
-                            Number(router.query.branch)
-                          );
-                        })
-                        .filter((el) => {
-                          console.log(el);
-                          return true;
-                        })
+                      {teacherData?.staffInAcademy
+                        ?.filter((el) => el.user.userCategory === "선생님")
                         .map((el) => {
                           return (
                             <option
                               key={uuidv4()}
-                              value={el.profile.id}
+                              value={el.id}
                               selected={
                                 Number(addRepeatInput[ind].teacherId) ===
-                                Number(el.profile.id)
+                                Number(el.id)
                               }
                             >
-                              {el.profile.korName}
+                              {el.korName}
                             </option>
                           );
                         })}
@@ -4460,7 +4753,7 @@ export default function ClassPage() {
                         type="radio"
                         name={"type" + ind}
                         value={"routine"}
-                        checked={addRepeatInput[ind].isRepeat !== "once"}
+                        checked={addRepeatInput[ind].isRepeat === "routine"}
                         style={{
                           width: "1.25rem",
                           height: "1.25rem",
@@ -4773,25 +5066,19 @@ export default function ClassPage() {
                 }}
                 value={makeUpTeacherId}
               >
-                {userData?.allUsers
-                  .filter((el) => el.userCategory === "선생님")
-                  .filter((el) => {
-                    return (
-                      Number(el.profile.academy.id) ===
-                      Number(router.query.branch)
-                    );
-                  })
+                {teacherData?.staffInAcademy
+                  ?.filter((el) => el.user.userCategory === "선생님")
                   .map((el) => {
                     return (
-                      <option key={uuidv4()} value={el.profile.id}>
-                        {el.profile.korName}
+                      <option key={uuidv4()} value={el.id}>
+                        {el.korName}
                       </option>
                     );
                   })}
               </select>
             </div>
             <div>
-              수정 날짜
+              수업 날짜
               <input
                 type="date"
                 onChange={(e) => {
@@ -5174,7 +5461,7 @@ export default function ClassPage() {
                   }}
                 >
                   <S.AlarmDiv>원생 리스트</S.AlarmDiv>
-                  <table>
+                  <table style={{ width: "100%" }}>
                     <thead>
                       <tr>
                         <th>원번</th>
@@ -6732,6 +7019,8 @@ export default function ClassPage() {
             >
               {packageData?.studentBookRecordWithPkg?.bookPkg?.createdAt !==
                 undefined &&
+                // nonFictionData !== undefined &&
+                // fictionData !== undefined &&
                 "최근 패키지 변경일 : " +
                   packageData?.studentBookRecordWithPkg?.bookPkg?.createdAt}
             </div>
@@ -7537,101 +7826,490 @@ export default function ClassPage() {
       {isEdit ? (
         <Modal
           open={isEdit}
+          // onOk={onClickUpdateLecture}
           onCancel={() => {
             setIsEdit(false);
-            setEditDate(dateToInput(date));
+            // setEditDate(dateToInput(date));
             // setEditStartTime(dateToClock(date));
             // setEditEndTime(dateToClockOneHour(date));
             setEditInfo("");
             setEditAcademy(Number(router.query.branch));
             setIsAll(false);
             setTeacherId(
-              userData?.allUsers
-                .filter((el) => el.userCategory === "선생님")
-                .filter((el) => {
-                  return (
-                    Number(el.profile.academy.id) ===
-                    Number(router.query.branch)
-                  );
-                })[0].id
+              teacherData?.staffInAcademy
+                ?.filter((el) => el.user.userCategory === "선생님")
+                ?.sort((a, b) => {
+                  if (Number(a.id) === Number(myData.me.id)) {
+                    return -1;
+                  } else if (Number(b.id) === Number(myData.me.id)) {
+                    return 1;
+                  } else {
+                    return Number(a.id) - Number(b.id);
+                  }
+                })?.[0].id
             );
           }}
           footer={null}
           closable={false}
           width={"60%"}
+          keyboard={true}
         >
           <S.EditModalTitle>수업 수정</S.EditModalTitle>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <div style={{ width: "48%" }}>
               <S.EditModalTagTitle>원생 수업 목록</S.EditModalTagTitle>
-              <table>
-                <thead>
-                  <tr>
-                    <th>날짜</th>
-                    <th>반복 요일</th>
-                    <th>수업 시간</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lectureInfoData?.studentLectures
-                    ?.filter((el, i, callback) => {
-                      return (
-                        i ===
-                        callback.findIndex(
-                          (t) =>
-                            t.lecture.lectureInfo.id ===
-                            el.lecture.lectureInfo.id
-                        )
-                      );
-                    })
-                    ?.map((el) => {
-                      return (
-                        <tr>
-                          <td
-                            style={{
-                              color:
-                                Number(el?.lecture?.lectureInfo?.id) ===
-                                Number(checkList[0].lectureInfoId)
-                                  ? "tomato"
-                                  : "",
-                            }}
-                          >
-                            {el?.lecture?.lectureInfo?.repeatDay.includes(-1)
-                              ? el?.lecture?.date
-                              : el?.lecture?.lectureInfo?.autoAdd
-                              ? el?.lecture?.date + "~"
-                              : el?.lecture?.date +
-                                "~" +
-                                lastDate(
-                                  el?.lecture?.date,
-                                  el?.lecture?.lectureInfo?.repeatWeeks,
-                                  el?.lecture?.lectureInfo?.repeatDay?.[
-                                    el?.lecture?.lectureInfo?.repeatDay
-                                      ?.length - 1
-                                  ]
-                                )}
-                          </td>
-                          <td>
-                            {el?.lecture?.lectureInfo?.repeatDay.includes(-1)
-                              ? "없음"
-                              : el?.lecture?.lectureInfo?.repeatDay
-                                  ?.sort((a, b) => {
-                                    return a - b;
-                                  })
-                                  .map((ele) => {
-                                    return week[ele];
-                                  })}
-                          </td>
-                          <td>
-                            {el?.lecture?.startTime.slice(0, 5) +
-                              "-" +
-                              el?.lecture?.endTime.slice(0, 5)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
+              {isAll ? (
+                <>
+                  <div>수정 전</div>
+                  <table style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>날짜</th>
+                        <th>반복 요일</th>
+                        <th>수업 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lectureInfoData?.studentLectures
+                        ?.filter((el, i, callback) => {
+                          return (
+                            i ===
+                            callback.findIndex(
+                              (t) =>
+                                t.lecture.lectureInfo.id ===
+                                el.lecture.lectureInfo.id
+                            )
+                          );
+                        })
+                        ?.map((el) => {
+                          return (
+                            <tr>
+                              <td
+                                style={{
+                                  color:
+                                    Number(el?.lecture?.lectureInfo?.id) ===
+                                    Number(checkList[0].lectureInfoId)
+                                      ? "tomato"
+                                      : "",
+                                }}
+                              >
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? el?.lecture?.date
+                                  : el?.lecture?.lectureInfo?.autoAdd
+                                  ? startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) + "~"
+                                  : startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) +
+                                    "~" +
+                                    (el?.lecture?.lectureInfo?.repeatTimes ===
+                                    null
+                                      ? lastDate(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatWeeks,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        )
+                                      : lastCount(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatTimes,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        ))}
+                              </td>
+                              <td>
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? "없음"
+                                  : el?.lecture?.lectureInfo?.repeatDay
+                                      ?.sort((a, b) => {
+                                        return a - b;
+                                      })
+                                      .map((ele) => {
+                                        return week[ele];
+                                      })}
+                              </td>
+                              <td>
+                                {el?.lecture?.startTime.slice(0, 5) +
+                                  "-" +
+                                  el?.lecture?.endTime.slice(0, 5)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                  <div>수정 후</div>
+                  <table style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>날짜</th>
+                        <th>반복 요일</th>
+                        <th>수업 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lectureInfoData?.studentLectures
+                        ?.filter((el, i, callback) => {
+                          return (
+                            i ===
+                            callback.findIndex(
+                              (t) =>
+                                t.lecture.lectureInfo.id ===
+                                el.lecture.lectureInfo.id
+                            )
+                          );
+                        })
+                        ?.map((el) => {
+                          if (
+                            Number(el?.lecture?.lectureInfo?.id) ===
+                            Number(checkList[0].lectureInfoId)
+                          ) {
+                            return (
+                              <tr>
+                                <td
+                                  style={{
+                                    color:
+                                      Number(el?.lecture?.lectureInfo?.id) ===
+                                      Number(checkList[0].lectureInfoId)
+                                        ? "tomato"
+                                        : "",
+                                  }}
+                                >
+                                  {lastDate(
+                                    editDate,
+                                    editRepeatCount,
+                                    editRepeatWeek
+                                  )
+                                    ? isAll
+                                      ? startDate(editDate, editRepeatWeek) +
+                                        (isEditRepeat === "once"
+                                          ? ""
+                                          : "~" +
+                                            (isEditRepeat === "routine"
+                                              ? lastDate(
+                                                  editDate,
+                                                  editRepeatCount,
+                                                  editRepeatWeek
+                                                )
+                                              : lastCount(
+                                                  editDate,
+                                                  editRepeatCount,
+                                                  editRepeatWeek
+                                                )))
+                                      : ""
+                                    : editDate}
+                                </td>
+                                <td>
+                                  {editRepeatWeek.length === 0
+                                    ? "없음"
+                                    : editRepeatWeek
+                                        ?.sort((a, b) => {
+                                          return a - b;
+                                        })
+                                        .map((ele) => {
+                                          return week[ele];
+                                        })}
+                                </td>
+                                <td>
+                                  {editStartTime.slice(0, 5) +
+                                    "-" +
+                                    editEndTime.slice(0, 5)}
+                                </td>
+                              </tr>
+                            );
+                          } else {
+                            return (
+                              <tr>
+                                <td
+                                  style={{
+                                    color:
+                                      Number(el?.lecture?.lectureInfo?.id) ===
+                                      Number(checkList[0].lectureInfoId)
+                                        ? "tomato"
+                                        : "",
+                                  }}
+                                >
+                                  {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                    -1
+                                  )
+                                    ? el?.lecture?.date
+                                    : el?.lecture?.lectureInfo?.autoAdd
+                                    ? startDate(
+                                        el?.lecture?.date,
+                                        el?.lecture?.lectureInfo?.repeatDay
+                                      ) + "~"
+                                    : startDate(
+                                        el?.lecture?.date,
+                                        el?.lecture?.lectureInfo?.repeatDay
+                                      ) +
+                                      "~" +
+                                      (el?.lecture?.lectureInfo?.repeatTimes ===
+                                      null
+                                        ? lastDate(
+                                            el?.lecture?.date,
+                                            el?.lecture?.lectureInfo
+                                              ?.repeatWeeks,
+                                            el?.lecture?.lectureInfo?.repeatDay
+                                          )
+                                        : lastCount(
+                                            el?.lecture?.date,
+                                            el?.lecture?.lectureInfo
+                                              ?.repeatTimes,
+                                            el?.lecture?.lectureInfo?.repeatDay
+                                          ))}
+                                </td>
+                                <td>
+                                  {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                    -1
+                                  )
+                                    ? "없음"
+                                    : el?.lecture?.lectureInfo?.repeatDay
+                                        ?.sort((a, b) => {
+                                          return a - b;
+                                        })
+                                        .map((ele) => {
+                                          return week[ele];
+                                        })}
+                                </td>
+                                <td>
+                                  {el?.lecture?.startTime.slice(0, 5) +
+                                    "-" +
+                                    el?.lecture?.endTime.slice(0, 5)}
+                                </td>
+                              </tr>
+                            );
+                          }
+                        })}
+                    </tbody>
+                  </table>
+                </>
+              ) : (
+                <>
+                  <div>수정 전</div>
+                  <table style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>날짜</th>
+                        <th>반복 요일</th>
+                        <th>수업 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lectureInfoData?.studentLectures
+                        ?.filter((el, i, callback) => {
+                          return (
+                            i ===
+                            callback.findIndex(
+                              (t) =>
+                                t.lecture.lectureInfo.id ===
+                                el.lecture.lectureInfo.id
+                            )
+                          );
+                        })
+                        ?.map((el) => {
+                          return (
+                            <tr>
+                              <td
+                                style={{
+                                  color:
+                                    Number(el?.lecture?.lectureInfo?.id) ===
+                                    Number(checkList[0].lectureInfoId)
+                                      ? "tomato"
+                                      : "",
+                                }}
+                              >
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? el?.lecture?.date
+                                  : el?.lecture?.lectureInfo?.autoAdd
+                                  ? startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) + "~"
+                                  : startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) +
+                                    "~" +
+                                    (el?.lecture?.lectureInfo?.repeatTimes ===
+                                    null
+                                      ? lastDate(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatWeeks,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        )
+                                      : lastCount(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatTimes,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        ))}
+                              </td>
+                              <td>
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? "없음"
+                                  : el?.lecture?.lectureInfo?.repeatDay
+                                      ?.sort((a, b) => {
+                                        return a - b;
+                                      })
+                                      .map((ele) => {
+                                        return week[ele];
+                                      })}
+                              </td>
+                              <td>
+                                {el?.lecture?.startTime.slice(0, 5) +
+                                  "-" +
+                                  el?.lecture?.endTime.slice(0, 5)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+
+                  <div>수정 후</div>
+                  <table style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>날짜</th>
+                        <th>반복 요일</th>
+                        <th>수업 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lectureInfoData?.studentLectures
+                        ?.filter((el, i, callback) => {
+                          return (
+                            i ===
+                            callback.findIndex(
+                              (t) =>
+                                t.lecture.lectureInfo.id ===
+                                el.lecture.lectureInfo.id
+                            )
+                          );
+                        })
+                        ?.map((el) => {
+                          return (
+                            <tr>
+                              <td>
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? el?.lecture?.date
+                                  : el?.lecture?.lectureInfo?.autoAdd
+                                  ? startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) + "~"
+                                  : startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) +
+                                    "~" +
+                                    (el?.lecture?.lectureInfo?.repeatTimes ===
+                                    null
+                                      ? lastDate(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatWeeks,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        )
+                                      : lastCount(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatTimes,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        ))}
+                              </td>
+                              <td>
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? "없음"
+                                  : el?.lecture?.lectureInfo?.repeatDay
+                                      ?.sort((a, b) => {
+                                        return a - b;
+                                      })
+                                      .map((ele) => {
+                                        return week[ele];
+                                      })}
+                              </td>
+                              <td>
+                                {el?.lecture?.startTime.slice(0, 5) +
+                                  "-" +
+                                  el?.lecture?.endTime.slice(0, 5)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      <tr>
+                        <td style={{ color: "tomato" }}>{editDate}</td>
+                        <td>없음</td>
+                        <td>
+                          {editStartTime.slice(0, 5) +
+                            "-" +
+                            editEndTime.slice(0, 5)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  {/* <table>
+                    <thead>
+                      <tr>
+                        <th>날짜</th>
+                        <th>시간</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lectureInfoData?.studentLectures
+                        ?.filter((el) => {
+                          const elDate = new Date(el.lecture.date);
+                          const edDate = new Date(standardDate);
+                          return elDate - edDate >= 0;
+                        })
+                        ?.sort((a, b) => {
+                          const aDate = new Date(a.lecture.date);
+                          const bDate = new Date(b.lecture.date);
+                          return aDate - bDate;
+                        })
+                        ?.filter((_, index) => index < 7)
+                        ?.map((el) => {
+                          if (
+                            Number(el.lecture.id) ===
+                            Number(checkList[0].lectureId)
+                          ) {
+                            return (
+                              <tr>
+                                <td style={{ color: "tomato" }}>{editDate}</td>
+                                <td>
+                                  {editStartTime.slice(0, 5) +
+                                    "-" +
+                                    editEndTime.slice(0, 5)}
+                                </td>
+                              </tr>
+                            );
+                          } else {
+                            return (
+                              <tr>
+                                <td>{el.lecture.date}</td>
+                                <td>
+                                  {el.lecture.startTime.slice(0, 5) +
+                                    "-" +
+                                    el.lecture.endTime.slice(0, 5)}
+                                </td>
+                              </tr>
+                            );
+                          }
+                        })}
+                    </tbody>
+                  </table> */}
+                </>
+              )}
             </div>
             <div style={{ width: "48%" }}>
               <S.EditModalTag>
@@ -7697,6 +8375,7 @@ export default function ClassPage() {
                 <S.EditModalTagTitle>담당 선생님</S.EditModalTagTitle>
                 <select
                   onChange={(event) => {
+                    console.log(event.target.value);
                     setTeacherId(event.target.value);
                   }}
                   style={{
@@ -7708,18 +8387,15 @@ export default function ClassPage() {
                   }}
                   value={teacherId}
                 >
-                  {userData?.allUsers
-                    .filter((el) => el.userCategory === "선생님")
-                    .filter((el) => {
-                      return (
-                        Number(el.profile.academy.id) ===
-                        Number(router.query.branch)
-                      );
-                    })
+                  {teacherData?.staffInAcademy
+                    ?.filter((el) => el.user.userCategory === "선생님")
                     .map((el) => {
                       return (
-                        <option key={uuidv4()} value={el.profile.id}>
-                          {el.profile.korName}
+                        <option
+                          value={el.id}
+                          selected={Number(teacherId) === Number(el.id)}
+                        >
+                          {el.korName}
                         </option>
                       );
                     })}
@@ -7729,9 +8405,18 @@ export default function ClassPage() {
                 <S.EditModalTagTitle>수정 날짜</S.EditModalTagTitle>
                 <input
                   type="date"
-                  defaultValue={dateToInput(date)}
+                  // defaultValue={dateToInput(date)}
+                  value={editDate}
                   onChange={(e) => {
                     setEditDate(e.target.value);
+                  }}
+                  // enter 키 적용
+
+                  onKeyPress={(e) => {
+                    console.log(e);
+                    if (e.key === "Enter") {
+                      onClickUpdateLecture();
+                    }
                   }}
                   style={{
                     width: "97%",
@@ -7787,11 +8472,41 @@ export default function ClassPage() {
                 <>
                   <S.EditModalTag>
                     <S.EditModalTagTitle>수업 반복</S.EditModalTagTitle>
+                    <div>단일</div>
                     <input
-                      type="checkbox"
-                      checked={isEditRepeat}
+                      type="radio"
+                      name="editRepeat"
+                      checked={isEditRepeat === "once"}
                       onChange={() => {
-                        setIsEditRepeat(!isEditRepeat);
+                        setIsEditRepeat("once");
+                        setIsEditAuto(false);
+                      }}
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                      }}
+                    ></input>
+                    <div>반복</div>
+                    <input
+                      type="radio"
+                      name="editRepeat"
+                      checked={isEditRepeat === "routine"}
+                      onChange={() => {
+                        setIsEditRepeat("routine");
+                      }}
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                      }}
+                    ></input>
+                    <div>횟수</div>
+                    <input
+                      type="radio"
+                      name="editRepeat"
+                      checked={isEditRepeat === "count"}
+                      onChange={() => {
+                        setIsEditRepeat("count");
+                        setIsEditAuto(false);
                       }}
                       style={{
                         width: "20px",
@@ -7799,10 +8514,12 @@ export default function ClassPage() {
                       }}
                     ></input>
                   </S.EditModalTag>
-                  {isEditRepeat && (
+                  {isEditRepeat !== "once" && (
                     <>
                       <S.EditModalTag>
-                        <S.EditModalTagTitle>반복 주</S.EditModalTagTitle>
+                        <S.EditModalTagTitle>
+                          {isEditRepeat === "routine" ? "반복 주" : "반복 횟수"}
+                        </S.EditModalTagTitle>
                         <div
                           style={{
                             display: "flex",
@@ -7836,6 +8553,7 @@ export default function ClassPage() {
                             onChange={() => {
                               setIsEditAuto(!isEditAuto);
                             }}
+                            disabled={!(isEditRepeat === "routine")}
                             style={{
                               width: "20px",
                               height: "20px",
@@ -7880,9 +8598,10 @@ export default function ClassPage() {
                   onChange={(e) => {
                     setEditInfo(e.target.value);
                   }}
+                  value={editInfo}
                   style={{
                     width: "97%",
-                    height: "10rem",
+                    height: "5rem",
                     fontSize: "14px",
                     border: "1px solid #DBDDE1",
                     borderRadius: "8px",
@@ -7896,20 +8615,23 @@ export default function ClassPage() {
                 <S.EditModalCancelButton
                   onClick={() => {
                     setIsEdit(false);
-                    setEditDate(dateToInput(date));
+                    // setEditDate(dateToInput(date));
                     // setEditStartTime(dateToClock(date));
                     // setEditEndTime(dateToClockOneHour(date));
                     setEditInfo("");
                     setEditAcademy(Number(router.query.branch));
                     setTeacherId(
-                      userData?.allUsers
-                        .filter((el) => el.userCategory === "선생님")
-                        .filter((el) => {
-                          return (
-                            Number(el.profile.academy.id) ===
-                            Number(router.query.branch)
-                          );
-                        })[0].id
+                      teacherData?.staffInAcademy
+                        ?.filter((el) => el.user.userCategory === "선생님")
+                        ?.sort((a, b) => {
+                          if (Number(a.id) === Number(myData.me.id)) {
+                            return -1;
+                          } else if (Number(b.id) === Number(myData.me.id)) {
+                            return 1;
+                          } else {
+                            return Number(a.id) - Number(b.id);
+                          }
+                        })?.[0].id
                     );
                   }}
                 >

@@ -21,6 +21,23 @@ export const GET_ALL_STUDENTS = gql`
   }
 `;
 
+export const GET_STUDENTS_REPORT_LIST = gql`
+  query studentsInAcademyWithConsulting($academyId: Int!) {
+    studentsInAcademyWithConsulting(academyId: $academyId) {
+      student {
+        id
+        origin
+        korName
+        engName
+        registerDate
+        birthDate
+      }
+      consultingCount
+      lastConsultingDate
+    }
+  }
+`;
+
 export const GET_ME = gql`
   query {
     me {

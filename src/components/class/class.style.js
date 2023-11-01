@@ -27,7 +27,7 @@ export const ClassTitle = styled.div`
 
 export const CalendarLine = styled.div`
   display: flex;
-  width: 100%;
+  width: 100rem;
   border-bottom: 1px solid #dfe1e5;
 `;
 
@@ -103,7 +103,7 @@ export const DateMoveButton = styled.button`
 `;
 
 export const ClassMiddleBox = styled.div`
-  width: 100%;
+  width: 100rem;
   display: flex;
   justify-content: space-between;
   align-items: center;

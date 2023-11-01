@@ -57,8 +57,8 @@ export const GET_STUDENT = gql`
 `;
 
 export const GET_SUMMARY_REPORT = gql`
-  query getSummaryReport($studentId: Int!) {
-    getSummaryReport(studentId: $studentId) {
+  query getSummaryReport($studentId: Int!, $date: Date!) {
+    getSummaryReport(studentId: $studentId, date: $date) {
       origin
       recentStudyDate
       thisMonthAr
@@ -77,13 +77,17 @@ export const GET_SUMMARY_REPORT = gql`
       lastMonthStudyDays
       totalStudyDays
       updateTime
+      thisMonthSr
+      lastMonthSr
+      thisPerWc
+      lastPerWc
     }
   }
 `;
 
 export const GET_MONTH_REPORT = gql`
-  query getMonthReports($studentId: Int!) {
-    getMonthReports(studentId: $studentId) {
+  query getMonthReports($studentId: Int!, $date: Date!) {
+    getMonthReports(studentId: $studentId, date: $date) {
       month
       bc
       wc
@@ -91,6 +95,7 @@ export const GET_MONTH_REPORT = gql`
       wcPerBook
       correct
       updateTime
+      sr
     }
   }
 `;
@@ -112,8 +117,8 @@ export const GET_MEMO = gql`
 `;
 
 export const GET_OPINION = gql`
-  query getOpinion($studentId: ID!, $userId: ID!) {
-    getOpinion(studentId: $studentId, userId: $userId) {
+  query getOpinion($studentId: ID!, $userId: ID!, $date: Date!) {
+    getOpinion(studentId: $studentId, userId: $userId, date: $date) {
       id
       contents
     }
@@ -197,11 +202,19 @@ export const GET_MEMOS = gql`
 `;
 
 export const CREATE_OPINION = gql`
-  mutation createOpinion($contents: String!, $writerId: ID!, $studentId: ID!) {
+  mutation createOpinion(
+    $contents: String!
+    $writerId: ID!
+    $studentId: ID!
+    $date: Date!
+    $opinionId: ID
+  ) {
     createOpinion(
       contents: $contents
       writerId: $writerId
       studentId: $studentId
+      date: $date
+      opinionId: $opinionId
     ) {
       opinion {
         id

@@ -21,14 +21,28 @@ import {
   UPDATE_LECTURE,
   CREATE_ACADEMY_TO_USER,
   EDIT_ACADEMY_LIST,
+  GET_CONSULTING,
+  CREATE_CONSULTING,
+  DELETE_CONSULTING,
+  UPDATE_CONSULTING,
+  EDIT_USER,
+  GET_LECTURE_INFO,
+  GET_TEACHER,
+  EDIT_LECTURE_INFO,
 } from "./academyDetail.query";
 import {
   dateInputToNumber,
   dateToClock,
   dateToClockOneHour,
   dateToInput,
+  lastCount,
+  lastDate,
+  startDate,
 } from "@/src/commons/library/library";
-import { noSSR } from "next/dynamic";
+import { ConsultingTable } from "@/src/commons/library/academyDetailTable";
+
+const addressList = ["gmail.com", "naver.com", "daum.net"];
+const week = ["월", "화", "수", "목", "금", "토", "일"];
 
 export default function AcademyDetailPage() {
   const router = useRouter();
@@ -41,29 +55,47 @@ export default function AcademyDetailPage() {
   const { refetch: refetchStudents } = useQuery(GET_STUDENTS_BY_DATE);
   const { data: userData, refetch: refetchUsers } = useQuery(GET_USERS);
   const { data: myData } = useQuery(GET_ME);
+  const { data: consultingData, refetch: refetchConsulting } = useQuery(
+    GET_CONSULTING,
+    {
+      variables: {
+        studentId: Number(router.query.id),
+        userId: Number(myData?.me?.id),
+      },
+    }
+  );
   const [editStudent] = useMutation(EDIT_STUDENT);
+  const [editUser] = useMutation(EDIT_USER);
   const [addMemo] = useMutation(ADD_MEMO);
-  const [createAttendance] = useMutation(CREATE_ATTENDANCE);
   const [createMakeUp] = useMutation(CREATE_MAKE_UP);
   const [editLectureMemo] = useMutation(CREATE_MEMO);
   const [stopAcademy] = useMutation(STOP_ACADEMY);
   const [updateLecture] = useMutation(UPDATE_LECTURE);
   const [addAcademyUser] = useMutation(CREATE_ACADEMY_TO_USER);
   const [editUserAcademy] = useMutation(EDIT_ACADEMY_LIST);
+  const [createConsulting] = useMutation(CREATE_CONSULTING);
+  const [deleteConsulting] = useMutation(DELETE_CONSULTING);
+  const [updateConsulting] = useMutation(UPDATE_CONSULTING);
   const [editEngName, setEditEngName] = useState("");
   const [editBirthDay, setEditBirthDay] = useState("");
-  const [editMobileNumber, setEditMobileNumber] = useState("");
-  const [editPMobileNumber, setEditPMobileNumber] = useState("");
+  const [editMobileNumber1, setEditMobileNumber1] = useState("");
+  const [editMobileNumber2, setEditMobileNumber2] = useState("");
+  const [editMobileNumber3, setEditMobileNumber3] = useState("");
+  const [editPMobileNumber1, setEditPMobileNumber1] = useState("");
+  const [editPMobileNumber2, setEditPMobileNumber2] = useState("");
+  const [editPMobileNumber3, setEditPMobileNumber3] = useState("");
   const [editGender, setEditGender] = useState("");
-  const [editEmail, setEditEmail] = useState("");
+  const [editEmail1, setEditEmail1] = useState("");
+  const [editEmail2, setEditEmail2] = useState("");
   const [editMemo, setEditMemo] = useState("");
+  const [editRegisterDate, setEditRegisterDate] = useState("");
   const [classToggle, setClassToggle] = useState(false);
   const [imageURL, setImageURL] = useState("");
   const [imageFile, setImageFile] = useState("");
   const [selectDates, setSelectDates] = useState([]);
   const [routineCount, setRoutineCount] = useState(0);
   const [teacherId, setTeacherId] = useState(0);
-  const [date] = useState(new Date());
+  const [date, setTodayDate] = useState(new Date());
   const [addClassStart, setAddClassStart] = useState(dateToClock(date));
   const [addClassEnd, setAddClassEnd] = useState(dateToClockOneHour(date));
   const [addClassDate, setAddClassDate] = useState(dateToInput(date));
@@ -76,16 +108,225 @@ export default function AcademyDetailPage() {
   const [memoLecture, setMemoLecture] = useState("");
   const [memoContents, setMemoContents] = useState();
   const [memoText, setMemoText] = useState("");
+
+  // 수업 수정 부분
+  const [editLectureInfo] = useMutation(EDIT_LECTURE_INFO);
+  const { data: lectureInfoData, refetch: refetchLectureInfo } = useQuery(
+    GET_LECTURE_INFO,
+    {
+      variables: {
+        academyIds: [Number(router.query.branch)],
+        studentId: Number(router.query.id),
+      },
+    }
+  );
+  const { data: teacherData, refetch: refetchTeacher } = useQuery(GET_TEACHER, {
+    variables: { academyId: Number(router.query.branch) },
+  });
   const [isEdit, setIsEdit] = useState(false);
+  const [editLectureId, setEditLectureId] = useState("");
+  const [editLectureInfoId, setEditLectureInfoId] = useState("");
+  const [editAcademy, setEditAcademy] = useState(Number(router.query.branch));
   const [editDate, setEditDate] = useState(dateToInput(date));
   const [editEndTime, setEditEndTime] = useState(dateToClockOneHour(date));
   const [editStartTime, setEditStartTime] = useState(dateToClock(date));
   const [editInfo, setEditInfo] = useState("");
-  const [editAcademy, setEditAcademy] = useState(0);
+  const [isAll, setIsAll] = useState(false);
+  const [isEditAuto, setIsEditAuto] = useState(false);
+  const [isEditRepeat, setIsEditRepeat] = useState("once");
+  const [editRepeatWeek, setEditRepeatWeek] = useState([]);
+  const [editRepeatCount, setEditRepeatCount] = useState(0);
+  const [standardDate, setStandardDate] = useState("");
+
+  const onClickEditDates = (index) => () => {
+    const newDates = [...editRepeatWeek];
+    if (newDates.includes(index)) {
+      setEditRepeatWeek(newDates.filter((el) => index !== el));
+    } else {
+      newDates.push(index);
+      setEditRepeatWeek(newDates);
+    }
+  };
+
+  const onClickOpenEditModal = (el) => () => {
+    const setting = lectureInfoData?.studentLectures?.filter((ele) => {
+      return ele?.lecture?.id === el.id;
+    })?.[0];
+    console.log(setting);
+    setIsAll(false);
+    setTodayDate(new Date());
+    setIsEdit(true);
+    setEditLectureInfoId(el?.lectureInfo?.id);
+    setEditLectureId(el?.id);
+
+    setIsEditAuto(setting?.lecture?.lectureInfo?.autoAdd);
+    setIsEditRepeat(
+      setting?.lecture?.lectureInfo.repeatDay.includes(-1)
+        ? "once"
+        : setting?.lecture?.lectureInfo.repeatTimes === null
+        ? "routine"
+        : "count"
+    );
+    setEditDate(setting?.lecture?.date);
+    setStandardDate(setting?.lecture?.date);
+    setEditStartTime(setting?.lecture?.startTime);
+    setEditEndTime(setting?.lecture?.endTime);
+    setEditInfo(setting?.lecture?.lectureInfo.about);
+    if (!setting?.lecture?.lectureInfo.repeatDay.includes(-1)) {
+      setEditRepeatWeek(setting?.lecture?.lectureInfo.repeatDay);
+      setEditRepeatCount(setting?.lecture?.lectureInfo.repeatWeeks);
+    } else {
+      setEditRepeatCount(1);
+      setEditRepeatWeek([]);
+    }
+  };
+
+  const onClickUpdateLecture = async () => {
+    if (isAll) {
+      if (
+        isEditRepeat === "count" &&
+        editRepeatWeek.length > Number(editRepeatCount)
+      ) {
+        alert("반복 횟수가 반복 요일보다 적습니다.");
+        return;
+      }
+      try {
+        await editLectureInfo({
+          variables: {
+            lectureInfoId: Number(editLectureInfoId),
+            date: editDate,
+            about: editInfo,
+            repeatDays:
+              isEditRepeat !== "once"
+                ? JSON.stringify({ repeat_days: editRepeatWeek })
+                : JSON.stringify({ repeat_days: [-1] }),
+            repeatWeeks: isEditRepeat !== "once" ? Number(editRepeatCount) : 1,
+            autoAdd: isEditAuto,
+            studentIds: [Number(router.query.id)],
+            startTime: editStartTime,
+            endTime: editEndTime,
+            academyId: Number(editAcademy),
+            teacherId: Number(teacherId),
+            repeatTimes:
+              isEditRepeat === "count" ? Number(editRepeatCount) : null,
+          },
+        });
+        refetch();
+        refetchLectureInfo();
+        setIsEdit(false);
+        setEditInfo("");
+        setEditAcademy(Number(router.query.branch));
+        setTeacherId(
+          teacherData?.staffInAcademy
+            ?.filter((el) => el.user.userCategory === "선생님")
+            ?.sort((a, b) => {
+              if (Number(a.id) === Number(myData.me.id)) {
+                return -1;
+              } else if (Number(b.id) === Number(myData.me.id)) {
+                return 1;
+              } else {
+                return Number(a.id) - Number(b.id);
+              }
+            })?.[0].id
+        );
+      } catch (err) {}
+    } else {
+      try {
+        await updateLecture({
+          variables: {
+            lectureId: Number(editLectureId),
+            date: editDate,
+            studentIds: Number(router.query.id),
+            startTime: editStartTime,
+            endTime: editEndTime,
+            academyId: editAcademy,
+            teacherId: Number(teacherId),
+          },
+        });
+      } catch (err) {
+        console.log(err);
+      }
+      refetch();
+      refetchLectureInfo();
+      setIsEdit(false);
+      setEditInfo("");
+      setEditAcademy(Number(router.query.branch));
+      setTeacherId(
+        teacherData?.staffInAcademy
+          ?.filter((el) => el.user.userCategory === "선생님")
+          ?.sort((a, b) => {
+            if (Number(a.id) === Number(myData.me.id)) {
+              return -1;
+            } else if (Number(b.id) === Number(myData.me.id)) {
+              return 1;
+            } else {
+              return Number(a.id) - Number(b.id);
+            }
+          })?.[0].id
+      );
+    }
+  };
+
   const [lectureId, setLectureId] = useState(0);
   const [branches, setBranches] = useState([]);
   const [listDate, setListDate] = useState(dateToInput(new Date()));
+  const [isTyped, setIsTyped] = useState(false);
   const [lectureList, setLectureList] = useState([]);
+  const [consultingList, setConsultingList] = useState([]);
+
+  // 상담 state
+  const [isConsulting, setIsConsulting] = useState(false);
+  const [consultingTitle, setConsultingTitle] = useState("");
+  const [consultingContents, setConsultingContents] = useState("");
+  const [consultingDate, setConsultingDate] = useState(dateToInput(date));
+  const [isDelete, setIsDelete] = useState(false);
+  const [isConsultingEdit, setIsConsultingEdit] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContents, setEditContents] = useState("");
+  const [consultingEditDate, setConsultingEditDate] = useState(
+    dateToInput(new Date())
+  );
+
+  const onClickOpenDeleteModal = (id) => () => {
+    setIsDelete(true);
+    setSelectId(id);
+  };
+
+  const onClickOpenEditConsultingModal = (el) => () => {
+    setIsConsultingEdit(true);
+    setSelectId(el.id);
+    setEditContents(el.contents);
+    setEditTitle(el.title);
+    setConsultingEditDate(el.createdAt);
+  };
+
+  const onClickConSultingDelete = async () => {
+    try {
+      await deleteConsulting({ variables: { consultingId: Number(selectId) } });
+      refetchConsulting();
+      setSelectId("");
+      setIsDelete(false);
+      alert("상담을 삭제했습니다.");
+    } catch (err) {}
+  };
+
+  const onClickConSultingEdit = async () => {
+    try {
+      await updateConsulting({
+        variables: {
+          title: editTitle,
+          consultingId: Number(selectId),
+          contents: editContents,
+          writerId: Number(myData?.me.id),
+          createdAt: editDate,
+        },
+      });
+      refetchConsulting();
+      setSelectId("");
+      setIsConsultingEdit(false);
+      alert("상담을 수정했습니다.");
+    } catch (err) {}
+  };
 
   const { data: memoData, refetch: refetchMemo } = useQuery(GET_MEMO, {
     variables: {
@@ -136,6 +377,16 @@ export default function AcademyDetailPage() {
     setClassToggle(false);
   };
 
+  // 상당 정보 useEffect
+
+  useEffect(() => {
+    if (consultingData === undefined) {
+      setConsultingList([]);
+    } else {
+      setConsultingList(consultingData?.getConsulting);
+    }
+  }, [consultingData]);
+
   useEffect(() => {
     if (data) {
       setLectureList(
@@ -164,7 +415,6 @@ export default function AcademyDetailPage() {
   }, [data]);
 
   const onClickCheck = (id, active) => async () => {
-    setSelectId({ id: id, active: active });
     // setIsCheck(true);
     try {
       await stopAcademy({ variables: { userId: Number(router.query.id) } });
@@ -255,20 +505,29 @@ export default function AcademyDetailPage() {
     if (data?.userDetails?.profile.birthDate !== editBirthDay) {
       variables.birthDate = editBirthDay;
     }
-    if (data?.userDetails?.profile.mobileno !== editMobileNumber) {
-      variables.mobileno = editMobileNumber;
+    if (data?.userDetails?.profile.mobileno !== editMobileNumber1) {
+      variables.mobileno =
+        editMobileNumber1 + "-" + editMobileNumber2 + "-" + editMobileNumber3;
     }
-    if (data?.userDetails?.profile.pmobileno !== editPMobileNumber) {
-      variables.pmobileno = editPMobileNumber;
+    if (data?.userDetails?.profile.pmobileno !== editPMobileNumber1) {
+      variables.pmobileno =
+        editPMobileNumber1 +
+        "-" +
+        editPMobileNumber2 +
+        "-" +
+        editPMobileNumber3;
     }
     if (data?.userDetails?.profile.gender !== editGender) {
       variables.gender = editGender;
     }
-    if (data?.userDetails?.email !== editEmail) {
-      variables.email = editEmail;
+    if (
+      data?.userDetails?.profile?.registerDate?.slice(0, 10) !==
+      editRegisterDate
+    ) {
+      variables.registerDate = editRegisterDate;
     }
     try {
-      const result = await editStudent({ variables });
+      await editStudent({ variables });
       try {
         const addResult = await addMemo({
           variables: {
@@ -280,6 +539,16 @@ export default function AcademyDetailPage() {
       } catch (err) {
         // alert("메모 내용을 입력해주세요.");
       }
+
+      try {
+        await editUser({
+          variables: {
+            email: editEmail1 + "@" + editEmail2,
+            userId: Number(router.query.id),
+            categoryId: 4,
+          },
+        });
+      } catch {}
 
       if (branches.length > 0) {
         try {
@@ -362,51 +631,51 @@ export default function AcademyDetailPage() {
     }
   };
 
-  const onClickUpdateLecture = async () => {
-    // console.log(
-    //   Number(router.query.id),
-    //   Number(lectureId),
-    //   editAcademy,
-    //   editDate,
-    //   editStartTime,
-    //   editEndTime,
-    //   Number(teacherId)
-    // );
-    try {
-      const result = await updateLecture({
-        variables: {
-          lectureId: Number(lectureId),
-          date: editDate,
-          studentIds: [Number(router.query.id)],
-          startTime: editStartTime,
-          endTime: editEndTime,
-          academyId: editAcademy,
-          teacherId: Number(teacherId),
-          lectureMemo: editInfo,
-        },
-      });
-      refetch();
-      refetchUsers();
-      refetchStudents();
-      setIsEdit(false);
-      setEditDate(dateToInput(date));
-      setEditStartTime(dateToClock(date));
-      setEditEndTime(dateToClockOneHour(date));
-      setTeacherId(
-        userData?.allUsers
-          .filter((el) => el.userCategory === "선생님")
-          .filter((el) => {
-            return (
-              Number(el.profile.academy.id) === Number(router.query.branch)
-            );
-          })[0].id
-      );
-      setEditAcademy(Number(router.query.branch));
-      setEditInfo("");
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  // const onClickUpdateLecture = async () => {
+  //   // console.log(
+  //   //   Number(router.query.id),
+  //   //   Number(lectureId),
+  //   //   editAcademy,
+  //   //   editDate,
+  //   //   editStartTime,
+  //   //   editEndTime,
+  //   //   Number(teacherId)
+  //   // );
+  //   try {
+  //     const result = await updateLecture({
+  //       variables: {
+  //         lectureId: Number(lectureId),
+  //         date: editDate,
+  //         studentIds: [Number(router.query.id)],
+  //         startTime: editStartTime,
+  //         endTime: editEndTime,
+  //         academyId: editAcademy,
+  //         teacherId: Number(teacherId),
+  //         lectureMemo: editInfo,
+  //       },
+  //     });
+  //     refetch();
+  //     refetchUsers();
+  //     refetchStudents();
+  //     setIsEdit(false);
+  //     setEditDate(dateToInput(date));
+  //     setEditStartTime(dateToClock(date));
+  //     setEditEndTime(dateToClockOneHour(date));
+  //     setTeacherId(
+  //       userData?.allUsers
+  //         .filter((el) => el.userCategory === "선생님")
+  //         .filter((el) => {
+  //           return (
+  //             Number(el.profile.academy.id) === Number(router.query.branch)
+  //           );
+  //         })[0].id
+  //     );
+  //     setEditAcademy(Number(router.query.branch));
+  //     setEditInfo("");
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  // };
   useEffect(() => {
     setTeacherId(
       userData?.allUsers
@@ -417,18 +686,31 @@ export default function AcademyDetailPage() {
     );
   }, [userData]);
   useEffect(() => {
-    setEditEngName(data?.userDetails?.profile.engName);
-    setEditBirthDay(data?.userDetails?.profile.birthDate);
-    setEditMobileNumber(data?.userDetails?.profile.mobileno);
-    setEditPMobileNumber(data?.userDetails?.profile.pmobileno);
-    setEditGender(data?.userDetails?.profile.gender);
-    setEditEmail(data?.userDetails?.email);
-    setEditMemo(
-      data?.userDetails?.memos?.filter((el) => {
-        console.log(el.academy.id);
-        return el.academy.id === router.query.branch;
-      })?.[0]?.memo
-    );
+    if (data !== undefined) {
+      setEditEngName(data?.userDetails?.profile.engName);
+      setEditBirthDay(data?.userDetails?.profile.birthDate);
+      setEditMobileNumber1(data?.userDetails?.profile.mobileno.split("-")[0]);
+      setEditMobileNumber2(data?.userDetails?.profile.mobileno.split("-")[1]);
+      setEditMobileNumber3(data?.userDetails?.profile.mobileno.split("-")[2]);
+      setEditPMobileNumber1(data?.userDetails?.profile.pmobileno.split("-")[0]);
+      setEditPMobileNumber2(data?.userDetails?.profile.pmobileno.split("-")[1]);
+      setEditPMobileNumber3(data?.userDetails?.profile.pmobileno.split("-")[2]);
+      setEditGender(data?.userDetails?.profile.gender);
+      setEditEmail1(data?.userDetails?.email?.split("@")[0]);
+      setEditEmail2(data?.userDetails?.email?.split("@")[1]);
+      if (!addressList?.includes(data?.userDetails?.email?.split("@")[1])) {
+        setIsTyped(true);
+      }
+      setEditRegisterDate(
+        data?.userDetails?.profile?.registerDate?.slice(0, 10)
+      );
+      setEditMemo(
+        data?.userDetails?.memos?.filter((el) => {
+          console.log(el.academy.id);
+          return el.academy.id === router.query.branch;
+        })?.[0]?.memo
+      );
+    }
   }, [data]);
 
   console.log(data);
@@ -436,6 +718,24 @@ export default function AcademyDetailPage() {
   useEffect(() => {
     setEditAcademy(Number(router.query.branch));
   }, [router]);
+
+  const onClickCreateConSulting = () => async () => {
+    try {
+      await createConsulting({
+        variables: {
+          title: consultingTitle,
+          contents: consultingContents,
+          writerId: Number(myData?.me?.id),
+          studentId: Number(router.query.id),
+          createdAt: consultingDate,
+        },
+      });
+      setIsConsulting(false);
+      setConsultingTitle("");
+      setConsultingContents("");
+      refetchConsulting();
+    } catch (err) {}
+  };
 
   return (
     <S.AcademyDetailWrapper>
@@ -501,21 +801,67 @@ export default function AcademyDetailPage() {
           <S.TagLine>
             <S.InputTag>
               <S.InputName>학부모 전화번호</S.InputName>
-              <S.InputInput
-                onChange={(e) => {
-                  setEditPMobileNumber(e.target.value);
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
-                defaultValue={data?.userDetails?.profile.pmobileno}
-              ></S.InputInput>
+              >
+                <S.InputPhoneInput
+                  onChange={(e) => {
+                    setEditPMobileNumber1(e.target.value);
+                  }}
+                  value={editPMobileNumber1}
+                ></S.InputPhoneInput>
+                {"-"}
+                <S.InputPhoneInput
+                  onChange={(e) => {
+                    setEditPMobileNumber2(e.target.value);
+                  }}
+                  value={editPMobileNumber2}
+                ></S.InputPhoneInput>
+                {"-"}
+                <S.InputPhoneInput
+                  onChange={(e) => {
+                    setEditPMobileNumber3(e.target.value);
+                  }}
+                  value={editPMobileNumber3}
+                ></S.InputPhoneInput>
+              </div>
             </S.InputTag>
             <S.InputTag>
               <S.InputName>연락처</S.InputName>
-              <S.InputInput
-                onChange={(e) => {
-                  setEditMobileNumber(e.target.value);
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
-                defaultValue={data?.userDetails?.profile.mobileno}
-              ></S.InputInput>
+              >
+                <S.InputPhoneInput
+                  onChange={(e) => {
+                    setEditMobileNumber1(e.target.value);
+                  }}
+                  value={editMobileNumber1}
+                ></S.InputPhoneInput>
+                {"-"}
+                <S.InputPhoneInput
+                  onChange={(e) => {
+                    setEditMobileNumber2(e.target.value);
+                  }}
+                  value={editMobileNumber2}
+                ></S.InputPhoneInput>
+                {"-"}
+                <S.InputPhoneInput
+                  onChange={(e) => {
+                    setEditMobileNumber3(e.target.value);
+                  }}
+                  value={editMobileNumber3}
+                ></S.InputPhoneInput>
+              </div>
             </S.InputTag>
           </S.TagLine>
           <S.TagLine>
@@ -523,16 +869,63 @@ export default function AcademyDetailPage() {
               <S.InputName>원번</S.InputName>
               <S.InputInput
                 value={data?.userDetails?.profile?.origin}
+                disabled={true}
               ></S.InputInput>
             </S.InputTag>
             <S.InputTag>
               <S.InputName>이메일</S.InputName>
-              <S.InputInput
-                onChange={(e) => {
-                  setEditEmail(e.target.value);
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
-                defaultValue={data?.userDetails?.email}
-              ></S.InputInput>
+              >
+                <S.InputPhoneInput
+                  onChange={(e) => {
+                    setEditEmail1(e.target.value);
+                  }}
+                  value={editEmail1}
+                ></S.InputPhoneInput>
+                <div>{" @ "}</div>
+                <S.InputPhoneInput
+                  onChange={(e) => {
+                    setEditEmail2(e.target.value);
+                  }}
+                  disabled={!isTyped}
+                  value={editEmail2}
+                ></S.InputPhoneInput>
+                <div>{}</div>
+                <select
+                  style={{
+                    padding: "0.81rem 1.5rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #dbdde1",
+                    width: "calc(25% - 1rem)",
+                    color: "#333",
+                  }}
+                  onChange={(e) => {
+                    if (e.target.value === "") {
+                      setEditEmail2("");
+                      setIsTyped(true);
+                    } else {
+                      setEditEmail2(e.target.value);
+                      setIsTyped(false);
+                    }
+                  }}
+                >
+                  {addressList.map((el) => {
+                    return (
+                      <option value={el} selected={el === editEmail2}>
+                        {el}
+                      </option>
+                    );
+                  })}
+                  <option value={""} selected={isTyped}>
+                    {"직접 입력"}
+                  </option>
+                </select>
+              </div>
             </S.InputTag>
           </S.TagLine>
           <S.TagLine>
@@ -540,7 +933,11 @@ export default function AcademyDetailPage() {
               <S.InputName>등록일</S.InputName>
               <S.InputInput
                 type="date"
-                value={data?.userDetails?.profile.registerDate.slice(0, 10)}
+                value={editRegisterDate}
+                onChange={(e) => {
+                  setEditRegisterDate(e.target.value);
+                }}
+                // disabled={true}
               ></S.InputInput>
             </S.InputTag>
             <S.InputTag>
@@ -666,16 +1063,20 @@ export default function AcademyDetailPage() {
         ></input>
       </div>
       <S.Table>
-        <S.TableHeaderRound>
-          <S.TableHeadLeft style={{ width: "70%" }}>수업 날짜</S.TableHeadLeft>
-          <S.TableHead style={{ width: "70%" }}>수업 시간</S.TableHead>
-          <S.TableHead style={{ width: "40%" }}>담당</S.TableHead>
-          <S.TableHead style={{ width: "30%" }}>출석현황</S.TableHead>
-          <S.TableHead>강의 정보</S.TableHead>
-          <S.TableHead style={{ width: "30%" }}>원생 메모</S.TableHead>
-          <S.TableHead style={{ width: "30%" }}>수업 수정</S.TableHead>
-          <S.TableHead style={{ width: "30%" }}>보강 학습 추가</S.TableHead>
-        </S.TableHeaderRound>
+        {lectureList.length !== 0 && (
+          <S.TableHeaderRound>
+            <S.TableHeadLeft style={{ width: "70%" }}>
+              수업 날짜
+            </S.TableHeadLeft>
+            <S.TableHead style={{ width: "70%" }}>수업 시간</S.TableHead>
+            <S.TableHead style={{ width: "40%" }}>담당</S.TableHead>
+            <S.TableHead style={{ width: "30%" }}>출석현황</S.TableHead>
+            <S.TableHead>강의 정보</S.TableHead>
+            <S.TableHead style={{ width: "30%" }}>원생 메모</S.TableHead>
+            <S.TableHead style={{ width: "30%" }}>수업 수정</S.TableHead>
+            <S.TableHead style={{ width: "30%" }}>보강 학습 추가</S.TableHead>
+          </S.TableHeaderRound>
+        )}
         {lectureList
           ?.sort((a, b) => {
             const dateA = new Date(a.date);
@@ -737,12 +1138,7 @@ export default function AcademyDetailPage() {
                   </svg>
                 </S.TableHead>
                 <S.TableHead style={{ width: "30%" }}>
-                  <EditOutlined
-                    onClick={() => {
-                      setIsEdit(true);
-                      setLectureId(el.id);
-                    }}
-                  />
+                  <EditOutlined onClick={onClickOpenEditModal(el)} />
                 </S.TableHead>
                 <S.TableHead style={{ width: "30%" }}>
                   {el.attendanceStatus?.statusDisplay === "결석" ? (
@@ -755,6 +1151,44 @@ export default function AcademyDetailPage() {
             );
           })}
       </S.Table>
+      <S.Box>상담 정보</S.Box>
+      <div>
+        <button
+          onClick={() => {
+            setIsConsulting(true);
+          }}
+        >
+          상담 추가
+        </button>
+      </div>
+      {consultingList.length !== 0 && (
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>원번</th>
+              <th>학생 이름</th>
+              <th>학부모 전화번호</th>
+              <th>제목</th>
+              <th>내용</th>
+              <th>상담 등록일</th>
+              <th>수정/삭제</th>
+            </tr>
+          </thead>
+          <tbody>
+            {consultingList?.map((el, index) => {
+              return (
+                <ConsultingTable
+                  el={el}
+                  index={index}
+                  openEdit={onClickOpenEditConsultingModal}
+                  openDelete={onClickOpenDeleteModal}
+                ></ConsultingTable>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
       {classToggle ? (
         <Modal
           closable={false}
@@ -1100,206 +1534,909 @@ export default function AcademyDetailPage() {
       {isEdit ? (
         <Modal
           open={isEdit}
+          // onOk={onClickUpdateLecture}
           onCancel={() => {
             setIsEdit(false);
-            setEditDate(dateToInput(date));
-            setEditStartTime(dateToClock(date));
-            setEditEndTime(dateToClockOneHour(date));
-            setTeacherId(
-              userData?.allUsers
-                .filter((el) => el.userCategory === "선생님")
-                .filter((el) => {
-                  return (
-                    Number(el.profile.academy.id) ===
-                    Number(router.query.branch)
-                  );
-                })[0].id
-            );
-            setEditAcademy(Number(router.query.branch));
+            // setEditDate(dateToInput(date));
+            // setEditStartTime(dateToClock(date));
+            // setEditEndTime(dateToClockOneHour(date));
             setEditInfo("");
+            setEditAcademy(Number(router.query.branch));
+            setIsAll(false);
+            setTeacherId(
+              teacherData?.staffInAcademy
+                ?.filter((el) => el.user.userCategory === "선생님")
+                ?.sort((a, b) => {
+                  if (Number(a.id) === Number(myData.me.id)) {
+                    return -1;
+                  } else if (Number(b.id) === Number(myData.me.id)) {
+                    return 1;
+                  } else {
+                    return Number(a.id) - Number(b.id);
+                  }
+                })?.[0].id
+            );
           }}
           footer={null}
           closable={false}
-          width={"25%"}
+          width={"60%"}
+          keyboard={true}
         >
-          <div>
-            <S.EditModalTitle>수업 수정</S.EditModalTitle>
-
-            <S.EditModalTag>
-              {myData?.me?.profile?.academies?.length > 0 ? (
+          <S.EditModalTitle>수업 수정</S.EditModalTitle>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div style={{ width: "48%" }}>
+              <S.EditModalTagTitle>원생 수업 목록</S.EditModalTagTitle>
+              {isAll ? (
                 <>
-                  <S.EditModalTagTitle>담당 지점</S.EditModalTagTitle>
-                  <select
-                    onChange={(e) => {
-                      setEditAcademy(Number(e.target.value));
+                  <div>수정 전</div>
+                  <table style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>날짜</th>
+                        <th>반복 요일</th>
+                        <th>수업 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lectureInfoData?.studentLectures
+                        ?.filter((el, i, callback) => {
+                          return (
+                            i ===
+                            callback.findIndex(
+                              (t) =>
+                                t.lecture.lectureInfo.id ===
+                                el.lecture.lectureInfo.id
+                            )
+                          );
+                        })
+                        ?.map((el) => {
+                          return (
+                            <tr>
+                              <td
+                                style={{
+                                  color:
+                                    Number(el?.lecture?.lectureInfo?.id) ===
+                                    Number(editLectureInfoId)
+                                      ? "tomato"
+                                      : "",
+                                }}
+                              >
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? el?.lecture?.date
+                                  : el?.lecture?.lectureInfo?.autoAdd
+                                  ? startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) + "~"
+                                  : startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) +
+                                    "~" +
+                                    (el?.lecture?.lectureInfo?.repeatTimes ===
+                                    null
+                                      ? lastDate(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatWeeks,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        )
+                                      : lastCount(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatTimes,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        ))}
+                              </td>
+                              <td>
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? "없음"
+                                  : el?.lecture?.lectureInfo?.repeatDay
+                                      ?.sort((a, b) => {
+                                        return a - b;
+                                      })
+                                      .map((ele) => {
+                                        return week[ele];
+                                      })}
+                              </td>
+                              <td>
+                                {el?.lecture?.startTime.slice(0, 5) +
+                                  "-" +
+                                  el?.lecture?.endTime.slice(0, 5)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                  <div>수정 후</div>
+                  <table style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>날짜</th>
+                        <th>반복 요일</th>
+                        <th>수업 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lectureInfoData?.studentLectures
+                        ?.filter((el, i, callback) => {
+                          return (
+                            i ===
+                            callback.findIndex(
+                              (t) =>
+                                t.lecture.lectureInfo.id ===
+                                el.lecture.lectureInfo.id
+                            )
+                          );
+                        })
+                        ?.map((el) => {
+                          if (
+                            Number(el?.lecture?.lectureInfo?.id) ===
+                            Number(editLectureInfoId)
+                          ) {
+                            return (
+                              <tr>
+                                <td
+                                  style={{
+                                    color:
+                                      Number(el?.lecture?.lectureInfo?.id) ===
+                                      Number(editLectureInfoId)
+                                        ? "tomato"
+                                        : "",
+                                  }}
+                                >
+                                  {lastDate(
+                                    editDate,
+                                    editRepeatCount,
+                                    editRepeatWeek
+                                  )
+                                    ? isAll
+                                      ? startDate(editDate, editRepeatWeek) +
+                                        (isEditRepeat === "once"
+                                          ? ""
+                                          : "~" +
+                                            (isEditRepeat === "routine"
+                                              ? lastDate(
+                                                  editDate,
+                                                  editRepeatCount,
+                                                  editRepeatWeek
+                                                )
+                                              : lastCount(
+                                                  editDate,
+                                                  editRepeatCount,
+                                                  editRepeatWeek
+                                                )))
+                                      : ""
+                                    : editDate}
+                                </td>
+                                <td>
+                                  {editRepeatWeek.length === 0
+                                    ? "없음"
+                                    : editRepeatWeek
+                                        ?.sort((a, b) => {
+                                          return a - b;
+                                        })
+                                        .map((ele) => {
+                                          return week[ele];
+                                        })}
+                                </td>
+                                <td>
+                                  {editStartTime.slice(0, 5) +
+                                    "-" +
+                                    editEndTime.slice(0, 5)}
+                                </td>
+                              </tr>
+                            );
+                          } else {
+                            return (
+                              <tr>
+                                <td
+                                  style={{
+                                    color:
+                                      Number(el?.lecture?.lectureInfo?.id) ===
+                                      Number(editLectureInfoId)
+                                        ? "tomato"
+                                        : "",
+                                  }}
+                                >
+                                  {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                    -1
+                                  )
+                                    ? el?.lecture?.date
+                                    : el?.lecture?.lectureInfo?.autoAdd
+                                    ? startDate(
+                                        el?.lecture?.date,
+                                        el?.lecture?.lectureInfo?.repeatDay
+                                      ) + "~"
+                                    : startDate(
+                                        el?.lecture?.date,
+                                        el?.lecture?.lectureInfo?.repeatDay
+                                      ) +
+                                      "~" +
+                                      (el?.lecture?.lectureInfo?.repeatTimes ===
+                                      null
+                                        ? lastDate(
+                                            el?.lecture?.date,
+                                            el?.lecture?.lectureInfo
+                                              ?.repeatWeeks,
+                                            el?.lecture?.lectureInfo?.repeatDay
+                                          )
+                                        : lastCount(
+                                            el?.lecture?.date,
+                                            el?.lecture?.lectureInfo
+                                              ?.repeatTimes,
+                                            el?.lecture?.lectureInfo?.repeatDay
+                                          ))}
+                                </td>
+                                <td>
+                                  {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                    -1
+                                  )
+                                    ? "없음"
+                                    : el?.lecture?.lectureInfo?.repeatDay
+                                        ?.sort((a, b) => {
+                                          return a - b;
+                                        })
+                                        .map((ele) => {
+                                          return week[ele];
+                                        })}
+                                </td>
+                                <td>
+                                  {el?.lecture?.startTime.slice(0, 5) +
+                                    "-" +
+                                    el?.lecture?.endTime.slice(0, 5)}
+                                </td>
+                              </tr>
+                            );
+                          }
+                        })}
+                    </tbody>
+                  </table>
+                </>
+              ) : (
+                <>
+                  <div>수정 전</div>
+                  <table style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>날짜</th>
+                        <th>반복 요일</th>
+                        <th>수업 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lectureInfoData?.studentLectures
+                        ?.filter((el, i, callback) => {
+                          return (
+                            i ===
+                            callback.findIndex(
+                              (t) =>
+                                t.lecture.lectureInfo.id ===
+                                el.lecture.lectureInfo.id
+                            )
+                          );
+                        })
+                        ?.map((el) => {
+                          return (
+                            <tr>
+                              <td
+                                style={{
+                                  color:
+                                    Number(el?.lecture?.lectureInfo?.id) ===
+                                    Number(editLectureInfoId)
+                                      ? "tomato"
+                                      : "",
+                                }}
+                              >
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? el?.lecture?.date
+                                  : el?.lecture?.lectureInfo?.autoAdd
+                                  ? startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) + "~"
+                                  : startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) +
+                                    "~" +
+                                    (el?.lecture?.lectureInfo?.repeatTimes ===
+                                    null
+                                      ? lastDate(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatWeeks,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        )
+                                      : lastCount(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatTimes,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        ))}
+                              </td>
+                              <td>
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? "없음"
+                                  : el?.lecture?.lectureInfo?.repeatDay
+                                      ?.sort((a, b) => {
+                                        return a - b;
+                                      })
+                                      .map((ele) => {
+                                        return week[ele];
+                                      })}
+                              </td>
+                              <td>
+                                {el?.lecture?.startTime.slice(0, 5) +
+                                  "-" +
+                                  el?.lecture?.endTime.slice(0, 5)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+
+                  <div>수정 후</div>
+                  <table style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>날짜</th>
+                        <th>반복 요일</th>
+                        <th>수업 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lectureInfoData?.studentLectures
+                        ?.filter((el, i, callback) => {
+                          return (
+                            i ===
+                            callback.findIndex(
+                              (t) =>
+                                t.lecture.lectureInfo.id ===
+                                el.lecture.lectureInfo.id
+                            )
+                          );
+                        })
+                        ?.map((el) => {
+                          return (
+                            <tr>
+                              <td>
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? el?.lecture?.date
+                                  : el?.lecture?.lectureInfo?.autoAdd
+                                  ? startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) + "~"
+                                  : startDate(
+                                      el?.lecture?.date,
+                                      el?.lecture?.lectureInfo?.repeatDay
+                                    ) +
+                                    "~" +
+                                    (el?.lecture?.lectureInfo?.repeatTimes ===
+                                    null
+                                      ? lastDate(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatWeeks,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        )
+                                      : lastCount(
+                                          el?.lecture?.date,
+                                          el?.lecture?.lectureInfo?.repeatTimes,
+                                          el?.lecture?.lectureInfo?.repeatDay
+                                        ))}
+                              </td>
+                              <td>
+                                {el?.lecture?.lectureInfo?.repeatDay.includes(
+                                  -1
+                                )
+                                  ? "없음"
+                                  : el?.lecture?.lectureInfo?.repeatDay
+                                      ?.sort((a, b) => {
+                                        return a - b;
+                                      })
+                                      .map((ele) => {
+                                        return week[ele];
+                                      })}
+                              </td>
+                              <td>
+                                {el?.lecture?.startTime.slice(0, 5) +
+                                  "-" +
+                                  el?.lecture?.endTime.slice(0, 5)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      <tr>
+                        <td style={{ color: "tomato" }}>{editDate}</td>
+                        <td>없음</td>
+                        <td>
+                          {editStartTime.slice(0, 5) +
+                            "-" +
+                            editEndTime.slice(0, 5)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </>
+              )}
+            </div>
+            <div style={{ width: "48%" }}>
+              <S.EditModalTag>
+                <S.EditModalTagTitle>수정 범위</S.EditModalTagTitle>
+                <div style={{ display: "flex" }}>
+                  <S.EditModalTagTitle>현재 수업</S.EditModalTagTitle>
+                  <input
+                    type="radio"
+                    name="isAll"
+                    checked={!isAll}
+                    onChange={() => {
+                      setIsAll(false);
                     }}
-                    style={{
-                      borderRadius: "0.5rem",
-                      border: "1px solid #DBDDE1",
-                      width: "100%",
-                      padding: "0.5rem 0.5rem",
-                      paddingLeft: "10px",
-                      fontFamily: "Spoqa Han Sans Neo",
+                  ></input>
+                  <S.EditModalTagTitle>수업 전체</S.EditModalTagTitle>
+                  <input
+                    type="radio"
+                    name="isAll"
+                    checked={isAll}
+                    onChange={() => {
+                      setIsAll(true);
                     }}
-                  >
-                    {myData?.me?.profile?.academies?.map((el) => {
+                  ></input>
+                </div>
+              </S.EditModalTag>
+
+              <S.EditModalTag>
+                {myData?.me?.profile?.academies?.length > 0 ? (
+                  <>
+                    <S.EditModalTagTitle>담당 지점</S.EditModalTagTitle>
+                    <select
+                      onChange={(e) => {
+                        setEditAcademy(Number(e.target.value));
+                      }}
+                      style={{
+                        borderRadius: "0.5rem",
+                        border: "1px solid #DBDDE1",
+                        width: "100%",
+                        padding: "0.5rem 0.5rem",
+                        paddingLeft: "10px",
+                        fontFamily: "Spoqa Han Sans Neo",
+                      }}
+                    >
+                      {myData?.me?.profile?.academies?.map((el) => {
+                        return (
+                          <option
+                            value={Number(el.id)}
+                            selected={
+                              Number(router.query.branch) === Number(el.id)
+                            }
+                          >
+                            {el.location}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </>
+                ) : (
+                  <></>
+                )}
+              </S.EditModalTag>
+              <S.EditModalTag>
+                <S.EditModalTagTitle>담당 선생님</S.EditModalTagTitle>
+                <select
+                  onChange={(event) => {
+                    console.log(event.target.value);
+                    setTeacherId(event.target.value);
+                  }}
+                  style={{
+                    borderRadius: "0.5rem",
+                    border: "1px solid #DBDDE1",
+                    width: "100%",
+                    padding: "0.5rem 0.5rem",
+                    fontFamily: "Spoqa Han Sans Neo",
+                  }}
+                  value={teacherId}
+                >
+                  {teacherData?.staffInAcademy
+                    ?.filter((el) => el.user.userCategory === "선생님")
+                    .map((el) => {
                       return (
                         <option
-                          value={Number(el.id)}
-                          selected={
-                            Number(router.query.branch) === Number(el.id)
-                          }
+                          value={el.id}
+                          selected={Number(teacherId) === Number(el.id)}
                         >
-                          {el.location}
+                          {el.korName}
                         </option>
                       );
                     })}
-                  </select>
+                </select>
+              </S.EditModalTag>
+              <S.EditModalTag>
+                <S.EditModalTagTitle>수정 날짜</S.EditModalTagTitle>
+                <input
+                  type="date"
+                  // defaultValue={dateToInput(date)}
+                  value={editDate}
+                  onChange={(e) => {
+                    setEditDate(e.target.value);
+                  }}
+                  // enter 키 적용
+
+                  onKeyPress={(e) => {
+                    console.log(e);
+                    if (e.key === "Enter") {
+                      onClickUpdateLecture();
+                    }
+                  }}
+                  style={{
+                    width: "97%",
+                    height: "2rem",
+                    fontSize: "14px",
+                    border: "1px solid #DBDDE1",
+                    borderRadius: "8px",
+                    fontFamily: "Spoqa Han Sans Neo",
+                    paddingLeft: "10px",
+                  }}
+                ></input>
+              </S.EditModalTag>
+              <S.EditModalTag>
+                <S.EditModalTagTitle>수업 시간</S.EditModalTagTitle>
+                <S.EditModalTimeTag>
+                  <input
+                    type="time"
+                    value={editStartTime}
+                    onChange={(e) => {
+                      setEditStartTime(e.target.value);
+                    }}
+                    style={{
+                      width: "40%",
+                      height: "2rem",
+                      fontSize: "14px",
+                      border: "1px solid #DBDDE1",
+                      borderRadius: "8px",
+                      fontFamily: "Spoqa Han Sans Neo",
+                      paddingLeft: "10px",
+                    }}
+                  ></input>
+                  <span>-</span>
+                  <input
+                    type="time"
+                    value={editEndTime}
+                    onChange={(e) => {
+                      setEditEndTime(e.target.value);
+                    }}
+                    style={{
+                      width: "40%",
+                      height: "2rem",
+                      fontSize: "14px",
+                      border: "1px solid #DBDDE1",
+                      borderRadius: "8px",
+                      fontFamily: "Spoqa Han Sans Neo",
+                      paddingLeft: "10px",
+                    }}
+                  ></input>
+                </S.EditModalTimeTag>
+              </S.EditModalTag>
+
+              {isAll && (
+                <>
+                  <S.EditModalTag>
+                    <S.EditModalTagTitle>수업 반복</S.EditModalTagTitle>
+                    <div>단일</div>
+                    <input
+                      type="radio"
+                      name="editRepeat"
+                      checked={isEditRepeat === "once"}
+                      onChange={() => {
+                        setIsEditRepeat("once");
+                        setIsEditAuto(false);
+                      }}
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                      }}
+                    ></input>
+                    <div>반복</div>
+                    <input
+                      type="radio"
+                      name="editRepeat"
+                      checked={isEditRepeat === "routine"}
+                      onChange={() => {
+                        setIsEditRepeat("routine");
+                      }}
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                      }}
+                    ></input>
+                    <div>횟수</div>
+                    <input
+                      type="radio"
+                      name="editRepeat"
+                      checked={isEditRepeat === "count"}
+                      onChange={() => {
+                        setIsEditRepeat("count");
+                        setIsEditAuto(false);
+                      }}
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                      }}
+                    ></input>
+                  </S.EditModalTag>
+                  {isEditRepeat !== "once" && (
+                    <>
+                      <S.EditModalTag>
+                        <S.EditModalTagTitle>
+                          {isEditRepeat === "routine" ? "반복 주" : "반복 횟수"}
+                        </S.EditModalTagTitle>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            width: "100%",
+                          }}
+                        >
+                          <input
+                            type="number"
+                            style={{
+                              width: "70%",
+                              height: "2rem",
+                              fontSize: "14px",
+                              border: "1px solid #DBDDE1",
+                              borderRadius: "8px",
+                              fontFamily: "Spoqa Han Sans Neo",
+                              paddingLeft: "10px",
+                              backgroundColor: isEditAuto ? "#dddddd" : "",
+                            }}
+                            disabled={isEditAuto}
+                            onChange={(e) => {
+                              setEditRepeatCount(e.target.value);
+                            }}
+                            value={editRepeatCount}
+                          ></input>
+                          <span style={{ marginLeft: "1rem" }}>자동 추가</span>
+                          <input
+                            type="checkbox"
+                            checked={isEditAuto}
+                            onChange={() => {
+                              setIsEditAuto(!isEditAuto);
+                            }}
+                            disabled={!(isEditRepeat === "routine")}
+                            style={{
+                              width: "20px",
+                              height: "20px",
+                            }}
+                          ></input>
+                        </div>
+                      </S.EditModalTag>
+                      <S.EditModalTag>
+                        <S.EditModalTagTitle>반복 요일</S.EditModalTagTitle>
+                        <S.ModalRoutineDates>
+                          {week.map((el, index) => {
+                            return (
+                              <>
+                                <S.ModalRoutineDate
+                                  key={uuidv4()}
+                                  onClick={onClickEditDates(index)}
+                                  style={
+                                    editRepeatWeek.includes(index)
+                                      ? {
+                                          backgroundColor: "#333",
+                                          color: "#eeeeee",
+                                        }
+                                      : {}
+                                  }
+                                >
+                                  {el}
+                                </S.ModalRoutineDate>
+                              </>
+                            );
+                          })}
+                        </S.ModalRoutineDates>
+                      </S.EditModalTag>
+                    </>
+                  )}
                 </>
-              ) : (
-                <></>
               )}
-            </S.EditModalTag>
 
-            <S.EditModalTag>
-              <S.EditModalTagTitle>담당 선생님</S.EditModalTagTitle>
-              <select
-                onChange={(event) => {
-                  setTeacherId(event.target.value);
-                }}
-                style={{
-                  borderRadius: "0.5rem",
-                  border: "1px solid #DBDDE1",
-                  width: "100%",
-                  padding: "0.5rem 0.5rem",
-                  fontFamily: "Spoqa Han Sans Neo",
-                }}
-                value={teacherId}
-              >
-                {userData?.allUsers
-                  .filter((el) => el.userCategory === "선생님")
-                  .filter((el) => {
-                    return (
-                      Number(el.profile.academy.id) ===
-                      Number(router.query.branch)
-                    );
-                  })
-                  .map((el) => {
-                    return (
-                      <option key={uuidv4()} value={el.profile.id}>
-                        {el.profile.korName}
-                      </option>
-                    );
-                  })}
-              </select>
-            </S.EditModalTag>
-
-            <S.EditModalTag>
-              <S.EditModalTagTitle>수정 날짜</S.EditModalTagTitle>
-              <input
-                type="date"
-                defaultValue={dateToInput(date)}
-                onChange={(e) => {
-                  setEditDate(e.target.value);
-                }}
-                style={{
-                  width: "97%",
-                  height: "2rem",
-                  fontSize: "14px",
-                  border: "1px solid #DBDDE1",
-                  borderRadius: "8px",
-                  fontFamily: "Spoqa Han Sans Neo",
-                  paddingLeft: "10px",
-                }}
-              ></input>
-            </S.EditModalTag>
-            <S.EditModalTag>
-              <S.EditModalTagTitle>수정 시간</S.EditModalTagTitle>
-              <S.EditModalTimeTag>
-                <input
-                  type="time"
-                  defaultValue={dateToClock(date)}
+              <S.EditModalTag>
+                <S.EditModalTagTitle>수업 정보</S.EditModalTagTitle>
+                <S.EditTextArea
+                  disabled={!isAll}
                   onChange={(e) => {
-                    setEditStartTime(e.target.value);
+                    setEditInfo(e.target.value);
                   }}
+                  value={editInfo}
                   style={{
-                    width: "40%",
-                    height: "2rem",
+                    width: "97%",
+                    height: "5rem",
                     fontSize: "14px",
                     border: "1px solid #DBDDE1",
                     borderRadius: "8px",
                     fontFamily: "Spoqa Han Sans Neo",
                     paddingLeft: "10px",
                   }}
-                ></input>
-                <span>-</span>
-                <input
-                  type="time"
-                  defaultValue={dateToClockOneHour(date)}
-                  onChange={(e) => {
-                    setEditEndTime(e.target.value);
-                  }}
-                  style={{
-                    width: "40%",
-                    height: "2rem",
-                    fontSize: "14px",
-                    border: "1px solid #DBDDE1",
-                    borderRadius: "8px",
-                    fontFamily: "Spoqa Han Sans Neo",
-                    paddingLeft: "10px",
-                  }}
-                ></input>
-              </S.EditModalTimeTag>
-            </S.EditModalTag>
-            <S.EditModalTag>
-              <S.EditModalTagTitle>수업 메모</S.EditModalTagTitle>
-              <S.EditTextArea
-                onChange={(e) => {
-                  setEditInfo(e.target.value);
-                }}
-                style={{
-                  width: "97%",
-                  height: "10rem",
-                  fontSize: "14px",
-                  border: "1px solid #DBDDE1",
-                  borderRadius: "8px",
-                  fontFamily: "Spoqa Han Sans Neo",
-                  paddingLeft: "10px",
-                }}
-              ></S.EditTextArea>
-            </S.EditModalTag>
+                ></S.EditTextArea>
+              </S.EditModalTag>
 
-            <S.EditModalButtonContainer>
-              <S.EditModalCancelButton
-                onClick={() => {
-                  setIsEdit(false);
-                  setEditDate(dateToInput(date));
-                  setEditStartTime(dateToClock(date));
-                  setEditEndTime(dateToClockOneHour(date));
-                  setTeacherId(
-                    userData?.allUsers
-                      .filter((el) => el.userCategory === "선생님")
-                      .filter((el) => {
-                        return (
-                          Number(el.profile.academy.id) ===
-                          Number(router.query.branch)
-                        );
-                      })[0].id
-                  );
-                  setEditAcademy(Number(router.query.branch));
-                  setEditInfo("");
-                }}
-              >
-                취소
-              </S.EditModalCancelButton>
-              <S.EditModalOKButton onClick={onClickUpdateLecture}>
-                저장
-              </S.EditModalOKButton>
-            </S.EditModalButtonContainer>
+              <S.EditModalButtonContainer>
+                <S.EditModalCancelButton
+                  onClick={() => {
+                    setIsEdit(false);
+                    // setEditDate(dateToInput(date));
+                    // setEditStartTime(dateToClock(date));
+                    // setEditEndTime(dateToClockOneHour(date));
+                    setEditInfo("");
+                    setEditAcademy(Number(router.query.branch));
+                    setTeacherId(
+                      teacherData?.staffInAcademy
+                        ?.filter((el) => el.user.userCategory === "선생님")
+                        ?.sort((a, b) => {
+                          if (Number(a.id) === Number(myData.me.id)) {
+                            return -1;
+                          } else if (Number(b.id) === Number(myData.me.id)) {
+                            return 1;
+                          } else {
+                            return Number(a.id) - Number(b.id);
+                          }
+                        })?.[0].id
+                    );
+                  }}
+                >
+                  취소
+                </S.EditModalCancelButton>
+                <S.EditModalOKButton onClick={onClickUpdateLecture}>
+                  저장
+                </S.EditModalOKButton>
+              </S.EditModalButtonContainer>
+            </div>
           </div>
         </Modal>
       ) : (
         <></>
+      )}
+      {isConsulting && (
+        <Modal
+          open={isConsulting}
+          onOk={() => {
+            console.log(12345);
+            setIsConsulting(false);
+            setConsultingTitle("");
+            setConsultingContents("");
+          }}
+          footer={null}
+          closable={false}
+          onCancel={() => {
+            setIsConsulting(false);
+            setConsultingTitle("");
+            setConsultingContents("");
+            setConsultingDate(dateToInput(date));
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                width: "20rem",
+              }}
+            >
+              <span>제목</span>
+              <input
+                onChange={(e) => {
+                  setConsultingTitle(e.target.value);
+                }}
+                value={consultingTitle}
+              ></input>
+              <span>내용</span>
+              <input
+                onChange={(e) => {
+                  setConsultingContents(e.target.value);
+                }}
+                value={consultingContents}
+              ></input>
+              <span>날짜</span>
+              <input
+                type="date"
+                value={dateToInput(date)}
+                onChange={(e) => {
+                  setConsultingDate(e.target.value);
+                }}
+              ></input>
+            </div>
+            <div>
+              <button
+                onClick={() => {
+                  setIsConsulting(false);
+                  setConsultingTitle("");
+                  setConsultingContents("");
+                  setConsultingDate(dateToInput(date));
+                }}
+              >
+                취소
+              </button>
+              <button onClick={onClickCreateConSulting()}>저장</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {isDelete && (
+        <Modal
+          open={isDelete}
+          footer={null}
+          closable={false}
+          onCancel={() => {
+            setIsDelete(false);
+          }}
+        >
+          <div>상담을 삭제하시겠습니까?</div>
+          <div>
+            <button
+              onClick={() => {
+                setIsDelete(false);
+              }}
+            >
+              취소
+            </button>
+            <button onClick={onClickConSultingDelete}>삭제</button>
+          </div>
+        </Modal>
+      )}
+      {isConsultingEdit && (
+        <Modal
+          open={isConsultingEdit}
+          footer={null}
+          closable={false}
+          onCancel={() => {
+            setIsConsultingEdit(false);
+          }}
+        >
+          <div>상담을 수정하시겠습니까?</div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div>제목</div>
+            <input
+              value={editTitle}
+              onChange={(e) => {
+                setEditTitle(e.target.value);
+              }}
+            ></input>
+            <div>내용</div>
+            <input
+              value={editContents}
+              onChange={(e) => {
+                setEditContents(e.target.value);
+              }}
+            ></input>
+            <div>날짜</div>
+            <input
+              type="date"
+              value={editDate}
+              onChange={(e) => {
+                setEditDate(e.target.value);
+              }}
+            ></input>
+          </div>
+          <div>
+            <button
+              onClick={() => {
+                setIsConsultingEdit(false);
+              }}
+            >
+              취소
+            </button>
+            <button onClick={onClickConSultingEdit}>수정</button>
+          </div>
+        </Modal>
       )}
     </S.AcademyDetailWrapper>
   );
