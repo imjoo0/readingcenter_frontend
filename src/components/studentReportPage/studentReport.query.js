@@ -57,8 +57,8 @@ export const GET_STUDENT = gql`
 `;
 
 export const GET_SUMMARY_REPORT = gql`
-  query getSummaryReport($studentId: Int!) {
-    getSummaryReport(studentId: $studentId) {
+  query getSummaryReport($studentId: Int!, $date: Date!) {
+    getSummaryReport(studentId: $studentId, date: $date) {
       origin
       recentStudyDate
       thisMonthAr
@@ -77,13 +77,17 @@ export const GET_SUMMARY_REPORT = gql`
       lastMonthStudyDays
       totalStudyDays
       updateTime
+      thisMonthSr
+      lastMonthSr
+      thisPerWc
+      lastPerWc
     }
   }
 `;
 
 export const GET_MONTH_REPORT = gql`
-  query getMonthReports($studentId: Int!) {
-    getMonthReports(studentId: $studentId) {
+  query getMonthReports($studentId: Int!, $date: Date!) {
+    getMonthReports(studentId: $studentId, date: $date) {
       month
       bc
       wc
@@ -91,6 +95,7 @@ export const GET_MONTH_REPORT = gql`
       wcPerBook
       correct
       updateTime
+      sr
     }
   }
 `;
@@ -107,6 +112,113 @@ export const GET_MEMO = gql`
       }
       statusDisplay
       memo
+    }
+  }
+`;
+
+export const GET_OPINION = gql`
+  query getOpinion($studentId: ID!, $userId: ID!, $date: Date!) {
+    getOpinion(studentId: $studentId, userId: $userId, date: $date) {
+      id
+      contents
+    }
+  }
+`;
+
+export const GET_ME = gql`
+  query {
+    me {
+      id
+      username
+      userCategory
+      profile {
+        ... on StudentType {
+          id
+          korName
+          engName
+          registerDate
+          origin
+          pmobileno
+          birthDate
+          academies {
+            id
+            name
+            location
+          }
+        }
+        ... on TeacherType {
+          id
+          korName
+          engName
+          registerDate
+          birthDate
+          academy {
+            id
+            name
+            location
+          }
+        }
+        ... on ManagerType {
+          id
+          korName
+          engName
+          registerDate
+          birthDate
+          academies {
+            id
+            name
+            location
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const GET_MEMOS = gql`
+  query getLectureMemoByStudent($studentId: ID!, $academyIds: [ID]!) {
+    getLectureMemoByStudent(studentId: $studentId, academyIds: $academyIds) {
+      lecture {
+        id
+        teacher {
+          korName
+        }
+        students {
+          id
+          korName
+        }
+        date
+      }
+      student {
+        id
+        origin
+        korName
+        engName
+      }
+      statusDisplay
+      memo
+    }
+  }
+`;
+
+export const CREATE_OPINION = gql`
+  mutation createOpinion(
+    $contents: String!
+    $writerId: ID!
+    $studentId: ID!
+    $date: Date!
+    $opinionId: ID
+  ) {
+    createOpinion(
+      contents: $contents
+      writerId: $writerId
+      studentId: $studentId
+      date: $date
+      opinionId: $opinionId
+    ) {
+      opinion {
+        id
+      }
     }
   }
 `;

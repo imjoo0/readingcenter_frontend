@@ -6,9 +6,5 @@ body {
   padding: 0;
   box-sizing: border-box ;
   font-family: 'Spoqa Han Sans Neo', 'sans-serif';
-  -webkit-user-select:none;
-  -moz-user-select:none;
-  -ms-user-select:none;
-  user-select:none
 }
 

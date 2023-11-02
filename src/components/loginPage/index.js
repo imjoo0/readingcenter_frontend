@@ -5,6 +5,7 @@ import * as S from "./loginPage.style";
 import { useMutation, gql, useQuery } from "@apollo/client";
 import { useRecoilState, useSetRecoilState } from "recoil";
 import { accessTokenState, refreshTokenState } from "src/commons/stores"; // accessTokenState import
+import { Modal } from "antd";
 
 const LOGIN_MUTATION = gql`
   mutation Login($username: String!, $password: String!) {
@@ -113,8 +114,14 @@ export default function LoginPageComponent() {
         );
       }
     } catch (error) {
-      console.error("로그인 오류:", error);
-      alert("로그인에 실패했습니다.");
+      if (error.message === "Invalid ID") {
+        alert("아이디/비밀번호를 확인해주세요.");
+        // Modal.error({ content: "아이디를 확인해주세요." });
+      }
+      if (error.message === "Invalid password") {
+        alert("아이디/비밀번호를 확인해주세요.");
+        // Modal.error({ content: "비밀번호를 확인해주세요" });
+      }
     }
   };
 
@@ -153,7 +160,7 @@ export default function LoginPageComponent() {
               placeholder="비밀번호를 입력해주세요."
             />
           </S.InputTag>
-          <S.LoginButton onClick={onClickLogin}>Sign in</S.LoginButton>
+          <S.LoginButton onClick={onClickLogin}>로그인</S.LoginButton>
         </S.LoginBoxRight>
       </S.LoginBox>
     </S.Wrapper>

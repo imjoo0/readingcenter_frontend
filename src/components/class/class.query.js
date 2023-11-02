@@ -84,6 +84,7 @@ export const GET_RESERVATION_BOOKS = gql`
       id
       plbn
       place
+
       book {
         arQuiz
         arPts
@@ -94,6 +95,9 @@ export const GET_RESERVATION_BOOKS = gql`
         titleAr
         authorAr
         bl
+        ilStatus
+        litproStatus
+        fnfStatus
       }
     }
   }
@@ -135,12 +139,16 @@ export const GET_BOOKS = gql`
       lexileLex
       wcAr
       arPts
+      ilStatus
+      litproStatus
+      fnfStatus
       books(academyIds: $academyIds) {
         isbn
         id
         place
         plbn
         bookStatus
+        boxNumber
       }
     }
   }
@@ -203,8 +211,11 @@ export const CREATE_CLASS = gql`
     $repeatDays: String!
     $repeatWeeks: Int!
     $autoAdd: Boolean!
+    $studentIds: [Int]!
+    $repeatTimes: Int
   ) {
     createLecture(
+      repeatTimes: $repeatTimes
       academyId: $academyId
       date: $date
       startTime: $startTime
@@ -215,6 +226,7 @@ export const CREATE_CLASS = gql`
       repeatWeeks: $repeatWeeks
       autoAdd: $autoAdd
       lectureMemo: $lectureMemo
+      studentIds: $studentIds
     ) {
       lectureIds
     }
@@ -335,8 +347,6 @@ export const GET_STUDENTS_BY_DATE = gql`
         korName
         engName
         origin
-        pmobileno
-        birthDate
         reservedBooksCount
       }
       lecture {
@@ -347,6 +357,10 @@ export const GET_STUDENTS_BY_DATE = gql`
         lectureMemo
         lectureInfo {
           about
+          id
+        }
+        teacher {
+          id
         }
       }
       attendanceStatus {
@@ -405,28 +419,28 @@ export const GET_BOOK_COUNT = gql`
 
 export const CREATE_MAKE_UP = gql`
   mutation createMakeup(
-    $academyId: Int!
+    $lectureId: Int!
     $date: Date!
     $startTime: Time!
     $endTime: Time!
-    $lectureInfo: String!
+    $lectureMemo: String
     $teacherId: Int!
-    $repeatDays: [Int]!
-    $repeatWeeks: Int!
     $studentIds: [Int]!
   ) {
     createMakeup(
-      academyId: $academyId
+      lectureId: $lectureId
       date: $date
       startTime: $startTime
       endTime: $endTime
-      lectureInfo: $lectureInfo
+      lectureMemo: $lectureMemo
       teacherId: $teacherId
-      repeatDays: $repeatDays
-      repeatWeeks: $repeatWeeks
       studentIds: $studentIds # 이 부분을 추가하려는 학생들의 ID 목록으로 교체하세요.
     ) {
-      lectureIds
+      lecture {
+        students {
+          id
+        }
+      }
     }
   }
 `;
@@ -573,25 +587,23 @@ export const GET_ME = gql`
 `;
 
 export const UPDATE_LECTURE = gql`
-  mutation updateLectureStudents(
+  mutation updateLecture(
     $lectureId: Int!
     $date: Date!
-    $studentId: ID!
+    $studentIds: [Int]!
     $startTime: Time!
     $endTime: Time!
     $academyId: Int!
     $teacherId: Int!
-    $lectureMemo: String
   ) {
-    updateLectureStudents(
+    updateLecture(
       lectureId: $lectureId
       date: $date
-      studentId: $studentId
+      studentIds: $studentIds
       startTime: $startTime
       endTime: $endTime
       academyId: $academyId
       teacherId: $teacherId
-      lectureMemo: $lectureMemo
     ) {
       success
       message
@@ -600,42 +612,389 @@ export const UPDATE_LECTURE = gql`
 `;
 
 export const GET_MONTH_CLASS = gql`
-  query getLecturesByAcademyAndMonth($academyId: Int!, $month: Int!) {
-    getLecturesByAcademyAndMonth(academyId: $academyId, month: $month) {
-      id
+  query getLecturestudentsByAcademyAndMonth(
+    $academyId: Int!
+    $month: Int!
+    $year: Int!
+  ) {
+    getLecturestudentsByAcademyAndMonth(
+      academyId: $academyId
+      month: $month
+      year: $year
+    ) {
       date
-      startTime
-      endTime
-      lectureInfo {
-        about
-        repeatDay
-        repeatWeeks
-      }
-      teacher {
-        id
-        korName
-        engName
-      }
       students {
-        # 여기에서 학생들의 정보를 가져옵니다.
+        student {
+          id
+          korName
+          engName
+          origin
+          pmobileno
+          birthDate
+          reservedBooksCount
+        }
+        lecture {
+          id
+          date
+          startTime
+          endTime
+          lectureInfo {
+            id
+            autoAdd
+            repeatDay
+            repeatWeeks
+            about
+            repeatTimes
+          }
+        }
+        attendanceStatus {
+          id
+          entryTime
+          exitTime
+          statusDisplay
+          memo
+        }
+      }
+      # id
+      # date
+      # startTime
+      # endTime
+      # lectureInfo {
+      #   id
+      #   about
+      #   repeatDay
+      #   repeatWeeks
+      #   autoAdd
+      #   repeatTimes
+      # }
+      # teacher {
+      #   id
+      #   korName
+      #   engName
+      # }
+      # students {
+      #   # 여기에서 학생들의 정보를 가져옵니다.
+      #   id
+      #   korName
+      #   engName
+      #   origin
+      #   pmobileno
+      #   mobileno
+      #   birthDate
+      #   gender
+      #   reservedBooksCount
+      #   attendances {
+      #     lecture {
+      #       id
+      #     }
+      #     status
+      #     statusDisplay
+      #     entryTime
+      #     exitTime
+      #   }
+      # }
+    }
+  }
+`;
+
+export const GET_FICTION_RECOMMEND = gql`
+  query getRecommendBooks(
+    $studentId: ID!
+    $academyId: ID!
+    $fNf: String!
+    $isSelected: Boolean!
+  ) {
+    getRecommendBooks(
+      studentId: $studentId
+      academyId: $academyId
+      fNf: $fNf
+      isSelected: $isSelected
+    ) {
+      boxNumber
+      booktitle
+      id
+      inventoryNum
+      plbn
+      place
+      book {
+        ilStatus
+        litproStatus
+        fnfStatus
+        arQuiz
+        arPts
+        lexileAr
+        lexileLex
+        wcAr
+        wcLex
+        titleAr
+        authorAr
+        bl
+      }
+    }
+  }
+`;
+
+export const GET_NONFICTION_RECOMMEND = gql`
+  query getRecommendNfBooks($studentId: ID!, $academyId: ID!) {
+    getRecommendNfBooks(studentId: $studentId, academyId: $academyId) {
+      boxNumber
+      booktitle
+      id
+      plbn
+      place
+      book {
+        arQuiz
+        arPts
+        lexileAr
+        lexileLex
+        wcAr
+        wcLex
+        titleAr
+        authorAr
+      }
+    }
+  }
+`;
+
+export const CHANGE_RECOMMEND_BY_PERIOD = gql`
+  mutation recommendBookByPeriod(
+    $studentId: Int!
+    $academyId: Int!
+    $fNf: String!
+  ) {
+    recommendBookByPeriod(
+      studentId: $studentId
+      academyId: $academyId
+      fNf: $fNf
+    ) {
+      selectedBooksInventory {
+        boxNumber
+      }
+    }
+  }
+`;
+
+export const CHANGE_RECOMMEND_BY_RECORD = gql`
+  mutation (
+    $studentId: Int!
+    $academyId: Int!
+    $fNf: String!
+    $bookRecordIds: [ID]!
+  ) {
+    recommendBookByRecord(
+      studentId: $studentId
+      academyId: $academyId
+      fNf: $fNf
+      bookRecordIds: $bookRecordIds
+    ) {
+      selectedBooksInventory {
+        boxNumber
+        booktitle
         id
+        plbn
+        place
+        book {
+          arQuiz
+          arPts
+          lexileAr
+          lexileLex
+          wcAr
+          wcLex
+          titleAr
+          authorAr
+        }
+      }
+    }
+  }
+`;
+
+export const GET_READING_RECORD = gql`
+  query studentBookRecord($studentId: Int!) {
+    studentBookRecord(studentId: $studentId) {
+      id
+      book {
+        id
+        kplbn
+        arQuiz
+        arPts
+        lexileAr
+        lexileLex
+        wcAr
+        wcLex
+        titleAr
+        authorAr
+        fnfStatus
+        bl
+      }
+      student {
         korName
         engName
         origin
-        pmobileno
-        mobileno
-        birthDate
-        gender
-        reservedBooksCount
-        attendances {
-          lecture {
+      }
+      month
+      arDate
+      litDate
+      arCorrect
+      litCorrect
+    }
+  }
+`;
+
+export const GET_PACKAGE_DATE = gql`
+  query studentBookRecordWithPkg($studentId: Int!, $fNf: String!) {
+    studentBookRecordWithPkg(studentId: $studentId, fNf: $fNf) {
+      bookPkg {
+        ... on RecommendFictionType {
+          pkg
+          createdAt
+        }
+        ... on RecommendNonFictionType {
+          pkg
+          createdAt
+        }
+      }
+    }
+  }
+`;
+
+export const EDIT_LECTURE_INFO = gql`
+  mutation updateLectureInfo(
+    $lectureInfoId: Int!
+    $date: Date!
+    $about: String!
+    $repeatDays: String!
+    $repeatWeeks: Int!
+    $autoAdd: Boolean!
+    $studentIds: [Int]!
+    $startTime: Time!
+    $endTime: Time!
+    $academyId: Int!
+    $teacherId: Int!
+    $repeatTimes: Int
+  ) {
+    updateLectureInfo(
+      repeatTimes: $repeatTimes
+      lectureInfoId: $lectureInfoId
+      date: $date
+      about: $about
+      repeatDays: $repeatDays
+      repeatWeeks: $repeatWeeks
+      autoAdd: $autoAdd
+      studentIds: $studentIds
+      startTime: $startTime
+      endTime: $endTime
+      academyId: $academyId
+      teacherId: $teacherId
+    ) {
+      success
+      message
+    }
+  }
+`;
+
+export const BARCODE_CHECK = gql`
+  query studentPlbnRecord($studentId: Int!, $plbn: String!) {
+    studentPlbnRecord(studentId: $studentId, plbn: $plbn)
+  }
+`;
+
+export const RESERVATION_BARCODE = gql`
+  mutation reservePlbn($studentId: ID!, $lectureId: ID!, $plbn: String!) {
+    reservePlbn(studentId: $studentId, lectureId: $lectureId, plbn: $plbn) {
+      bookReservation {
+        id
+        student {
+          id
+        }
+        lecture {
+          id
+        }
+        books {
+          id
+          reservations {
             id
           }
-          status
-          statusDisplay
-          entryTime
-          exitTime
         }
+      }
+    }
+  }
+`;
+
+export const DELETE_LECTURE = gql`
+  mutation deleteLecture($id: ID!) {
+    deleteLecture(id: $id) {
+      success
+    }
+  }
+`;
+
+export const DELETE_LECTURE_INFO = gql`
+  mutation deleteLectureInfo($id: ID!, $date: Date!) {
+    deleteLectureInfo(id: $id, date: $date) {
+      success
+    }
+  }
+`;
+
+export const GET_LECTURE_INFO = gql`
+  query studentLectures($academyIds: [ID]!, $studentId: ID!) {
+    studentLectures(academyIds: $academyIds, studentId: $studentId) {
+      student {
+        id
+        korName
+      }
+      lecture {
+        date
+        startTime
+        endTime
+        id
+        academy {
+          id
+          name
+        }
+        lectureInfo {
+          about
+          repeatDay
+          repeatWeeks
+          repeatTimes
+          id
+          autoAdd
+        }
+
+        teacher {
+          id
+        }
+        lectureMemo
+      }
+      attendanceStatus {
+        statusDisplay
+        entryTime
+        exitTime
+      }
+    }
+  }
+`;
+
+export const GET_TEACHER = gql`
+  query staffInAcademy($academyId: Int!) {
+    staffInAcademy(academyId: $academyId) {
+      ... on ManagerType {
+        id
+        user {
+          isActive
+          userCategory
+        }
+        korName
+        engName
+      }
+      ... on TeacherType {
+        id
+        user {
+          isActive
+          userCategory
+        }
+        korName
+        engName
       }
     }
   }

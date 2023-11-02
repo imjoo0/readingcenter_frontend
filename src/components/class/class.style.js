@@ -27,7 +27,7 @@ export const ClassTitle = styled.div`
 
 export const CalendarLine = styled.div`
   display: flex;
-  width: 100%;
+  width: 100rem;
   border-bottom: 1px solid #dfe1e5;
 `;
 
@@ -103,7 +103,7 @@ export const DateMoveButton = styled.button`
 `;
 
 export const ClassMiddleBox = styled.div`
-  width: 100%;
+  width: 100rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -333,6 +333,7 @@ export const ModalWrapper = styled.div`
   justify-content: space-around;
   align-items: flex-start;
   position: relative;
+  width: 89rem;
 `;
 
 export const ModalRadioBox = styled.div`
@@ -373,7 +374,7 @@ export const ModalTitle = styled.div`
 `;
 
 export const ModalButtonBox = styled.div`
-  width: 100%;
+  width: 92rem;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -392,7 +393,7 @@ export const ModalReturnButton = styled.button`
   line-height: normal;
   :hover {
     cursor: pointer;
-    filter: brightness(180%);
+    filter: brightness(120%);
   }
 `;
 
@@ -422,7 +423,7 @@ export const ModalCancelButton = styled.button`
   font-style: normal;
   font-weight: 500;
   line-height: normal;
-  margin-left: 0.75rem;
+  margin-right: 0.75rem;
   :hover {
     cursor: pointer;
     filter: brightness(80%);
@@ -635,6 +636,7 @@ export const CalendarLeft = styled.div`
   align-items: flex-start;
   justify-content: flex-start;
   border-right: 1px solid #dbdde1;
+  height: 58.5rem;
 `;
 
 export const CalendarLeftSelect = styled.select`
@@ -806,5 +808,9 @@ export const EditModalCancelButton = styled.div`
   justify-content: center;
   align-items: center;
   color: #333;
+  cursor: pointer;
+`;
+
+export const HoverButton = styled.div`
   cursor: pointer;
 `;

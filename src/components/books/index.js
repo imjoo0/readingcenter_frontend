@@ -32,7 +32,6 @@ import { useRouter } from "next/router";
 export default function BookPage() {
   const router = useRouter();
 
-  const [searchType, setSearchType] = useState("name");
   const [minBl, setMinBl] = useState(0);
   const [maxBl, setMaxBl] = useState("");
   const [date, setDate] = useState(new Date());
@@ -47,7 +46,6 @@ export default function BookPage() {
   const [maxWc, setMaxWc] = useState("");
   const [minLex, setMinLex] = useState("");
   const [maxLex, setMaxLex] = useState("");
-  const [inputPlbn, setInputPlbn] = useState("");
   const [isAddBook, setIsAddBook] = useState(false);
   const [inputFile, setInputFile] = useState([]);
   const [dragging, setDragging] = useState(false);
@@ -69,6 +67,9 @@ export default function BookPage() {
   const [isInfo, setIsInfo] = useState(false);
   const [info, setInfo] = useState("");
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [fNF, setFNF] = useState("");
+  const [iL, setIL] = useState("");
+
   const { data, refetch, loading } = useQuery(GET_BOOKS, {
     variables: {
       minBl: 0,
@@ -329,26 +330,40 @@ export default function BookPage() {
     }
   }, [userData]);
 
+  // 정렬
   useEffect(() => {
     const newArray =
       data === undefined
         ? []
-        : data?.getBooksByBl?.filter((el) => {
-            return (
-              el?.titleAr
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase()) ||
-              String(el?.books[0]?.isbn)
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase()) ||
-              el?.authorAr
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase()) ||
-              String(el?.kplbn)
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase())
-            );
-          });
+        : data?.getBooksByBl
+            ?.filter((el) => {
+              return (
+                el?.titleAr
+                  .toUpperCase()
+                  .includes(bookSearchWord.toUpperCase()) ||
+                String(el?.books[0]?.isbn)
+                  .toUpperCase()
+                  .includes(bookSearchWord.toUpperCase()) ||
+                el?.authorAr
+                  .toUpperCase()
+                  .includes(bookSearchWord.toUpperCase()) ||
+                String(el?.kplbn)
+                  .toUpperCase()
+                  .includes(bookSearchWord.toUpperCase())
+              );
+            })
+            ?.filter((el) => {
+              if (fNF === "") {
+                return true;
+              }
+              return el.fnfStatus === fNF;
+            })
+            ?.filter((el) => {
+              if (iL === "") {
+                return true;
+              }
+              return el.ilStatus.slice(3) === iL;
+            });
     if (sortType === "title") {
       setBookArray(
         newArray
@@ -701,44 +716,74 @@ export default function BookPage() {
     }
     setBookMaxPage(
       Math.ceil(
-        data?.getBooksByBl?.filter((el) => {
-          return (
-            el?.titleAr.toUpperCase().includes(bookSearchWord.toUpperCase()) ||
-            String(el?.books[0]?.isbn)
-              .toUpperCase()
-              .includes(bookSearchWord.toUpperCase()) ||
-            el?.authorAr.toUpperCase().includes(bookSearchWord.toUpperCase()) ||
-            String(el?.kplbn)
-              .toUpperCase()
-              .includes(bookSearchWord.toUpperCase())
-          );
-        })?.length / 20
+        data?.getBooksByBl
+          ?.filter((el) => {
+            return (
+              el?.titleAr
+                .toUpperCase()
+                .includes(bookSearchWord.toUpperCase()) ||
+              String(el?.books[0]?.isbn)
+                .toUpperCase()
+                .includes(bookSearchWord.toUpperCase()) ||
+              el?.authorAr
+                .toUpperCase()
+                .includes(bookSearchWord.toUpperCase()) ||
+              String(el?.kplbn)
+                .toUpperCase()
+                .includes(bookSearchWord.toUpperCase())
+            );
+          })
+          ?.filter((el) => {
+            if (fNF === "") {
+              return true;
+            }
+            return el.fnfStatus === fNF;
+          })
+          ?.filter((el) => {
+            if (iL === "") {
+              return true;
+            }
+            return el.ilStatus.slice(3) === iL;
+          })?.length / 20
       )
     );
     setBookPage(1);
     setBookPageList(0);
-  }, [data, bookSearchWord, minWc, maxWc, sortType]);
+  }, [data, bookSearchWord, minWc, maxWc, sortType, iL, fNF]);
 
   useEffect(() => {
     const newArray =
       data === undefined
         ? []
-        : data?.getBooksByBl?.filter((el) => {
-            return (
-              el?.titleAr
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase()) ||
-              String(el?.books[0]?.isbn)
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase()) ||
-              el?.authorAr
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase()) ||
-              String(el?.kplbn)
-                .toUpperCase()
-                .includes(bookSearchWord.toUpperCase())
-            );
-          });
+        : data?.getBooksByBl
+            ?.filter((el) => {
+              return (
+                el?.titleAr
+                  .toUpperCase()
+                  .includes(bookSearchWord.toUpperCase()) ||
+                String(el?.books[0]?.isbn)
+                  .toUpperCase()
+                  .includes(bookSearchWord.toUpperCase()) ||
+                el?.authorAr
+                  .toUpperCase()
+                  .includes(bookSearchWord.toUpperCase()) ||
+                String(el?.kplbn)
+                  .toUpperCase()
+                  .includes(bookSearchWord.toUpperCase())
+              );
+            })
+            ?.filter((el) => {
+              if (fNF === "") {
+                return true;
+              }
+              return el.fnfStatus === fNF;
+            })
+            ?.filter((el) => {
+              if (iL === "") {
+                return true;
+              }
+              return el.ilStatus.slice(3) === iL;
+            });
     if (sortType === "title") {
       setBookArray(
         newArray
@@ -1091,18 +1136,35 @@ export default function BookPage() {
     }
     setBookMaxPage(
       Math.ceil(
-        data?.getBooksByBl?.filter((el) => {
-          return (
-            el?.titleAr.toUpperCase().includes(bookSearchWord.toUpperCase()) ||
-            String(el?.books[0]?.isbn)
-              .toUpperCase()
-              .includes(bookSearchWord.toUpperCase()) ||
-            el?.authorAr.toUpperCase().includes(bookSearchWord.toUpperCase()) ||
-            String(el?.kplbn)
-              .toUpperCase()
-              .includes(bookSearchWord.toUpperCase())
-          );
-        })?.length / 20
+        data?.getBooksByBl
+          ?.filter((el) => {
+            return (
+              el?.titleAr
+                .toUpperCase()
+                .includes(bookSearchWord.toUpperCase()) ||
+              String(el?.books[0]?.isbn)
+                .toUpperCase()
+                .includes(bookSearchWord.toUpperCase()) ||
+              el?.authorAr
+                .toUpperCase()
+                .includes(bookSearchWord.toUpperCase()) ||
+              String(el?.kplbn)
+                .toUpperCase()
+                .includes(bookSearchWord.toUpperCase())
+            );
+          })
+          ?.filter((el) => {
+            if (fNF === "") {
+              return true;
+            }
+            return el.fnfStatus === fNF;
+          })
+          ?.filter((el) => {
+            if (iL === "") {
+              return true;
+            }
+            return el.ilStatus.slice(3) === iL;
+          })?.length / 20
       )
     );
   }, [bookPage, bookSearchWord]);
@@ -1247,7 +1309,7 @@ export default function BookPage() {
           >
             <div style={{ marginBottom: "5px" }}>AR 점수</div>
             <div>
-              <span>최소</span>
+              <span style={{ fontWeight: 400 }}>최소</span>
               <S.InputInput
                 style={{ marginLeft: "10px", marginTop: "10px" }}
                 type="number"
@@ -1263,7 +1325,7 @@ export default function BookPage() {
               ></S.InputInput>
             </div>
             <div>
-              <span>최대</span>
+              <span style={{ fontWeight: 400 }}>최대</span>
               <S.InputInput
                 style={{ marginLeft: "10px", marginTop: "10px" }}
                 type="number"
@@ -1290,7 +1352,7 @@ export default function BookPage() {
             }}
           >
             <div style={{ marginBottom: "5px" }}>WC</div>
-            <div>
+            <div style={{ fontWeight: 400 }}>
               최소
               <S.InputInput
                 type="number"
@@ -1306,7 +1368,7 @@ export default function BookPage() {
                 defaultValue={minWc}
               ></S.InputInput>
             </div>
-            <div>
+            <div style={{ fontWeight: 400 }}>
               최대
               <S.InputInput
                 type="number"
@@ -1335,7 +1397,7 @@ export default function BookPage() {
           >
             <div>Lexile 점수</div>
             <div>
-              <div>
+              <div style={{ fontWeight: 400 }}>
                 최소
                 <S.InputInput
                   type="number"
@@ -1351,7 +1413,7 @@ export default function BookPage() {
                   defaultValue={minLex}
                 ></S.InputInput>
               </div>
-              <div>
+              <div style={{ fontWeight: 400 }}>
                 최대
                 <S.InputInput
                   type="number"
@@ -1382,7 +1444,7 @@ export default function BookPage() {
           >
             <div>AR Quiz No</div>
             <div>
-              <div>
+              <div style={{ fontWeight: 400 }}>
                 No.
                 <S.InputInput
                   type="number"
@@ -1399,6 +1461,100 @@ export default function BookPage() {
                 ></S.InputInput>
               </div>
             </div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              color: "#000",
+              fontSize: "15px",
+              fontWeight: "bold",
+              flexDirection: "column",
+              marginRight: "1.87rem",
+              marginBottom: "39px",
+            }}
+          >
+            <div>F/NF</div>
+            <S.InputSelect
+              onChange={(e) => {
+                setFNF(e.target.value);
+              }}
+              style={{ marginLeft: "0px", marginTop: "10px" }}
+            >
+              <option value={""} selected={fNF === ""}>
+                전체
+              </option>
+              <option value={"F"} selected={fNF === "F"}>
+                Fiction
+              </option>
+              <option value={"NF"} selected={fNF === "NF"}>
+                NonFiction
+              </option>
+            </S.InputSelect>
+            {/* <div style={{ display: "flex", marginTop: "0.6rem" }}>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span>F</span>
+                <input
+                  type="checkbox"
+                  style={{ width: "1.5rem", height: "1.5rem" }}
+                ></input>
+              </div>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span>NF</span>
+                <input
+                  type="checkbox"
+                  style={{ width: "1.5rem", height: "1.5rem" }}
+                ></input>
+              </div>
+            </div> */}
+          </div>
+          <div
+            onChange={(e) => {
+              setIL(e.target.value);
+            }}
+            style={{
+              display: "flex",
+              color: "#000",
+              fontSize: "15px",
+              fontWeight: "bold",
+              flexDirection: "column",
+              marginRight: "1.87rem",
+              marginBottom: "39px",
+            }}
+          >
+            <div>IL</div>
+            <S.InputSelect style={{ marginLeft: "0px", marginTop: "10px" }}>
+              <option value={""} selected={iL === ""}>
+                전체
+              </option>
+              <option value={"LG"} selected={iL === "LG"}>
+                LG
+              </option>
+              <option value={"MG"} selected={iL === "MG"}>
+                MG
+              </option>
+              <option value={"MG+"} selected={iL === "MG+"}>
+                MG+
+              </option>
+              <option value={"UG"} selected={iL === "UG"}>
+                UG
+              </option>
+            </S.InputSelect>
+            {/* <div style={{ display: "flex", marginTop: "0.6rem" }}>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span>LG</span>
+                <input
+                  type="checkbox"
+                  style={{ width: "1.5rem", height: "1.5rem" }}
+                ></input>
+              </div>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span>MG</span>
+                <input
+                  type="checkbox"
+                  style={{ width: "1.5rem", height: "1.5rem" }}
+                ></input>
+              </div>
+            </div> */}
           </div>
           <S.ModalAddButton
             onClick={onClickSearch}
@@ -1451,29 +1607,42 @@ export default function BookPage() {
                   );
                 }).length !== 0) ||
               undefined
-                ? data?.getBooksByBl?.filter((el) => {
-                    return (
-                      el?.titleAr
-                        .toUpperCase()
-                        .includes(bookSearchWord.toUpperCase()) ||
-                      String(el?.books[0]?.isbn)
-                        .toUpperCase()
-                        .includes(bookSearchWord.toUpperCase()) ||
-                      el?.authorAr
-                        .toUpperCase()
-                        .includes(bookSearchWord.toUpperCase()) ||
-                      String(el?.kplbn)
-                        .toUpperCase()
-                        .includes(bookSearchWord.toUpperCase())
-                    );
-                  }).length + "권"
+                ? data?.getBooksByBl
+                    ?.filter((el) => {
+                      return (
+                        el?.titleAr
+                          .toUpperCase()
+                          .includes(bookSearchWord.toUpperCase()) ||
+                        String(el?.books[0]?.isbn)
+                          .toUpperCase()
+                          .includes(bookSearchWord.toUpperCase()) ||
+                        el?.authorAr
+                          .toUpperCase()
+                          .includes(bookSearchWord.toUpperCase()) ||
+                        String(el?.kplbn)
+                          .toUpperCase()
+                          .includes(bookSearchWord.toUpperCase())
+                      );
+                    })
+                    ?.filter((el) => {
+                      if (fNF === "") {
+                        return true;
+                      }
+                      return el.fnfStatus === fNF;
+                    })
+                    ?.filter((el) => {
+                      if (iL === "") {
+                        return true;
+                      }
+                      return el.ilStatus.slice(3) === iL;
+                    }).length + "권"
                 : ""}
             </S.CountNumber>
             <S.SearchTag>
               <div>
                 <S.SearchInput
                   type="text"
-                  placeholder="도서 제목, 바코드, 저자 등으로 검색해주세요."
+                  placeholder="     도서 제목, 바코드, 저자 등으로 검색해주세요."
                   onChange={(e) => {
                     setBookSearchWord(e.target.value);
                   }}

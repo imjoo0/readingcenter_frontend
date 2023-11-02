@@ -1,7 +1,16 @@
+import { addDays, getDay, startOfWeek, endOfWeek } from "date-fns";
 import styles from "../../components/class/styles.module.css";
 export const longWord = (word) => {
   if (word.length > 25) {
     return word.slice(0, 24) + "...";
+  } else {
+    return word;
+  }
+};
+
+export const shortWord = (word) => {
+  if (word.length > 12) {
+    return word.slice(0, 11) + "...";
   } else {
     return word;
   }
@@ -104,6 +113,21 @@ export const dateToInput = (date) => {
   }
 
   return year + "-" + month + "-" + day;
+};
+
+export const dateToMonth = (date) => {
+  let year = String(date.getFullYear());
+  let month = String(date.getMonth() + 1);
+  let day = String(date.getDate());
+
+  if (Number(month) < 10) {
+    month = "0" + month;
+  }
+  if (Number(day) < 10) {
+    day = "0" + day;
+  }
+
+  return year + "-" + month;
 };
 
 export const dateToKoreanTime = (date) => {
@@ -217,10 +241,150 @@ export const getMonthZero = (date) => {
   }
 };
 
+export const getDateZero = (date) => {
+  if (date.getDate() < 10) {
+    return "0" + date.getDate();
+  } else {
+    return String(date.getDate());
+  }
+};
+
 export const getNumberZero = (number) => {
   if (number < 10) {
     return "0" + number;
   } else {
     return String(number);
   }
+};
+
+export const dateInputToNumber = (dateInput) => {
+  return Number(dateInput.replaceAll("-", ""));
+};
+
+export const startDate = (dateInput, weekDays) => {
+  let currentDate = new Date(dateInput);
+  let startDay = currentDate.getDay();
+  let jsWeekDays = weekDays
+    .map((el) => (el + 1) % 7)
+    .sort((a, b) => {
+      return a - b;
+    });
+  let after = jsWeekDays.filter((el) => {
+    return el >= startDay;
+  });
+  let before = jsWeekDays.filter((el) => {
+    return el < startDay;
+  });
+
+  let targetDay = [...after, ...before][0];
+  let dates = currentDate.getDate() - startDay + targetDay;
+  if (after.length === 0) {
+    console.log(after, "after");
+    dates = dates + 7;
+  }
+  currentDate.setDate(dates);
+  return dateToInput(currentDate);
+};
+
+export const lastDate = (dateInput, weeks, weekDays) => {
+  if (weekDays.length === 0) {
+    return false;
+  }
+  let currentDate = new Date(dateInput);
+  let jsWeekDays = weekDays
+    .map((el) => (el + 1) % 7)
+    .sort((a, b) => {
+      return a - b;
+    });
+  let startDay = currentDate.getDay();
+  let after = jsWeekDays.filter((el) => {
+    return el > startDay;
+  });
+  let now = jsWeekDays.includes(startDay) ? [startDay] : [];
+  let before = jsWeekDays.filter((el) => {
+    return el < startDay;
+  });
+  const targetDate = [...now, ...after, ...before];
+
+  const targetDay = targetDate[targetDate.length - 1];
+
+  let dates = currentDate.getDate() + (weeks - 1) * 7 - startDay + targetDay;
+  if (targetDate[targetDate.length - 1] < startDay) {
+    dates = dates + 7;
+  }
+  console.log(jsWeekDays, startDay, dates, "day");
+  currentDate.setDate(dates);
+  return dateToInput(currentDate);
+};
+
+export const lastCount = (dateInput, count, weekDays) => {
+  const result = [];
+  let currentDate = new Date(dateInput);
+  let jsWeekDays = weekDays
+    .map((el) => (el + 1) % 7)
+    .sort((a, b) => {
+      return a - b;
+    });
+
+  if (jsWeekDays.includes(currentDate.getDay())) {
+    result.push(new Date(currentDate));
+  }
+  while (result.length < count) {
+    currentDate = addDays(currentDate, 1);
+    if (jsWeekDays.includes(currentDate.getDay())) {
+      result.push(new Date(currentDate));
+    }
+  }
+
+  // const k = new Date(
+  //   result[result.length - 1].setDate(result[result.length - 1].getDate() + 1)
+  // );
+  return dateToInput(result[result.length - 1]);
+
+  // let startDay = currentDate.getDay();
+
+  // let after = jsWeekDays.filter((el) => {
+  //   return el > startDay;
+  // });
+  // let now = jsWeekDays.includes(startDay) ? [startDay] : [];
+  // let before = jsWeekDays.filter((el) => {
+  //   return el < startDay;
+  // });
+
+  // let newWeek = [...now, ...after, ...before];
+  // let week = Math.floor(count / weekDays.length);
+  // let k = count % weekDays.length;
+
+  // let targetDate =
+  //   currentDate.getDate() +
+  //   week * 7 +
+  //   newWeek[(k - 1 + weekDays.length) % weekDays.length] -
+  //   startDay;
+
+  // if (before.length === 0 && now.length !== 0 && after.length === 0) {
+  //   targetDate = targetDate - 7;
+  // }
+  // // if (after.length !== 0 &&) {
+  // //   targetDate = targetDate + 7;
+  // // }
+  // currentDate.setDate(targetDate);
+
+  // return dateToInput(currentDate);
+};
+
+export const calculateLectureDate = (dateInput) => {
+  let currentDate = new Date(dateInput);
+
+  let currentDayOfWeek = currentDate.getDay();
+
+  let oneWeekAgoMonday = new Date(currentDate);
+  oneWeekAgoMonday.setDate(currentDate.getDate() - currentDayOfWeek - 6);
+
+  let fourWeeksLaterSunday = new Date(currentDate);
+  fourWeeksLaterSunday.setDate(currentDate.getDate() - currentDayOfWeek + 28);
+
+  return [
+    oneWeekAgoMonday.toISOString().slice(0, 10),
+    fourWeeksLaterSunday.toISOString().slice(0, 10),
+  ];
 };
