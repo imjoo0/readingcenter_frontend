@@ -49,7 +49,7 @@ export default function StudentReportPage() {
   const [maxSR, setMaxSr] = useState(0);
   const [maxWCPerBooks, setMaxWCPerBooks] = useState(0);
   const [maxCorrects, setMaxCorrects] = useState(0);
-  const [window, setWindow] = useState(false);
+  const [widows, setWidows] = useState(false);
   const [moreView, setMoreView] = useState(false);
   const [isAr, setIsAr] = useState(false);
   const [isWc, setIsWc] = useState(false);
@@ -174,7 +174,33 @@ export default function StudentReportPage() {
     },
   });
 
-  const { data: myData } = useQuery(GET_ME);
+  // const { data: myData } = useQuery(GET_ME); 수정 필수
+  const { data: myData } = {
+    data: {
+      me: {
+        id: "9",
+        username: "gyeonggi_teacher",
+        userCategory: "\uc120\uc0dd\ub2d8",
+        profile: {
+          id: 9,
+          korName: "\uacbd\uae30\ud37c\ud50c",
+          engName: "gyeonggiPurple",
+          registerDate: "2023-08-01",
+          birthDate: "1980-01-01",
+          academy: {
+            id: "2",
+            name: "\ud37c\ud50c\uc544\uce74\ub370\ubbf8",
+            location:
+              "\uacbd\uae30 \uc6a9\uc778\uc2dc \uc218\uc9c0\uad6c \ud3ec\uc740\ub300\ub85c 536 \uc2e0\uc138\uacc4\ubc31\ud654\uc810\uacbd\uae30\uc810 8F",
+            __typename: "AcademyType",
+          },
+          __typename: "TeacherType",
+        },
+        __typename: "UserType",
+      },
+    },
+  };
+
   const { data: memosData, refetch: refetchMemos } = useQuery(GET_MEMOS, {
     variables: {
       studentId: Number(router.query.id),
@@ -215,6 +241,7 @@ export default function StudentReportPage() {
 
     try {
       await createOpinion({ variables: variables });
+      setHasUnsavedChanges(false);
       alert("종합의견이 저장됐습니다.");
       refetchOpinion();
     } catch (err) {}
@@ -396,6 +423,44 @@ export default function StudentReportPage() {
   //   refetchMemos();
   // }, [myData]);
 
+  // 페이지 벗어날 때
+
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  useEffect(() => {
+    // 예시: 사용자가 어떤 입력 필드를 수정한 경우
+    const checkUnsavedChanges = () => {
+      // 변경 사항이 있다면
+      setHasUnsavedChanges(true);
+    };
+
+    // 여기에서 페이지 이동 전에 변경 사항을 확인하는 이벤트 리스너를 등록합니다.
+    window.addEventListener("beforeunload", checkUnsavedChanges);
+
+    // 컴포넌트가 언마운트될 때 이벤트 리스너를 해제합니다.
+    return () => {
+      window.removeEventListener("beforeunload", checkUnsavedChanges);
+    };
+  }, []);
+
+  useEffect(() => {
+    // 페이지 이동 이벤트를 감지하여 사용자에게 경고 메시지를 표시합니다.
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        const confirmationMessage =
+          "변경 내용이 저장되지 않을 수 있습니다. 저장하지 않고 이동하시겠습니까?";
+        (e || window.event).returnValue = confirmationMessage;
+        return confirmationMessage;
+      }
+    };
+
+    window.onbeforeunload = handleBeforeUnload;
+
+    return () => {
+      window.onbeforeunload = null;
+    };
+  }, [hasUnsavedChanges]);
+
   // 최근 반년 정보 데이터 추출
   useEffect(() => {
     if (Array.isArray(monthData?.getMonthReports)) {
@@ -506,7 +571,7 @@ export default function StudentReportPage() {
         },
       ];
       setLatestData(newLatestData);
-      setWindow(true);
+      setWidows(true);
     }
   }, [monthData, summaryData]);
 
@@ -840,7 +905,7 @@ export default function StudentReportPage() {
             </S.ReportInfoBox>
             <S.ReportInfoBox>
               <S.ChartTitle>읽은 권 수</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -875,7 +940,7 @@ export default function StudentReportPage() {
             <S.ReportInfoBox>
               {" "}
               <S.ChartTitle>월별 WC</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={250}
                   height={250}
@@ -910,7 +975,7 @@ export default function StudentReportPage() {
             </S.ReportInfoBox>
             <S.ReportInfoBox>
               <S.ChartTitle>학습일</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -947,7 +1012,7 @@ export default function StudentReportPage() {
           <S.ReportInfoContainer>
             <S.ReportInfoBox>
               <S.ChartTitle>SR</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -982,7 +1047,7 @@ export default function StudentReportPage() {
             </S.ReportInfoBox>
             <S.ReportInfoBox>
               <S.ChartTitle>AR</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -1016,7 +1081,7 @@ export default function StudentReportPage() {
             </S.ReportInfoBox>
             <S.ReportInfoBox>
               <S.ChartTitle>WC/권</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -1050,7 +1115,7 @@ export default function StudentReportPage() {
             </S.ReportInfoBox>
             <S.ReportInfoBox>
               <S.ChartTitle>정답률</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -1302,8 +1367,7 @@ export default function StudentReportPage() {
           </S.ReportInfoContainer>
           <S.ReportInfoContainer>
             <S.ReportInfoDoubleBox style={{ alignItems: "flex-end" }}>
-              <S.ReportSubTitle>월별 지수변화</S.ReportSubTitle>
-
+              <S.ReportSubTitle>월별 리딩지수</S.ReportSubTitle>
               <ResponsiveContainer width={"87%"} height={300}>
                 <ComposedChart data={halfYearData}>
                   {/* <XAxis
@@ -1413,6 +1477,7 @@ export default function StudentReportPage() {
                 value={opinion}
                 onChange={(e) => {
                   setOpinion(e.target.value);
+                  setHasUnsavedChanges(true);
                 }}
               ></S.ReportTextArea>
               <div
@@ -1499,7 +1564,7 @@ export default function StudentReportPage() {
                 >
                   평균 리딩 지수
                 </S.ReportSubContainerTitle>
-                {window ? (
+                {widows ? (
                   <BarChart
                     width={300}
                     height={250}
@@ -1600,7 +1665,7 @@ export default function StudentReportPage() {
                 >
                   월별 WC
                 </S.ReportSubContainerTitle>
-                {window ? (
+                {widows ? (
                   <BarChart
                     width={300}
                     height={250}
@@ -1696,7 +1761,7 @@ export default function StudentReportPage() {
                 >
                   평균 정답률
                 </S.ReportSubContainerTitle>
-                {window ? (
+                {widows ? (
                   <BarChart
                     width={300}
                     height={250}
@@ -1792,7 +1857,7 @@ export default function StudentReportPage() {
                 >
                   읽은 권 수
                 </S.ReportSubContainerTitle>
-                {window ? (
+                {widows ? (
                   <BarChart
                     width={300}
                     height={250}
@@ -1887,7 +1952,7 @@ export default function StudentReportPage() {
                 >
                   학습일
                 </S.ReportSubContainerTitle>
-                {window ? (
+                {widows ? (
                   <BarChart
                     width={300}
                     height={250}

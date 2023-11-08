@@ -51,7 +51,7 @@ export default function ApolloSetting(props) {
   });
 
   const uploadLink = createUploadLink({
-    uri: "http://readingcenter.purpleacademy.co.kr:8000/graphql/",
+    uri: "https://readingcenter.purpleacademy.co.kr/graphql/",
     headers: { Authorization: `Bearer ${accessToken}` },
     credentials: "include",
   });

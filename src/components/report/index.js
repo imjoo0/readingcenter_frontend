@@ -18,7 +18,32 @@ export default function ReportPage() {
     variables: { academyId: Number(router.query.branch) },
   });
 
-  const { data: myData } = useQuery(GET_ME);
+  // const { data: myData } = useQuery(GET_ME); 수정 필수
+  const { data: myData } = {
+    data: {
+      me: {
+        id: "9",
+        username: "gyeonggi_teacher",
+        userCategory: "\uc120\uc0dd\ub2d8",
+        profile: {
+          id: 9,
+          korName: "\uacbd\uae30\ud37c\ud50c",
+          engName: "gyeonggiPurple",
+          registerDate: "2023-08-01",
+          birthDate: "1980-01-01",
+          academy: {
+            id: "2",
+            name: "\ud37c\ud50c\uc544\uce74\ub370\ubbf8",
+            location:
+              "\uacbd\uae30 \uc6a9\uc778\uc2dc \uc218\uc9c0\uad6c \ud3ec\uc740\ub300\ub85c 536 \uc2e0\uc138\uacc4\ubc31\ud654\uc810\uacbd\uae30\uc810 8F",
+            __typename: "AcademyType",
+          },
+          __typename: "TeacherType",
+        },
+        __typename: "UserType",
+      },
+    },
+  };
   const [searchWord, setSearchWord] = useState("");
   const [studentArray, setStudentArray] = useState([]);
 
@@ -125,8 +150,8 @@ export default function ReportPage() {
             <th>생년월일</th>
             <th>학습 리포트</th>
             <th>리딩 이력</th>
-            <th>상담 횟수</th>
-            <th>최근 상담 날짜</th>
+            {/* <th>상담 횟수</th>
+            <th>최근 상담 날짜</th> */}
           </tr>
         </thead>
         <tbody>
@@ -148,7 +173,13 @@ export default function ReportPage() {
                     xmlns="http://www.w3.org/2000/svg"
                     style={{ cursor: "pointer" }}
                     onClick={() => {
-                      window.open(
+                      // window.open(
+                      //   "/" +
+                      //     router.query.branch +
+                      //     "/report/reportDetail/" +
+                      //     el?.student?.id
+                      // );
+                      router.push(
                         "/" +
                           router.query.branch +
                           "/report/reportDetail/" +
@@ -180,7 +211,10 @@ export default function ReportPage() {
                     xmlns="http://www.w3.org/2000/svg"
                     style={{ cursor: "pointer" }}
                     onClick={() => {
-                      window.open(
+                      // window.open(
+                      //   "/" + router.query.branch + "/report/" + el?.student?.id
+                      // );
+                      router.push(
                         "/" + router.query.branch + "/report/" + el?.student?.id
                       );
                     }}
@@ -200,10 +234,10 @@ export default function ReportPage() {
                     />
                   </svg>
                 </td>
-                <td>{el.consultingCount}</td>
+                {/* <td>{el.consultingCount}</td>
                 <td>
                   {el.lastConsultingDate === null ? "-" : el.lastConsultingDate}
-                </td>
+                </td> */}
               </tr>
             );
           })}

@@ -18,6 +18,7 @@ import {
   GET_ME,
   GET_STUDENTS,
   STOP_ACADEMY,
+  GET_STUDENTS_REPORT_LIST,
 } from "./academy.query";
 import { Modal, Switch } from "antd";
 
@@ -28,6 +29,12 @@ export default function AcademyPage() {
   const { data, refetch } = useQuery(GET_STUDENTS, {
     variables: { academyId: Number(router.query.branch) },
   });
+  const { data: listData, refetch: refetchList } = useQuery(
+    GET_STUDENTS_REPORT_LIST,
+    {
+      variables: { academyId: Number(router.query.branch) },
+    }
+  );
 
   const [array, setArray] = useState(data?.studentsInAcademy);
   const [searchWord, setSearchWord] = useState("");
@@ -63,7 +70,32 @@ export default function AcademyPage() {
   const [isCheck, setIsCheck] = useState(false);
   const [isStop, setIsStop] = useState(false);
   const [branches, setBranches] = useState([]);
-  const { data: myData } = useQuery(GET_ME);
+  // const { data: myData } = useQuery(GET_ME);
+  const { data: myData } = {
+    data: {
+      me: {
+        id: "9",
+        username: "gyeonggi_teacher",
+        userCategory: "\uc120\uc0dd\ub2d8",
+        profile: {
+          id: 9,
+          korName: "\uacbd\uae30\ud37c\ud50c",
+          engName: "gyeonggiPurple",
+          registerDate: "2023-08-01",
+          birthDate: "1980-01-01",
+          academy: {
+            id: "2",
+            name: "\ud37c\ud50c\uc544\uce74\ub370\ubbf8",
+            location:
+              "\uacbd\uae30 \uc6a9\uc778\uc2dc \uc218\uc9c0\uad6c \ud3ec\uc740\ub300\ub85c 536 \uc2e0\uc138\uacc4\ubc31\ud654\uc810\uacbd\uae30\uc810 8F",
+            __typename: "AcademyType",
+          },
+          __typename: "TeacherType",
+        },
+        __typename: "UserType",
+      },
+    },
+  };
 
   const onChangeSearchWord = (event) => {
     setSearchWord(event.target.value);
@@ -122,6 +154,7 @@ export default function AcademyPage() {
     }
     setIsCheck(false);
     refetch();
+    refetchList();
   };
 
   const onClickAddStudent = async () => {
@@ -199,6 +232,7 @@ export default function AcademyPage() {
               },
             });
             refetch();
+            refetchList();
           } catch {}
         }
       } catch {
@@ -207,7 +241,6 @@ export default function AcademyPage() {
     } catch {
       alert("유저 생성 오류");
     }
-    refetch();
     setAddKorName("");
     setAddEmail1("");
     setAddEmail2("gmail.com");
@@ -229,26 +262,32 @@ export default function AcademyPage() {
   useEffect(() => {
     if (isStop) {
       setArray(
-        data?.studentsInAcademy
+        listData?.studentsInAcademyWithConsulting
           ?.filter((el) => {
-            return !el.user.isActive;
+            return !el?.student.user.isActive;
           })
           ?.sort((a, b) => {
-            return a.korName.localeCompare(b.korName, "kr-KR");
+            return a?.student.korName.localeCompare(
+              b?.student.korName,
+              "kr-KR"
+            );
           })
       );
     } else {
       setArray(
-        data?.studentsInAcademy
+        listData?.studentsInAcademyWithConsulting
           ?.filter((el) => {
-            return el.user.isActive;
+            return el?.student.user.isActive;
           })
           ?.sort((a, b) => {
-            return a.korName.localeCompare(b.korName, "kr-KR");
+            return a?.student.korName.localeCompare(
+              b?.student.korName,
+              "kr-KR"
+            );
           })
       );
     }
-  }, [data, isStop]);
+  }, [data, listData, isStop]);
 
   useEffect(() => {
     if (data !== undefined) {
@@ -425,7 +464,7 @@ export default function AcademyPage() {
               )}
             </S.TableHeadLeft>
             <S.TableHead style={{ width: "45%" }}>
-              원생명
+              이름
               {sortType !== "name" || sortType === "" ? (
                 <DownOutlined
                   style={{ marginLeft: "5px" }}
@@ -454,7 +493,7 @@ export default function AcademyPage() {
             </S.TableHead>
             <S.TableHead style={{ width: "30%" }}>성별</S.TableHead>
             <S.TableHead style={{ width: "50%" }}>
-              등록일{" "}
+              센터 등록일{" "}
               {sortType !== "register" || sortType === "" ? (
                 <DownOutlined
                   style={{ marginLeft: "5px" }}
@@ -467,13 +506,16 @@ export default function AcademyPage() {
                 />
               )}
             </S.TableHead>
-            <S.TableHead style={{ width: "70%" }}>연락처</S.TableHead>
+            <S.TableHead style={{ width: "70%" }}>부모님 전화번호</S.TableHead>
 
-            {/* <S.TableHeadRight style={{ width: "30%" }}>
-              상세 보기
-            </S.TableHeadRight> */}
             <S.TableHeadRight style={{ width: "30%" }}>
-              리딩 이력
+              상담 횟수
+            </S.TableHeadRight>
+            <S.TableHeadRight style={{ width: "30%" }}>
+              학습 리포트
+            </S.TableHeadRight>
+            <S.TableHeadRight style={{ width: "30%" }}>
+              리딩이력
             </S.TableHeadRight>
             <S.TableHeadRight style={{ width: "35%" }}>상태</S.TableHeadRight>
           </S.TableHeaderRound>
@@ -483,57 +525,84 @@ export default function AcademyPage() {
                 <S.TableHeadLeft
                   style={{
                     width: "40%",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => {
-                    window.open(
-                      "/" + router.query.branch + "/academy/" + el.id,
-                      "_blank"
-                    );
                   }}
                 >
-                  {el.origin}
+                  <span
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                      // window.open(
+                      //   "/" + router.query.branch + "/academy/" + el.id,
+                      //   "_blank"
+                      // );
+                      router.push(
+                        "/" + router.query.branch + "/academy/" + el?.student.id
+                      );
+                    }}
+                  >
+                    {el?.student?.origin}
+                  </span>
                 </S.TableHeadLeft>
                 <S.TableHead
                   style={{
                     width: "45%",
-                    cursor: "pointer",
+                    // cursor: "pointer",
                     // display: "flex",
-                    // justifyContent: "space-between",
+                    justifyContent: "space-between",
                   }}
-                  onClick={() => {
-                    window.open(
-                      "/" + router.query.branch + "/academy/" + el.id,
-                      "_blank"
-                    );
-                  }}
+                  // onClick={() => {
+                  //   window.open(
+                  //     "/" + router.query.branch + "/academy/" + el.id,
+                  //     "_blank"
+                  //   );
+                  // }}
                 >
-                  <div>{el.korName + "(" + el.engName + ")"}</div>
-                  <SearchOutlined
+                  <span
+                    style={{ cursor: "pointer" }}
                     onClick={() => {
-                      window.open(
-                        "/" + router.query.branch + "/academy/" + el.id,
-                        "_blank"
+                      // window.open(
+                      //   "/" + router.query.branch + "/academy/" + el.id,
+                      //   "_blank"
+                      // );
+                      router.push(
+                        "/" + router.query.branch + "/academy/" + el?.student.id
+                      );
+                    }}
+                  >
+                    <span style={{ marginLeft: "1rem" }}>
+                      {el?.student?.korName + "(" + el?.student?.engName + ")"}
+                    </span>
+                  </span>
+                  <SearchOutlined
+                    style={{ marginRight: "1rem" }}
+                    onClick={() => {
+                      // window.open(
+                      //   "/" + router.query.branch + "/academy/" + el.id,
+                      //   "_blank"
+                      // );
+                      router.push(
+                        "/" +
+                          router.query.branch +
+                          "/academy/" +
+                          el?.student?.id
                       );
                     }}
                   ></SearchOutlined>
                 </S.TableHead>
                 <S.TableHead style={{ width: "40%" }}>
-                  {el.birthDate}
+                  {el?.student?.birthDate}
                 </S.TableHead>
                 <S.TableHead style={{ width: "30%" }}>
-                  {el.gender === "M" ? "남" : "여"}
+                  {el?.student?.gender === "M" ? "남" : "여"}
                 </S.TableHead>
                 <S.TableHead style={{ width: "50%" }}>
-                  {dateChange(el.registerDate)}
+                  {dateChange(el?.student?.registerDate)}
                 </S.TableHead>
                 <S.TableHead2 style={{ width: "70%" }}>
-                  <div>{el.pmobileno}</div>
+                  <div>{el?.student?.pmobileno}</div>
                 </S.TableHead2>
-
-                {/* <S.TableHeadRight style={{ width: "30%" }}>
-                  
-                </S.TableHeadRight> */}
+                <S.TableHeadRight style={{ width: "30%" }}>
+                  {el?.consultingCount + "회"}
+                </S.TableHeadRight>
                 <S.TableHeadRight style={{ width: "30%" }}>
                   <svg
                     width="24"
@@ -543,8 +612,46 @@ export default function AcademyPage() {
                     xmlns="http://www.w3.org/2000/svg"
                     style={{ cursor: "pointer" }}
                     onClick={() => {
-                      window.open(
-                        "/" + router.query.branch + "/report/" + el.id
+                      // window.open(
+                      //   "/" + router.query.branch + "/report/" + el.id
+                      // );
+                      router.push(
+                        "/" +
+                          router.query.branch +
+                          "/report/reportDetail/" +
+                          el?.student.id
+                      );
+                    }}
+                  >
+                    <path
+                      d="M5 19.5V5C5 4.46957 5.21071 3.96086 5.58579 3.58579C5.96086 3.21071 6.46957 3 7 3H18.4C18.5591 3 18.7117 3.06321 18.8243 3.17574C18.9368 3.28826 19 3.44087 19 3.6V21H6.5M9 7H15M6.5 15H19M6.5 18H19"
+                      stroke="#81858C"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M6.5 15C5.5 15 5 15.672 5 16.5C5 17.328 5.5 18 6.5 18C5.5 18 5 18.672 5 19.5C5 20.328 5.5 21 6.5 21"
+                      stroke="#81858C"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </S.TableHeadRight>
+                <S.TableHeadRight style={{ width: "30%" }}>
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                      // window.open(
+                      //   "/" + router.query.branch + "/report/" + el.id
+                      // );
+                      router.push(
+                        "/" + router.query.branch + "/report/" + el?.student.id
                       );
                     }}
                   >
@@ -566,8 +673,11 @@ export default function AcademyPage() {
                 <S.TableHeadRight style={{ width: "35%" }}>
                   휴원
                   <Switch
-                    defaultChecked={el.user.isActive}
-                    onClick={onClickCheck(el.id, el.user.isActive)}
+                    defaultChecked={el?.student?.user?.isActive}
+                    onClick={onClickCheck(
+                      el?.student?.id,
+                      el?.student?.user?.isActive
+                    )}
                   ></Switch>
                   재원
                   {/* <button
@@ -609,12 +719,13 @@ export default function AcademyPage() {
             setAddRegisterDay(dateToInput(date));
             setAddOrigin("");
           }}
+          width={"40rem"}
           footer={null}
         >
           <S.ModalWrapperTitle>원생 등록</S.ModalWrapperTitle>
           <S.ModalWrapper>
             <S.ModalTag>
-              <S.ModalTitle>원생 아이디 *</S.ModalTitle>
+              <S.ModalTitle>{"원번(아이디) *"}</S.ModalTitle>
               <S.ModalInput
                 type="text"
                 onChange={(e) => {
@@ -628,7 +739,7 @@ export default function AcademyPage() {
               ></S.ModalInput>
             </S.ModalTag>
             <S.ModalTag>
-              <S.ModalTitle>Password *</S.ModalTitle>
+              <S.ModalTitle>비밀번호 *</S.ModalTitle>
               <S.ModalInput
                 type="password"
                 onChange={(e) => {
@@ -643,7 +754,7 @@ export default function AcademyPage() {
             </S.ModalTag>
 
             <S.ModalTag>
-              <S.ModalTitle>한글 이름 *</S.ModalTitle>
+              <S.ModalTitle>이름 *</S.ModalTitle>
               <S.ModalInput
                 type="text"
                 onChange={(e) => {
@@ -670,7 +781,7 @@ export default function AcademyPage() {
                 }}
               ></S.ModalInput>
             </S.ModalTag>
-            <S.ModalTag>
+            <S.ModalTag style={{ width: "70%" }}>
               <S.ModalTitle>이메일</S.ModalTitle>
               <div>
                 <S.ModalSmall
@@ -731,7 +842,7 @@ export default function AcademyPage() {
                 }}
               ></S.ModalInput> */}
             </S.ModalTag>
-            <S.ModalTag>
+            <S.ModalTag style={{ width: "30%" }}>
               <S.ModalTitle>성별</S.ModalTitle>
               <div>
                 <input
@@ -757,7 +868,7 @@ export default function AcademyPage() {
               </div>
             </S.ModalTag>
             <S.ModalTag>
-              <S.ModalTitle>학부모 전화번호 *</S.ModalTitle>
+              <S.ModalTitle>부모님 전화번호 *</S.ModalTitle>
               <div>
                 <S.ModalSmall
                   type="text"
@@ -851,7 +962,7 @@ export default function AcademyPage() {
               ></S.ModalInput>
             </S.ModalTag>
             <S.ModalTag>
-              <S.ModalTitle>등록일</S.ModalTitle>
+              <S.ModalTitle>센터 등록일</S.ModalTitle>
               <S.ModalInput
                 type="date"
                 defaultValue={addRegisterDay}

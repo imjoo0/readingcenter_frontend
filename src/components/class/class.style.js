@@ -1,4 +1,20 @@
+import { css } from "@emotion/react";
 import styled from "@emotion/styled";
+
+export const CustomRadioStyles = css`
+  input[type="radio"] {
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    box-shadow: 0 0 0 1px red;
+    border: 4px solid black;
+    border-radius: 50%;
+    background-color: yellow;
+    &:checked {
+      background-color: #791285;
+    }
+  }
+`;
 
 export const ClassWrapper = styled.div`
   display: flex;
@@ -17,12 +33,13 @@ export const TitleWrapper = styled.div`
 `;
 
 export const ClassTitle = styled.div`
-  font-size: 2.5rem;
+  color: #222;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1.25rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 3.5rem;
-  margin-bottom: 2.5rem;
-  width: 11rem;
+  display: flex;
+  align-items: center;
 `;
 
 export const CalendarLine = styled.div`
@@ -233,6 +250,14 @@ export const ClassSmallBlackButton = styled.button`
     filter: brightness(80%);
   }
 `;
+
+export const AbsentButton = styled.button`
+  :hover {
+    cursor: pointer;
+    filter: brightness(80%);
+  }
+`;
+
 export const ClassSmallTimeInput = styled.input`
   border-radius: 0.5rem;
   border: 1px solid #dbdde1;
@@ -341,6 +366,7 @@ export const ModalRadioBox = styled.div`
   justify-content: flex-start;
   align-items: center;
   margin-top: 1.38rem;
+  margin-left: 0.62rem;
 `;
 
 export const ModalInputBox = styled.div`
@@ -352,10 +378,11 @@ export const ModalInputBox = styled.div`
 `;
 
 export const TimeBox = styled.div`
-  width: 51%;
+  width: 37rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-left: 0.62rem;
 `;
 
 export const ModalTextArea = styled.textarea`
@@ -466,18 +493,19 @@ export const ModalRoutineDates = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 0.75rem;
-  width: 100%;
-  border-radius: 0.5rem;
-  border: 1px solid #dbdde1;
+  /* border-radius: 0.5rem;
+  border: 1px solid #dbdde1; */
 `;
 
 export const ModalRoutineDate = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 14%;
-  height: 2.75rem;
+  width: 2.6875rem;
+  height: 2.6875rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d9d9d9;
+  margin-left: 0.62rem;
 `;
 
 export const AlarmDiv = styled.div`
@@ -494,9 +522,9 @@ export const ModalTable = styled.div`
   justify-content: flex-start;
   width: 100%;
   margin-bottom: 15px;
-  ::-webkit-scrollbar {
+  /* ::-webkit-scrollbar {
     display: none;
-  }
+  } */
 `;
 
 export const ModalTag = styled.div`
@@ -813,4 +841,196 @@ export const EditModalCancelButton = styled.div`
 
 export const HoverButton = styled.div`
   cursor: pointer;
+`;
+
+export const ModalInput = styled.input`
+  width: 15.625rem;
+  height: 2.6875rem;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  border: 1px solid #dfe1e5;
+  background: #fff;
+  font-family: Noto Sans KR;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+  margin-bottom: 0.7rem;
+  ::placeholder {
+    background-image: url("/image/search.svg");
+    background-size: contain;
+    background-position: 0px center;
+    background-repeat: no-repeat;
+  }
+`;
+
+export const AddModalTh = styled.th`
+  color: #fff;
+
+  text-align: center;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+`;
+
+export const AddModalTd = styled.td`
+  color: #333;
+
+  text-align: center;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+`;
+
+export const AddModalBackButton = styled.button`
+  border-radius: 0.25rem;
+  border: 1px solid #791285;
+  background: #fff;
+  width: 8.875rem;
+  height: 2.6875rem;
+  color: #791285;
+
+  font-family: Noto Sans KR;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  display: "flex";
+  align-items: center;
+  justify-content: space-around;
+`;
+
+export const AddModalTitle = styled.div`
+  color: #333;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  margin-top: 1.25rem;
+  margin-bottom: 0.69rem;
+`;
+
+export const AddModalSelectBox = styled.div`
+  border-radius: 0.25rem 0.25rem 0rem 0rem;
+  border: 1px solid #dfe1e5;
+  background: #fff;
+  width: 6.1875rem;
+  height: 2.6875rem;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  color: #333;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+`;
+
+export const AddModalOKButton = styled.button`
+  width: 4.375rem;
+  height: 2.6875rem;
+  border-radius: 0.25rem;
+  border: 1px solid #791285;
+  color: #fff;
+  background: #791285;
+  color: #fff;
+  margin-right: 0.88rem;
+  font-family: Noto Sans KR;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  cursor: pointer;
+`;
+
+export const AddModalCancelButton = styled.button`
+  width: 4.375rem;
+  height: 2.6875rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d9d9d9;
+  background: #fff;
+  color: #333;
+  font-family: Noto Sans KR;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  cursor: pointer;
+`;
+
+export const AddModalInput = styled.input`
+  width: 16rem;
+  height: 2.6875rem;
+  border-radius: 0.5rem;
+  border: 1px solid #dfe1e5;
+  margin-left: 0.62rem;
+  color: #333;
+  padding-left: 0.87rem;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+`;
+
+export const AddModalTagTitle = styled.div`
+  color: #333;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  margin-top: 1.25rem;
+  margin-bottom: 0.62rem;
+`;
+
+export const AddRadioButton = styled.input`
+  accent-color: #791285;
+  :checked {
+    border: 0.4em solid #791285;
+  }
+`;
+
+export const AddRadioTitle = styled.div`
+  color: #791285;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+`;
+
+export const AddModalTextArea = styled.textarea`
+  width: 36.5rem;
+  height: 14.1875rem;
+  border-radius: 0.5rem;
+  border: 1px solid #dfe1e5;
+  resize: none;
+  color: #aaa;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+`;
+
+export const AddModalContent = styled.div`
+  color: #333;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+`;
+
+export const AddModalTimeInput = styled.input`
+  width: 15.855rem;
+  height: 2.6875rem;
+  border-radius: 0.5rem;
+  border: 1px solid #dfe1e5;
+  color: #333;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+  padding-left: 0.87rem;
 `;

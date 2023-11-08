@@ -6,7 +6,7 @@ export const BooksWrapper = styled.div`
   justify-content: center;
   align-items: flex-start;
   margin-top: 10rem;
-  padding: 0 8.4% 0 8.4%;
+  /* padding: 0 8.4% 0 8.4%; */
 `;
 
 export const BooksTitle = styled.div`
@@ -35,11 +35,11 @@ export const BooksTitleLine = styled.div`
 `;
 
 export const SearchBox = styled.div`
-  width: 88%;
+  width: 100%;
   border: 1px solid #eeeeee;
-  padding: 1%;
-  background-color: #f8f9fa;
-  margin-bottom: 4vh;
+  padding: 2.5rem 15rem;
+  background-color: #f4f4f8;
+  margin-bottom: 5rem;
 `;
 
 export const SearchTitle = styled.div`
@@ -278,4 +278,22 @@ export const EditTagFont = styled.div`
   display: flex;
   align-items: center;
   padding-left: 20px;
+`;
+
+export const BookTagSmallInput = styled.input`
+  width: 6.25rem;
+  height: 2.6875rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d9d9d9;
+  margin-left: 1.25rem;
+  margin-right: 1.25rem;
+`;
+
+export const BookTagBigInput = styled.input`
+  width: 16.875rem;
+  height: 2.6875rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d9d9d9;
+  margin-left: 1.25rem;
+  margin-right: 1.25rem;
 `;

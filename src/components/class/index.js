@@ -28,6 +28,7 @@ import {
   lastDate,
   lastCount,
   startDate,
+  dateInputToDot,
 } from "../../commons/library/library";
 import { Modal, Spin, Switch } from "antd";
 import {
@@ -152,6 +153,7 @@ export default function ClassPage() {
   const [isAlert, setIsAlert] = useState(false);
   const [isDup, setIsDup] = useState(false);
   const [manager, setManager] = useState("");
+  const [classSortType, setClassSortType] = useState("default");
 
   // 수업 수정 추가 지점
   const [isAll, setIsAll] = useState(false);
@@ -195,7 +197,32 @@ export default function ClassPage() {
   // 삭제 스테이트
   const [deleteDate, setDeleteDate] = useState(dateToInput(date));
 
-  const { data: myData } = useQuery(GET_ME);
+  // const { data: myData } = useQuery(GET_ME); //  getMe 수정 필수
+  const { data: myData } = {
+    data: {
+      me: {
+        id: "9",
+        username: "gyeonggi_teacher",
+        userCategory: "\uc120\uc0dd\ub2d8",
+        profile: {
+          id: 9,
+          korName: "\uacbd\uae30\ud37c\ud50c",
+          engName: "gyeonggiPurple",
+          registerDate: "2023-08-01",
+          birthDate: "1980-01-01",
+          academy: {
+            id: "2",
+            name: "\ud37c\ud50c\uc544\uce74\ub370\ubbf8",
+            location:
+              "\uacbd\uae30 \uc6a9\uc778\uc2dc \uc218\uc9c0\uad6c \ud3ec\uc740\ub300\ub85c 536 \uc2e0\uc138\uacc4\ubc31\ud654\uc810\uacbd\uae30\uc810 8F",
+            __typename: "AcademyType",
+          },
+          __typename: "TeacherType",
+        },
+        __typename: "UserType",
+      },
+    },
+  };
   const { data: fictionData, refetch: refetchFiction } = useQuery(
     GET_FICTION_RECOMMEND,
     {
@@ -260,7 +287,9 @@ export default function ClassPage() {
       variables: { studentId: 4 },
     }
   );
-  const { data: userData } = useQuery(GET_USERS);
+
+  // 유저 데이터 부분 수정 필요
+  // const { data: userData } = useQuery(GET_USERS);
   const { data: allLectureData, refetch: refetchList } = useQuery(
     GET_ALL_LECTURES,
     {
@@ -348,6 +377,7 @@ export default function ClassPage() {
   const [isBook, setIsBook] = useState(false);
   const [maxScore, setMaxScore] = useState("");
   const [minScore, setMinScore] = useState(0);
+  const [selectedAddListIndex, setSelectedAddListIndex] = useState(0);
   // const [bookList, setBookList] = useState([]);
   const [selectBooks, setSelectBooks] = useState([]);
   const [addClassType, setAddClassType] = useState("once");
@@ -387,13 +417,13 @@ export default function ClassPage() {
         isRepeat: "once",
         repeatsNum: 0,
         startDate: dateToInput(date),
-        teacherId: userData?.allUsers
-          .filter((el) => el.userCategory === "선생님")
-          .filter((el) => {
-            return (
-              Number(el.profile.academy.id) === Number(router.query.branch)
-            );
-          })
+        teacherId: teacherData?.staffInAcademy
+          .filter((el) => el.user.userCategory === "선생님")
+          // .filter((el) => {
+          //   return (
+          //     Number(el.profile.academy.id) === Number(router.query.branch)
+          //   );
+          // })
           ?.sort((a, b) => {
             if (Number(a.id) === Number(myData.me.id)) {
               return -1;
@@ -450,19 +480,34 @@ export default function ClassPage() {
     })?.length ?? 1) / itemsPerPage
   );
 
+  // 수업 정렬 함수
+
+  useEffect(() => {
+    if (localStorage.getItem("classSortType") !== undefined) {
+      setClassSortType(localStorage.getItem("classSortType"));
+    }
+  }, []);
+
+  const onChangeClassSort = (e) => {
+    setClassSortType(e.target.value);
+    localStorage.setItem("classSortType", e.target.value);
+    console.log(e.target.value);
+  };
+
   useEffect(() => {
     const newList = [...addRepeatInput];
     newList.forEach((el) => {
-      el.teacherId = userData?.allUsers
-        .filter((el) => el.userCategory === "선생님")
-        .filter((el) => {
-          return (
-            Number(el?.profile?.academy?.id) === Number(router.query.branch)
-          );
-        })[0]?.id;
+      el.teacherId = teacherData?.staffInAcademy.filter(
+        (el) => el?.user.userCategory === "선생님"
+      )[0]?.id;
+      // .filter((el) => {
+      //   return (
+      //     Number(el?.profile?.academy?.id) === Number(router.query.branch)
+      //   );
+      // })
     });
     setAddRepeatInput(newList);
-  }, [userData]);
+  }, [teacherData]);
 
   useEffect(() => {
     setLateTime(dateToClock(date));
@@ -508,25 +553,26 @@ export default function ClassPage() {
       calendar.push(nowWeek);
     }
     setCalendarArray(calendar);
+    setCheckList([]);
   }, [calendarDate]);
 
   useEffect(() => {
     setPage(1);
-    if (manager === "") {
-      let students = Array.isArray(
-        studentListData?.getLecturesByAcademyAndDateStudents
-      )
-        ? [...studentListData?.getLecturesByAcademyAndDateStudents]
-        : [];
-
-      const start = (page - 1) * itemsPerPage;
-      const end = start + itemsPerPage;
-      setStudentArray(
-        students
-          .sort((a, b) =>
-            a.student.korName.localeCompare(b.student.korName, "ko-KR")
-          )
-          .sort((a, b) => {
+    // if (manager === "") {
+    let students = Array.isArray(
+      studentListData?.getLecturesByAcademyAndDateStudents
+    )
+      ? [...studentListData?.getLecturesByAcademyAndDateStudents]
+      : [];
+    const start = (page - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    setStudentArray(
+      students
+        .sort((a, b) =>
+          a.student.korName.localeCompare(b.student.korName, "ko-KR")
+        )
+        .sort((a, b) => {
+          if (classSortType === "default") {
             let timeA = new Date(`1970-01-01T${a.lecture.startTime}`);
             let timeB = new Date(`1970-01-01T${b.lecture.startTime}`);
             if (
@@ -544,71 +590,86 @@ export default function ClassPage() {
               timeB = new Date(`1970-01-02T${a.lecture.startTime}`);
             }
             return timeA - timeB;
-          })
-          ?.filter((el) => {
-            return (
-              el.student.korName.includes(searchWord) ||
-              el.student.origin
-                .toUpperCase()
-                .includes(searchWord.toUpperCase()) ||
-              el.student.engName
-                .toUpperCase()
-                .includes(searchWord.toUpperCase())
-            );
-          })
-        // ?.slice(start, end)
-      );
-    } else {
-      let students = Array.isArray(
-        studentListData?.getLecturesByAcademyAndDateStudents
-      )
-        ? [...studentListData?.getLecturesByAcademyAndDateStudents]
-        : [];
-
-      const start = (page - 1) * itemsPerPage;
-      const end = start + itemsPerPage;
-      setStudentArray(
-        students
-          .sort((a, b) =>
-            a.student.korName.localeCompare(b.student.korName, "ko-KR")
-          )
-          .sort((a, b) => {
+          } else if (classSortType === "startTime") {
             let timeA = new Date(`1970-01-01T${a.lecture.startTime}`);
             let timeB = new Date(`1970-01-01T${b.lecture.startTime}`);
-            if (
-              a?.attendanceStatus?.statusDisplay === "하원" ||
-              a?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
-              a?.attendanceStatus?.statusDisplay === "결석"
-            ) {
-              timeA = new Date(`1970-01-02T${a.lecture.startTime}`);
-            }
-            if (
-              b?.attendanceStatus?.statusDisplay === "하원" ||
-              b?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
-              b?.attendanceStatus?.statusDisplay === "결석"
-            ) {
-              timeB = new Date(`1970-01-02T${a.lecture.startTime}`);
-            }
             return timeA - timeB;
-          })
-          ?.filter((el) => {
-            return (
-              el.student.korName.includes(searchWord) ||
-              el.student.origin
-                .toUpperCase()
-                .includes(searchWord.toUpperCase()) ||
-              el.student.engName
-                .toUpperCase()
-                .includes(searchWord.toUpperCase())
-            );
-          })
-          ?.filter((el) => {
+          } else if (classSortType === "endTime") {
+            let timeA = new Date(`1970-01-01T${a.lecture.endTime}`);
+            let timeB = new Date(`1970-01-01T${b.lecture.endTime}`);
+            return timeA - timeB;
+          } else if (classSortType === "name") {
+            return a.student.korName.localeCompare(b.student.korName, "ko-KR");
+          }
+        })
+        ?.filter((el) => {
+          return (
+            el.student.korName.includes(searchWord) ||
+            el.student.origin
+              .toUpperCase()
+              .includes(searchWord.toUpperCase()) ||
+            el.student.engName.toUpperCase().includes(searchWord.toUpperCase())
+          );
+        })
+        ?.filter((el) => {
+          if (manager === "") {
+            return true;
+          } else {
             return Number(el.lecture.teacher.id) === Number(manager);
-          })
-        // ?.slice(start, end)
-      );
-    }
-  }, [studentListData, searchWord, manager]);
+          }
+        })
+    );
+    // } else {
+    //   let students = Array.isArray(
+    //     studentListData?.getLecturesByAcademyAndDateStudents
+    //   )
+    //     ? [...studentListData?.getLecturesByAcademyAndDateStudents]
+    //     : [];
+
+    //   const start = (page - 1) * itemsPerPage;
+    //   const end = start + itemsPerPage;
+
+    //   setStudentArray(
+    //     students
+    //       .sort((a, b) =>
+    //         a.student.korName.localeCompare(b.student.korName, "ko-KR")
+    //       )
+    //       .sort((a, b) => {
+    //         let timeA = new Date(`1970-01-01T${a.lecture.startTime}`);
+    //         let timeB = new Date(`1970-01-01T${b.lecture.startTime}`);
+    //         if (
+    //           a?.attendanceStatus?.statusDisplay === "하원" ||
+    //           a?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+    //           a?.attendanceStatus?.statusDisplay === "결석"
+    //         ) {
+    //           timeA = new Date(`1970-01-02T${a.lecture.startTime}`);
+    //         }
+    //         if (
+    //           b?.attendanceStatus?.statusDisplay === "하원" ||
+    //           b?.attendanceStatus?.statusDisplay === "결석 (보강)" ||
+    //           b?.attendanceStatus?.statusDisplay === "결석"
+    //         ) {
+    //           timeB = new Date(`1970-01-02T${a.lecture.startTime}`);
+    //         }
+    //         return timeA - timeB;
+    //       })
+    //       ?.filter((el) => {
+    //         return (
+    //           el.student.korName.includes(searchWord) ||
+    //           el.student.origin
+    //             .toUpperCase()
+    //             .includes(searchWord.toUpperCase()) ||
+    //           el.student.engName
+    //             .toUpperCase()
+    //             .includes(searchWord.toUpperCase())
+    //         );
+    //       })
+    //       ?.filter((el) => {
+    //         return Number(el.lecture.teacher.id) === Number(manager);
+    //       })
+    //   );
+    // }
+  }, [studentListData, searchWord, manager, classSortType]);
 
   const onClickMakeUpClass = async () => {
     // try {
@@ -1433,6 +1494,9 @@ export default function ClassPage() {
 
   // 수업 반복 추가 커스텀 지점
   const onClickRepeatDates = (ind, index) => () => {
+    if (addList.length === 0) {
+      return;
+    }
     const newInput = [...addRepeatInput];
     const newDates = [...newInput[ind].week];
     if (newDates.includes(index)) {
@@ -1502,7 +1566,8 @@ export default function ClassPage() {
     console.log(newInput);
   };
 
-  const onClickAddRepeatDelete = (ind) => () => {
+  const onClickAddRepeatDelete = (ind) => (e) => {
+    e.stopPropagation();
     if (addRepeatInput.length !== 1) {
       const newInput = [...addRepeatInput];
       setAddRepeatInput(
@@ -1510,6 +1575,9 @@ export default function ClassPage() {
           return ind !== index;
         })
       );
+    }
+    if (ind <= selectedAddListIndex) {
+      setSelectedAddListIndex(0);
     }
   };
 
@@ -1720,7 +1788,6 @@ export default function ClassPage() {
       // setEndTimes(endTimesArray);
       const endTimesJSON = JSON.stringify(endTimesArray);
       localStorage.setItem("endTimes", endTimesJSON);
-      console.log(data.allLectures);
     }
   }, [data, settingData]);
 
@@ -1793,9 +1860,9 @@ export default function ClassPage() {
         Math.ceil(studentData?.studentsInAcademy?.length / itemsPerPage)
       );
       const newArray = [
-        ...studentData?.studentsInAcademy
-          .sort((a, b) => a.korName.localeCompare(b.korName, "ko-KR"))
-          .slice(start, end),
+        ...studentData?.studentsInAcademy.sort((a, b) =>
+          a.korName.localeCompare(b.korName, "ko-KR")
+        ),
       ];
       setAllStudent(newArray);
     }
@@ -1828,7 +1895,6 @@ export default function ClassPage() {
               el?.korName?.includes(searchStudents)
             );
           })
-          .slice(0, itemsPerPage)
       );
     }
   }, [searchStudents]);
@@ -1844,8 +1910,7 @@ export default function ClassPage() {
             el?.origin?.toUpperCase()?.includes(searchStudents.toUpperCase()) ||
             el?.korName?.includes(searchStudents)
           );
-        })
-        .slice(start, end),
+        }),
     ];
     setAllStudent(newArray);
     setStudentPage(index);
@@ -2856,19 +2921,60 @@ export default function ClassPage() {
                 </select>
               </div>
             )}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span>수업 정렬</span>
+              <select onChange={onChangeClassSort}>
+                <option
+                  selected={classSortType === "default"}
+                  value={"default"}
+                >
+                  기본 정렬
+                </option>
+                <option
+                  selected={classSortType === "startTime"}
+                  value={"startTime"}
+                >
+                  시작 시간
+                </option>
+                {/* <option
+                  selected={classSortType === "startTimeR"}
+                  value={"startTimeR"}
+                >
+                  시작 시간▼
+                </option> */}
+                <option
+                  selected={classSortType === "endTime"}
+                  value={"endTime"}
+                >
+                  종료 시간
+                </option>
+                {/* <option
+                  selected={classSortType === "endTimeR"}
+                  value={"endTimeR"}
+                >
+                  종료 시간▼
+                </option> */}
+                <option selected={classSortType === "name"} value={"name"}>
+                  원생 이름
+                </option>
+                {/* <option selected={classSortType === "nameR"} value={"nameR"}>
+                  원생 이름▼
+                </option> */}
+              </select>
+            </div>
             <S.ClassMiddleTag>
               <S.ClassInput
                 type="text"
                 onChange={onChangeSearch}
                 placeholder="     원번 혹은 이름을 입력하세요."
               ></S.ClassInput>
-              <S.ClassButton
+              {/* <S.ClassButton
                 onClick={() => {
                   setStudentToggle(true);
                 }}
               >
                 수업 관리
-              </S.ClassButton>
+              </S.ClassButton> */}
               <S.ClassButton
                 onClick={() => {
                   setTodayDate(new Date());
@@ -2884,14 +2990,14 @@ export default function ClassPage() {
                       repeatsNum: 0,
                       startDate: dateToInput(date),
                       teacherId: Number(
-                        userData?.allUsers
-                          .filter((el) => el.userCategory === "선생님")
-                          .filter((el) => {
-                            return (
-                              Number(el.profile.academy.id) ===
-                              Number(router.query.branch)
-                            );
-                          })
+                        teacherData?.staffInAcademy
+                          .filter((el) => el.user.userCategory === "선생님")
+                          // .filter((el) => {
+                          //   return (
+                          //     Number(el.profile.academy.id) ===
+                          //     Number(router.query.branch)
+                          //   );
+                          // })
                           ?.sort((a, b) => {
                             if (Number(a.id) === Number(myData.me.id)) {
                               return -1;
@@ -3013,31 +3119,57 @@ export default function ClassPage() {
                         ></input>
                       </td>
                       <td
-                        style={{ cursor: "pointer" }}
-                        onClick={() => {
-                          window.open(
-                            "/" +
-                              router.query.branch +
-                              "/academy/" +
-                              el.student.id
-                          );
-                        }}
+                      // style={{ cursor: "pointer" }}
+                      // onClick={() => {
+                      //   // window.open(
+                      //   // "/" +
+                      //   //   router.query.branch +
+                      //   //   "/academy/" +
+                      //   //   el.student.id
+                      //   // );
+                      //   router.push(
+                      //     "/" +
+                      //       router.query.branch +
+                      //       "/academy/" +
+                      //       el.student.id
+                      //   );
+                      // }}
                       >
                         {el.student.origin}
                       </td>
                       <td
-                        style={{ cursor: "pointer" }}
-                        onClick={() => {
-                          window.open(
-                            "/" +
-                              router.query.branch +
-                              "/academy/" +
-                              el.student.id
-                          );
-                        }}
+                      // onClick={() => {
+                      //   // window.open(
+                      //   //   "/" +
+                      //   //     router.query.branch +
+                      //   //     "/academy/" +
+                      //   //     el.student.id
+                      //   // );
+                      //   router.push(
+                      //     "/" +
+                      //       router.query.branch +
+                      //       "/academy/" +
+                      //       el.student.id
+                      //   );
+                      // }}
                       >
-                        {el.student.korName + "(" + el.student.engName + ")"}
-                        <SearchOutlined />
+                        <div
+                          style={{
+                            // cursor: "pointer",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          {el.student.korName + "(" + el.student.engName + ")"}
+                          <SearchOutlined
+                            onClick={() => {
+                              router.push(
+                                `/${router.query.branch}/academy/${el?.student?.id}`
+                              );
+                            }}
+                          />
+                        </div>
                       </td>
                       <td
                         style={
@@ -3059,14 +3191,22 @@ export default function ClassPage() {
                         {el?.attendanceStatus?.statusDisplay ?? ""}
                         {el?.attendanceStatus?.statusDisplay === "결석" && (
                           // 여기서부터 보강
-                          <button
+                          <S.AbsentButton
                             onClick={onClickOpenMakeUp(
                               el.student.id,
                               el.lecture.id
                             )}
+                            style={{
+                              width: "2.5rem",
+                              height: "1.5rem",
+                              fontSize: "0.8rem",
+                              borderRadius: "1.375rem",
+                              border: "1px solid #dbdde1",
+                              background: "#f7f8fa",
+                            }}
                           >
                             보강
-                          </button>
+                          </S.AbsentButton>
                         )}
                       </td>
                       <td>
@@ -4345,8 +4485,8 @@ export default function ClassPage() {
         <Modal
           closable={false}
           open={classToggle}
-          width={"55vw"}
-          height={"50vh"}
+          width={"78.75rem"}
+          height={"48rem"}
           onOk={() => {
             console.log(12345);
           }}
@@ -4366,14 +4506,14 @@ export default function ClassPage() {
                 isRepeat: "once",
                 repeatsNum: 0,
                 startDate: dateToInput(date),
-                teacherId: userData?.allUsers
-                  .filter((el) => el.userCategory === "선생님")
-                  .filter((el) => {
-                    return (
-                      Number(el.profile.academy.id) ===
-                      Number(router.query.branch)
-                    );
-                  })
+                teacherId: teacherData?.staffInAcademy
+                  .filter((el) => el?.user.userCategory === "선생님")
+                  // .filter((el) => {
+                  //   return (
+                  //     Number(el.profile.academy.id) ===
+                  //     Number(router.query.branch)
+                  //   );
+                  // })
                   ?.sort((a, b) => {
                     if (Number(a.id) === Number(myData.me.id)) {
                       return -1;
@@ -4389,169 +4529,203 @@ export default function ClassPage() {
           }}
           footer={null}
         >
-          <S.ClassTitle>{"수업 추가"}</S.ClassTitle>
+          <S.ClassTitle>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ marginRight: "0.62rem" }}
+            >
+              <path
+                d="M12 6.84564H6.84564V12H5.15436V6.84564H0V5.15436H5.15436V0H6.84564V5.15436H12V6.84564Z"
+                fill="#791285"
+              />
+            </svg>
+            {" 수업 추가"}
+          </S.ClassTitle>
+          <div
+            style={{ border: "1px solid #DFE1E5", margin: "1.25rem 0" }}
+          ></div>
           <S.ModalClassAddWrapper>
             <div style={{ width: "50%" }}>
-              <div>
-                <div
-                  style={{
-                    marginRight: "5px",
-                    fontSize: "0.875rem",
-                    fontStyle: "normal",
-                    fontWeight: "500",
-                    marginBottom: "0.75rem",
-                  }}
-                >
-                  원생 목록
-                </div>
-                <S.InputInput
-                  onChange={(e) => {
-                    setSearchStudents(e.target.value);
-                  }}
-                  style={{
-                    borderRadius: "0.5rem",
-                    border: "1px solid #DBDDE1",
-                    padding: "0.81rem 1.25rem",
-                    width: "80%",
-                  }}
-                  placeholder="원번 혹은 이름을 입력하세요."
-                ></S.InputInput>
-              </div>{" "}
               {addList.length === 0 ? (
                 <>
-                  <S.ModalTable
+                  <S.ModalInput
+                    onChange={(e) => {
+                      setSearchStudents(e.target.value);
+                    }}
+                    placeholder="      원번 혹은 이름을 입력하세요."
+                  ></S.ModalInput>
+                  <div
                     style={{
-                      height: "40rem",
+                      height: "38rem",
                       overflow: "scroll",
-                      // overflow: "hidden",
+                      overflowX: "hidden",
                     }}
                   >
-                    <S.ModalTag style={{ position: "sticky" }}>
-                      <S.ModalHeadLeft
+                    <table
+                      style={{
+                        height: "33.625rem",
+                        width: "37.125rem",
+                        overflow: "scroll",
+                        overflowX: "hidden",
+                      }}
+                    >
+                      <thead
                         style={{
-                          width: "30%",
-                          color: "#000",
-                          background: "#F7F8FA",
-                          height: "2.75rem",
-                          display: "flex",
-                          alignItems: "center",
+                          position: "sticky",
+                          top: 0,
+                          zIndex: 0,
                         }}
                       >
-                        원번
-                      </S.ModalHeadLeft>
-                      <S.ModalHeadMiddle
-                        style={{
-                          width: "30%",
-                          color: "#000",
-                          background: "#F7F8FA",
-                          height: "2.75rem",
-                          display: "flex",
-                          alignItems: "center",
-                        }}
-                      >
-                        이름
-                      </S.ModalHeadMiddle>
-                      <S.ModalHeadRight
-                        style={{
-                          width: "25%",
-                          color: "#000",
-                          background: "#F7F8FA",
-                          height: "2.75rem",
-                          display: "flex",
-                          alignItems: "center",
-                        }}
-                      >
-                        추가
-                      </S.ModalHeadRight>
-                    </S.ModalTag>
-                    {/* 여기다가 필터 추가 lecture 정보로 */}
-                    {allStudent?.map((el) => {
-                      return (
-                        <S.ModalTag key={uuidv4()} style={{ margin: 0 }}>
-                          <S.ModalHeadLeft
+                        <tr>
+                          <S.AddModalTh
                             style={{
-                              width: "30%",
-                              height: "2.75rem",
-                              display: "flex",
-                              alignItems: "center",
+                              width: "15rem",
+                              textAlign: "center",
+                              background: "#791285",
                             }}
                           >
-                            {el?.origin}
-                          </S.ModalHeadLeft>
-                          <S.ModalHeadMiddle
+                            원번
+                          </S.AddModalTh>
+                          <S.AddModalTh
                             style={{
-                              width: "30%",
-                              height: "2.75rem",
-                              display: "flex",
-                              alignItems: "center",
+                              width: "15rem",
+                              textAlign: "center",
+                              background: "#791285",
                             }}
                           >
-                            {el?.korName}
-                          </S.ModalHeadMiddle>
-                          <S.ModalHeadRight
+                            이름
+                          </S.AddModalTh>
+                          <S.AddModalTh
                             style={{
-                              width: "25%",
-                              height: "2.75rem",
-                              display: "flex",
-                              alignItems: "center",
+                              width: "6rem",
+                              textAlign: "center",
+                              background: "#791285",
                             }}
                           >
-                            {/* <input
-                        style={{ width: "20px", height: "20px" }}
-                        type="checkbox"
-                        onChange={onClickStudents(el?.id)}
-                        checked={addList.includes(Number(el?.id))}
-                      ></input> */}
-                            <button
-                              onClick={onClickStudents(el?.id, el?.korName)}
-                            >
-                              선택
-                            </button>
-                          </S.ModalHeadRight>
-                        </S.ModalTag>
-                      );
-                    })}
-                  </S.ModalTable>
-                  <S.PageContainer
-                    style={{ marginBottom: "20px", justifyContent: "center" }}
-                  >
-                    {Array.from({ length: studentMaxPage }, (_, i) => (
-                      <S.PageBox
-                        key={i}
-                        style={
-                          i === studentPage
-                            ? { backgroundColor: "#333", color: "#eeeeee" }
-                            : {}
-                        }
-                        onClick={onClickStudentPage(i)}
-                      >
-                        {i + 1}
-                      </S.PageBox>
-                    ))}
-                  </S.PageContainer>
+                            추가
+                          </S.AddModalTh>
+                        </tr>
+                      </thead>
+                      {/* 여기다가 필터 추가 lecture 정보로 */}
+                      <tbody>
+                        {allStudent?.map((el) => {
+                          return (
+                            <tr key={uuidv4()} style={{ margin: 0 }}>
+                              <S.AddModalTd
+                                style={{
+                                  textAlign: "center",
+                                }}
+                              >
+                                {el?.origin}
+                              </S.AddModalTd>
+                              <S.AddModalTd
+                                style={{
+                                  textAlign: "center",
+                                }}
+                              >
+                                {`${el?.korName} (${el?.engName ?? ""})`}
+                              </S.AddModalTd>
+                              <S.AddModalTd
+                                style={{
+                                  textAlign: "center",
+                                }}
+                              >
+                                <button
+                                  onClick={onClickStudents(el?.id, el?.korName)}
+                                  style={{
+                                    cursor: "pointer",
+                                    border: "none",
+                                    background: "#fff",
+                                    fontFamily: "Noto Sans KR",
+                                    fontSize: "1rem",
+                                    fontWeight: "500",
+                                  }}
+                                >
+                                  <svg
+                                    width="12"
+                                    height="10"
+                                    viewBox="0 0 12 10"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      d="M4 7.28125L11.0625 0.21875L12 1.15625L4 9.15625L0.28125 5.4375L1.21875 4.5L4 7.28125Z"
+                                      fill="#333333"
+                                    />
+                                  </svg>
+                                  {" 선택"}
+                                </button>
+                              </S.AddModalTd>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </>
               ) : (
                 <>
+                  <S.AddModalBackButton
+                    onClick={() => {
+                      setAddList([]);
+                    }}
+                  >
+                    <svg
+                      width="12"
+                      height="9"
+                      viewBox="0 0 12 9"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      style={{ marginBottom: "0.1rem", marginRight: "1rem" }}
+                    >
+                      <path
+                        d="M12 3.84375V5.15625H2.5625L4.9375 7.5625L4 8.5L0 4.5L4 0.5L4.9375 1.4375L2.5625 3.84375H12Z"
+                        fill="#791285"
+                      />
+                    </svg>
+                    이전 단계로
+                  </S.AddModalBackButton>
                   <div
                     style={{ display: "flex", justifyContent: "space-between" }}
                   >
-                    <S.EditModalTagTitle>
-                      {addListName + " 수업 목록"}
-                    </S.EditModalTagTitle>
-                    <button
-                      onClick={() => {
-                        setAddList([]);
-                      }}
-                    >
-                      취소
-                    </button>
+                    <S.AddModalTitle>
+                      {addListName + "의 수업 목록"}
+                    </S.AddModalTitle>
                   </div>
                   <table style={{ width: "100%" }}>
                     <thead>
                       <tr>
-                        <th>날짜</th>
-                        <th>반복 요일</th>
-                        <th>수업 시간</th>
+                        <S.AddModalTh
+                          style={{
+                            width: "15rem",
+                            textAlign: "center",
+                            background: "#791285",
+                          }}
+                        >
+                          날짜
+                        </S.AddModalTh>
+                        <S.AddModalTh
+                          style={{
+                            width: "12rem",
+                            textAlign: "center",
+                            background: "#791285",
+                          }}
+                        >
+                          반복 요일
+                        </S.AddModalTh>
+                        <S.AddModalTh
+                          style={{
+                            width: "9rem",
+                            textAlign: "center",
+                            background: "#791285",
+                          }}
+                        >
+                          수업 시간
+                        </S.AddModalTh>
                       </tr>
                     </thead>
                     <tbody>
@@ -4569,25 +4743,29 @@ export default function ClassPage() {
                         ?.map((el) => {
                           return (
                             <tr>
-                              <td>
+                              <S.AddModalTd>
                                 {el?.lecture?.lectureInfo?.repeatDay.includes(
                                   -1
                                 )
-                                  ? el?.lecture?.date
+                                  ? dateInputToDot(el?.lecture?.date)
                                   : el?.lecture?.lectureInfo?.autoAdd
-                                  ? startDate(
-                                      el?.lecture?.date,
-                                      el?.lecture?.lectureInfo?.repeatDay
+                                  ? dateInputToDot(
+                                      startDate(
+                                        el?.lecture?.date,
+                                        el?.lecture?.lectureInfo?.repeatDay
+                                      )
                                     ) + "~"
-                                  : el?.lecture?.date +
-                                    "~" +
-                                    lastDate(
-                                      el?.lecture?.date,
-                                      el?.lecture?.lectureInfo?.repeatWeeks,
-                                      el?.lecture?.lectureInfo?.repeatDay
+                                  : dateInputToDot(el?.lecture?.date) +
+                                    " ~ " +
+                                    dateInputToDot(
+                                      lastDate(
+                                        el?.lecture?.date,
+                                        el?.lecture?.lectureInfo?.repeatWeeks,
+                                        el?.lecture?.lectureInfo?.repeatDay
+                                      )
                                     )}
-                              </td>
-                              <td>
+                              </S.AddModalTd>
+                              <S.AddModalTd>
                                 {el?.lecture?.lectureInfo?.repeatDay.includes(
                                   -1
                                 )
@@ -4599,12 +4777,12 @@ export default function ClassPage() {
                                       .map((ele) => {
                                         return week[ele];
                                       })}
-                              </td>
-                              <td>
+                              </S.AddModalTd>
+                              <S.AddModalTd>
                                 {el?.lecture?.startTime.slice(0, 5) +
-                                  "-" +
+                                  " ~ " +
                                   el?.lecture?.endTime.slice(0, 5)}
-                              </td>
+                              </S.AddModalTd>
                             </tr>
                           );
                         })}
@@ -4613,330 +4791,454 @@ export default function ClassPage() {
                 </>
               )}
             </div>
-            <S.ModalTable style={{ width: "48%", display: "block" }}>
+            <div>
               <div
                 style={{
-                  marginBottom: "1rem",
-                  width: "100%",
                   display: "flex",
-                  justifyContent: "flex-end",
+                  width: "37rem",
+                  overflowY: "hidden",
+                  overflowX: addRepeatInput.length > 6 ? "scroll" : "hidden",
                 }}
               >
-                <button
-                  style={{ marginTop: "1rem" }}
-                  onClick={() => {
-                    const newList = [...addRepeatInput];
-                    newList.push({
-                      week: [],
-                      startTime: dateToClock(date),
-                      endTime: dateToClockOneHour(date),
-                      isAuto: false,
-                      isRepeat: "once",
-                      repeatsNum: 0,
-                      startDate: dateToInput(date),
-                      teacherId: userData?.allUsers
-                        .filter((el) => el.userCategory === "선생님")
-                        .filter((el) => {
-                          return (
-                            Number(el.profile.academy.id) ===
-                            Number(router.query.branch)
-                          );
-                        })
-                        ?.sort((a, b) => {
-                          if (Number(a.id) === Number(myData.me.id)) {
-                            return -1;
-                          } else if (Number(b.id) === Number(myData.me.id)) {
-                            return 1;
-                          } else {
-                            return Number(a.id) - Number(b.id);
+                {addRepeatInput?.map((el, ind) => {
+                  return (
+                    <S.AddModalSelectBox
+                      style={{
+                        border: selectedAddListIndex === ind ? "" : "none",
+                        borderBottom:
+                          selectedAddListIndex === ind
+                            ? "none"
+                            : "1px solid #dfe1e5",
+                      }}
+                    >
+                      {ind + 1}
+                    </S.AddModalSelectBox>
+                  );
+                })}
+                {/* {Array(6)
+                  .fill(0)
+                  .map((el, ind) => {
+                    return (
+                      <S.AddModalSelectBox
+                        style={{
+                          border: selectedAddListIndex === ind ? "" : "none",
+                          borderBottom:
+                            selectedAddListIndex === ind
+                              ? "none"
+                              : "1px solid #dfe1e5",
+                        }}
+                        onClick={() => {
+                          if (
+                            addRepeatInput?.length > ind &&
+                            addList.length !== 0
+                          ) {
+                            setSelectedAddListIndex(ind);
                           }
-                        })?.[0].id,
-                      about: "",
-                    });
-                    setAddRepeatInput(newList);
-                    setAddRepeatCount(addRepeatCount + 1);
-                  }}
-                >
-                  +
-                </button>
-              </div>
-              {addRepeatInput.map((_, ind) => {
-                return (
-                  <>
-                    <div
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <button onClick={onClickAddRepeatDelete(ind)}>X</button>
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: "0.875rem",
-                        color: "#000",
-                        marginBottom: "0.75rem",
-                      }}
-                    >
-                      담당 선생님
-                    </div>
-                    <select
-                      onChange={onChangeRepeatTeacherId(ind)}
-                      style={{
-                        borderRadius: "0.5rem",
-                        border: "1px solid #DBDDE1",
-                        width: "100%",
-                        padding: "0.81rem 1.5rem",
-                      }}
-                      // value={teacherId}
-                    >
-                      {teacherData?.staffInAcademy
-                        ?.filter((el) => el.user.userCategory === "선생님")
-                        .map((el) => {
-                          return (
-                            <option
-                              key={uuidv4()}
-                              value={el.id}
-                              selected={
-                                Number(addRepeatInput[ind].teacherId) ===
-                                Number(el.id)
-                              }
+                        }}
+                      >
+                        {addRepeatInput?.length > ind
+                          ? "수업 " + (ind + 1)
+                          : ""}
+                        {addRepeatInput.length > 1 &&
+                          addRepeatInput?.length > ind && (
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 12 12"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                              onClick={onClickAddRepeatDelete(ind)}
                             >
-                              {el.korName}
-                            </option>
-                          );
-                        })}
-                    </select>
-                    <div style={{ marginTop: "1.87rem" }}>수업 날짜</div>
-                    <S.InputInput
-                      type="date"
-                      // defaultValue={dateToInput(date)}
-                      value={addRepeatInput[ind].startDate}
-                      style={{
-                        width: "88%",
-                        height: "2.75rem",
-                        padding: "0 1.5rem",
-                      }}
-                      onChange={onChangeRepeatDate(ind)}
-                    ></S.InputInput>
-                    <div
-                      style={{
-                        fontSize: "0.875rem",
-                        color: "#000",
-                        marginBottom: "0.75rem",
-                        marginTop: "1.25rem",
-                      }}
-                    >
-                      수업 방식
-                    </div>
+                              <path
+                                d="M11.2383 1.81641L7.05469 6L11.2383 10.1836L10.1836 11.2383L6 7.05469L1.81641 11.2383L0.761719 10.1836L4.94531 6L0.761719 1.81641L1.81641 0.761719L6 4.94531L10.1836 0.761719L11.2383 1.81641Z"
+                                fill="#82858B"
+                              />
+                            </svg>
+                          )}
+                        {addRepeatInput.length === ind &&
+                          addList.length !== 0 && (
+                            <svg
+                              width="10"
+                              height="10"
+                              viewBox="0 0 10 10"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                              onClick={() => {
+                                const newList = [...addRepeatInput];
+                                newList.push({
+                                  week: [],
+                                  startTime: dateToClock(date),
+                                  endTime: dateToClockOneHour(date),
+                                  isAuto: false,
+                                  isRepeat: "once",
+                                  repeatsNum: 0,
+                                  startDate: dateToInput(date),
+                                  teacherId: teacherData?.staffInAcademy
+                                    ?.filter(
+                                      (el) =>
+                                        el?.user?.userCategory === "선생님"
+                                    )
+                                    // .filter((el) => {
+                                    //   return (
+                                    //     Number(el.profile.academy.id) ===
+                                    //     Number(router.query.branch)
+                                    //   );
+                                    // })
+                                    ?.sort((a, b) => {
+                                      if (
+                                        Number(a.id) === Number(myData.me.id)
+                                      ) {
+                                        return -1;
+                                      } else if (
+                                        Number(b.id) === Number(myData.me.id)
+                                      ) {
+                                        return 1;
+                                      } else {
+                                        return Number(a.id) - Number(b.id);
+                                      }
+                                    })?.[0].id,
+                                  about: "",
+                                });
+                                setAddRepeatInput(newList);
+                                setAddRepeatCount(addRepeatCount + 1);
+                                setSelectedAddListIndex(addRepeatInput.length);
+                              }}
+                            >
+                              <path
+                                d="M9.65625 5.65625H5.65625V9.65625H4.34375V5.65625H0.34375V4.34375H4.34375V0.34375H5.65625V4.34375H9.65625V5.65625Z"
+                                fill="#333333"
+                              />
+                            </svg>
+                          )}
+                      </S.AddModalSelectBox>
+                    );
+                  })} */}
+              </div>
 
-                    <S.ModalRadioBox>
-                      <input
-                        type="radio"
-                        name={"type" + ind}
-                        checked={addRepeatInput[ind].isRepeat === "once"}
-                        value={"once"}
-                        onClick={onChangeRepeatIsRepeat(ind, "once")}
-                        style={{ width: "1.25rem", height: "1.25rem" }}
-                      ></input>
+              {addRepeatInput.map((_, ind) => {
+                if (ind === selectedAddListIndex) {
+                  return (
+                    <>
                       <div
                         style={{
-                          fontSize: "0.875rem",
-                          paddingLeft: "0.5rem",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          width: "37rem",
                         }}
                       >
-                        단일
+                        <div>
+                          <S.AddModalTagTitle>담당 선생님</S.AddModalTagTitle>
+                          <select
+                            onChange={onChangeRepeatTeacherId(ind)}
+                            style={{
+                              marginLeft: "0.62rem",
+                              borderRadius: "0.5rem",
+                              border: "1px solid #DBDDE1",
+                              width: "16.0625rem",
+                              height: "2.75rem",
+                              color: "#000000",
+                              paddingLeft: "0.87rem",
+                              fontFamily: "Spoqa Han Sans Neo",
+                              fontSize: "1rem",
+                              fontStyle: "normal",
+                              fontWeight: "400",
+                              backgroundColor:
+                                addList.length === 0 ? "#f1f1f1" : "",
+                            }}
+                            disabled={addList.length === 0}
+                            // value={teacherId}
+                          >
+                            {teacherData?.staffInAcademy
+                              ?.filter(
+                                (el) => el.user.userCategory === "선생님"
+                              )
+                              .map((el) => {
+                                return (
+                                  <option
+                                    key={uuidv4()}
+                                    value={el.id}
+                                    selected={
+                                      Number(addRepeatInput[ind].teacherId) ===
+                                      Number(el.id)
+                                    }
+                                  >
+                                    {el.korName}
+                                  </option>
+                                );
+                              })}
+                          </select>
+                        </div>
+                        <div>
+                          <S.AddModalTagTitle>수업 날짜</S.AddModalTagTitle>
+                          <S.AddModalInput
+                            type="date"
+                            // defaultValue={dateToInput(date)}
+                            value={addRepeatInput[ind].startDate}
+                            // style={{
+                            //  marginLeft
+                            // }}
+                            disabled={addList.length === 0}
+                            onChange={onChangeRepeatDate(ind)}
+                          ></S.AddModalInput>
+                        </div>
                       </div>
-                      <input
-                        type="radio"
-                        name={"type" + ind}
-                        value={"routine"}
-                        checked={addRepeatInput[ind].isRepeat === "routine"}
-                        style={{
-                          width: "1.25rem",
-                          height: "1.25rem",
-                          marginLeft: "1.5rem",
-                        }}
-                        onClick={onChangeRepeatIsRepeat(ind, "routine")}
-                      ></input>
-                      <div
-                        style={{
-                          fontSize: "0.875rem",
-                          paddingLeft: "0.5rem",
-                        }}
-                      >
-                        반복
-                      </div>
-                      <input
-                        type="radio"
-                        name={"type" + ind}
-                        value={"routine"}
-                        checked={addRepeatInput[ind].isRepeat === "count"}
-                        style={{
-                          width: "1.25rem",
-                          height: "1.25rem",
-                          marginLeft: "1.5rem",
-                        }}
-                        onClick={onChangeRepeatIsRepeat(ind, "count")}
-                      ></input>
-                      <div
-                        style={{
-                          fontSize: "0.875rem",
-                          paddingLeft: "0.5rem",
-                        }}
-                      >
-                        횟수
-                      </div>
-                    </S.ModalRadioBox>
-                    {addRepeatInput[ind].isRepeat === "once" ? (
-                      <></>
-                    ) : (
-                      <>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            marginTop: "1.87rem",
-                          }}
+                      <S.AddModalTagTitle style={{}}>
+                        수업 방식
+                      </S.AddModalTagTitle>
+                      <S.ModalRadioBox>
+                        <S.AddRadioButton
+                          type="radio"
+                          name={"type" + ind}
+                          checked={addRepeatInput[ind].isRepeat === "once"}
+                          value={"once"}
+                          onClick={onChangeRepeatIsRepeat(ind, "once")}
+                          style={{ width: "1.25rem", height: "1.25rem" }}
+                          disabled={addList.length === 0}
+                        ></S.AddRadioButton>
+                        <S.AddRadioTitle
+                          style={
+                            addRepeatInput[ind].isRepeat === "once" &&
+                            addList.length !== 0
+                              ? {}
+                              : { color: "#cccccc" }
+                          }
                         >
+                          단일
+                        </S.AddRadioTitle>
+                        <S.AddRadioButton
+                          type="radio"
+                          name={"type" + ind}
+                          value={"routine"}
+                          checked={addRepeatInput[ind].isRepeat === "routine"}
+                          style={{
+                            width: "1.25rem",
+                            height: "1.25rem",
+                            marginLeft: "1.5rem",
+                            backgroundColor: "#791285",
+                          }}
+                          onClick={onChangeRepeatIsRepeat(ind, "routine")}
+                          disabled={addList.length === 0}
+                        ></S.AddRadioButton>
+                        <S.AddRadioTitle
+                          style={
+                            addRepeatInput[ind].isRepeat === "routine" &&
+                            addList.length !== 0
+                              ? {}
+                              : { color: "#cccccc" }
+                          }
+                        >
+                          반복
+                        </S.AddRadioTitle>
+                        <S.AddRadioButton
+                          type="radio"
+                          name={"type" + ind}
+                          value={"routine"}
+                          checked={addRepeatInput[ind].isRepeat === "count"}
+                          style={{
+                            width: "1.25rem",
+                            height: "1.25rem",
+                            marginLeft: "1.5rem",
+                          }}
+                          onClick={onChangeRepeatIsRepeat(ind, "count")}
+                          disabled={addList.length === 0}
+                        ></S.AddRadioButton>
+                        <S.AddRadioTitle
+                          style={
+                            addRepeatInput[ind].isRepeat === "count" &&
+                            addList.length !== 0
+                              ? {}
+                              : { color: "#cccccc" }
+                          }
+                        >
+                          횟수
+                        </S.AddRadioTitle>
+                      </S.ModalRadioBox>
+                      {addRepeatInput[ind].isRepeat === "once" ? (
+                        <></>
+                      ) : (
+                        <>
                           <div
                             style={{
-                              width: "70%",
-                              border: "1px solid #DBDDE1",
-                              borderRadius: "0.5rem",
-                              backgroundColor: addRepeatInput[ind].isAuto
-                                ? "#dddddd"
-                                : "",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              marginTop: "1.87rem",
                             }}
                           >
-                            <input
-                              type="number"
-                              onChange={onChangeRepeatCount(ind)}
+                            <div
                               style={{
-                                paddingLeft: "5%",
-                                paddingTop: "0.81rem",
-                                paddingBottom: "0.81rem",
-                                border: "0",
-                                width: "85%",
+                                display: "flex",
+                                alignItems: "center",
+                                marginLeft: "0.7rem",
+                                marginBottom: "1.25rem",
                               }}
-                              value={addRepeatInput[ind].repeatsNum}
-                              disabled={addRepeatInput[ind].isAuto}
-                            ></input>
-                            <span>
-                              {addRepeatInput[ind].isRepeat === "count"
-                                ? "회"
-                                : "주"}
-                            </span>
+                            >
+                              <input
+                                type="checkbox"
+                                checked={addRepeatInput[ind].isAuto}
+                                style={{
+                                  width: "1rem",
+                                  height: "1rem",
+                                  marginRight: "0.62rem",
+                                }}
+                                onChange={onChangeRepeatIsAuto(ind)}
+                                disabled={
+                                  addRepeatInput[ind].isRepeat === "count" ||
+                                  addList.length === 0
+                                }
+                              ></input>
+                              <S.AddModalContent
+                                style={{
+                                  fontSize: "1rem",
+                                  fontWeight: "400",
+                                  fontStyle: "Noto Sans KR",
+                                }}
+                              >
+                                자동 생성
+                              </S.AddModalContent>
+                            </div>
                           </div>
+
                           <div
                             style={{
                               display: "flex",
                               alignItems: "center",
-                              marginLeft: "20px",
+                              marginLeft: "0.6rem",
                             }}
                           >
-                            <span>자동 생성</span>
-                            <input
-                              type="checkbox"
-                              checked={addRepeatInput[ind].isAuto}
-                              style={{ width: "20px", height: "20px" }}
-                              onChange={onChangeRepeatIsAuto(ind)}
-                              disabled={
-                                addRepeatInput[ind].isRepeat === "count"
-                              }
-                            ></input>
+                            <div
+                              style={{
+                                width: "3.4375rem",
+                                border: "1px solid #DBDDE1",
+                                borderRadius: "0.5rem",
+                                backgroundColor:
+                                  addRepeatInput[ind].isAuto ||
+                                  addList.length === 0
+                                    ? "#f9f9f9"
+                                    : "",
+                              }}
+                            >
+                              <input
+                                type="number"
+                                onChange={onChangeRepeatCount(ind)}
+                                style={{
+                                  // paddingLeft: "5%",
+                                  // paddingTop: "0.81rem",
+                                  // paddingBottom: "0.81rem",
+                                  borderRadius: "0.5rem",
+                                  border: "0",
+                                  width: "2.2rem",
+                                  height: "2.6875rem",
+                                  textAlign: "center",
+                                  paddingLeft: "1rem",
+                                }}
+                                value={addRepeatInput[ind].repeatsNum}
+                                disabled={
+                                  addRepeatInput[ind].isAuto ||
+                                  addList.length === 0
+                                }
+                              ></input>
+                            </div>
+                            <S.AddModalContent
+                              style={{ marginLeft: "0.62rem" }}
+                            >
+                              {addRepeatInput[ind].isRepeat === "count"
+                                ? "회 동안"
+                                : "주 동안"}
+                            </S.AddModalContent>
+                            <S.ModalRoutineDates>
+                              {week.map((el, index) => {
+                                return (
+                                  <S.ModalRoutineDate
+                                    key={uuidv4()}
+                                    onClick={onClickRepeatDates(ind, index)}
+                                    style={
+                                      addList.length === 0
+                                        ? { backgroundColor: "#f9f9f9" }
+                                        : addRepeatInput[ind].week.includes(
+                                            index
+                                          )
+                                        ? {
+                                            backgroundColor: "#791285",
+                                            color: "#eeeeee",
+                                          }
+                                        : {}
+                                    }
+                                  >
+                                    {el}
+                                  </S.ModalRoutineDate>
+                                );
+                              })}
+                            </S.ModalRoutineDates>
+                            <S.AddModalContent
+                              style={{ marginLeft: "0.62rem" }}
+                            >
+                              {" "}
+                              요일 반복
+                            </S.AddModalContent>
                           </div>
-                        </div>
-                        <S.ModalRoutineInput>
-                          <S.ModalRoutineDates>
-                            {week.map((el, index) => {
-                              return (
-                                <S.ModalRoutineDate
-                                  key={uuidv4()}
-                                  onClick={onClickRepeatDates(ind, index)}
-                                  style={
-                                    addRepeatInput[ind].week.includes(index)
-                                      ? {
-                                          backgroundColor: "#333",
-                                          color: "#eeeeee",
-                                        }
-                                      : {}
-                                  }
-                                >
-                                  {el}
-                                </S.ModalRoutineDate>
-                              );
-                            })}
-                          </S.ModalRoutineDates>
-                        </S.ModalRoutineInput>
-                      </>
-                    )}
+                        </>
+                      )}
 
-                    <div
-                      style={{
-                        marginTop: "1.25rem",
-                        marginBottom: "0.75rem",
-                      }}
-                    >
-                      수업 시간
-                    </div>
-                    <S.TimeBox style={{ width: "100%" }}>
-                      <input
-                        type="time"
+                      <S.AddModalTagTitle>수업 시간</S.AddModalTagTitle>
+                      <div
                         style={{
-                          width: "40%",
-                          fontSize: "17px",
-                          border: "1px solid #dddddd",
-                          paddingLeft: "12px",
-                          borderRadius: "5px",
-                          height: "2.75rem",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          width: "37rem",
                         }}
-                        // defaultValue={dateToClock(date)}
-                        value={addRepeatInput[ind].startTime}
-                        onChange={onChangeRepeatStartTime(ind)}
-                      ></input>
-                      ~
-                      <input
-                        type="time"
-                        style={{
-                          width: "40%",
-                          fontSize: "17px",
-                          border: "1px solid #dddddd",
-                          paddingLeft: "12px",
-                          borderRadius: "5px",
-                          height: "2.75rem",
-                        }}
-                        // defaultValue={dateToClockOneHour(date)}
-                        value={addRepeatInput[ind].endTime}
-                        onChange={onChangeRepeatEndTime(ind)}
-                      ></input>
-                    </S.TimeBox>
-                    <S.ModalInputBox style={{ display: "block" }}>
-                      <div>
-                        <div
-                          style={{
-                            marginTop: "1.25rem",
-                            marginBottom: "0.75rem",
-                          }}
-                        >
-                          메모
-                        </div>
+                      >
+                        <S.AddModalTimeInput
+                          type="time"
+                          // style={{
+                          //   width: "40%",
+                          //   fontSize: "17px",
+                          //   border: "1px solid #dddddd",
+                          //   paddingLeft: "12px",
+                          //   borderRadius: "5px",
+                          //   height: "2.75rem",
+                          // }}
+                          disabled={addList.length === 0}
+                          // defaultValue={dateToClock(date)}
+                          value={addRepeatInput[ind].startTime}
+                          onChange={onChangeRepeatStartTime(ind)}
+                        ></S.AddModalTimeInput>
+                        ~
+                        <S.AddModalTimeInput
+                          type="time"
+                          // style={{
+                          //   width: "40%",
+                          //   fontSize: "17px",
+                          //   border: "1px solid #dddddd",
+                          //   paddingLeft: "12px",
+                          //   borderRadius: "5px",
+                          //   height: "2.75rem",
+                          // }}
+                          disabled={addList.length === 0}
+                          // defaultValue={dateToClockOneHour(date)}
+                          value={addRepeatInput[ind].endTime}
+                          onChange={onChangeRepeatEndTime(ind)}
+                        ></S.AddModalTimeInput>
                       </div>
-                      <S.ModalTextArea
-                        onChange={onChangeRepeatAbout(ind)}
-                        style={{
-                          width: "100%",
-                          borderRadius: "0.5rem",
-                          border: "1px solid #DBDDE1",
-                        }}
-                        value={addRepeatInput[ind].about}
-                      ></S.ModalTextArea>
-                    </S.ModalInputBox>
-                  </>
-                );
+                      <S.ModalInputBox style={{ display: "block" }}>
+                        <S.AddModalTagTitle>메모</S.AddModalTagTitle>
+
+                        <S.AddModalTextArea
+                          onChange={onChangeRepeatAbout(ind)}
+                          style={{
+                            width: "100%",
+                            borderRadius: "0.5rem",
+                            border: "1px solid #DBDDE1",
+                          }}
+                          disabled={addList.length === 0}
+                          placeholder={"메모를 입력해주세요."}
+                          value={addRepeatInput[ind].about}
+                        ></S.AddModalTextArea>
+                      </S.ModalInputBox>
+                    </>
+                  );
+                }
               })}
 
               {/* {addClassType === "once" ? (
@@ -5033,16 +5335,33 @@ export default function ClassPage() {
                   </div>
                 </>
               )} */}
-            </S.ModalTable>
+            </div>
           </S.ModalClassAddWrapper>
           <S.ModalButtonBox style={{ width: "100%", justifyContent: "center" }}>
-            <S.ModalCancelButton
+            <S.AddModalOKButton
+              style={
+                addList.length === 0
+                  ? {
+                      borderRadius: "0.25rem",
+                      border: "1px solid #791285",
+                      cursor: "default",
+                      opacity: 0.5,
+                      background: "#791285",
+                      color: "#FFF",
+                    }
+                  : {}
+              }
+              disabled={addList.length === 0}
+              onClick={onClickOk}
+            >
+              저장
+            </S.AddModalOKButton>
+            <S.AddModalCancelButton
               onClick={onClickCancel}
               style={{ background: "#EBECEF", color: "#000" }}
             >
               취소
-            </S.ModalCancelButton>
-            <S.ModalOkButton onClick={onClickOk}>저장</S.ModalOkButton>
+            </S.AddModalCancelButton>
           </S.ModalButtonBox>
         </Modal>
       ) : (
@@ -5128,7 +5447,7 @@ export default function ClassPage() {
           </div>
         </Modal>
       )}
-      {studentToggle ? (
+      {/* {studentToggle ? (
         <Modal
           closable={false}
           open={studentToggle}
@@ -5430,7 +5749,7 @@ export default function ClassPage() {
         </Modal>
       ) : (
         <></>
-      )}
+      )} */}
       {isAlarm &&
         (lateList?.length > 0 ||
           startList?.length > 0 ||
@@ -7990,7 +8309,9 @@ export default function ClassPage() {
                                         (isEditRepeat === "once"
                                           ? ""
                                           : "~" +
-                                            (isEditRepeat === "routine"
+                                            (isEditAuto
+                                              ? ""
+                                              : isEditRepeat === "routine"
                                               ? lastDate(
                                                   editDate,
                                                   editRepeatCount,

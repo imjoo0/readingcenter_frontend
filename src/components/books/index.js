@@ -1281,14 +1281,14 @@ export default function BookPage() {
     <S.BooksWrapper>
       <S.BooksTitle>도서 관리</S.BooksTitle>
       <S.SearchBox
-        style={{
-          borderRadius: "0.25rem 0.25rem 0rem 0rem",
-          background: "#F7F8FA",
-          padding: "1.5rem",
-          borderRadius: "9px",
-          marginTop: "1.25rem",
-          width: "95%",
-        }}
+      // style={{
+      //   borderRadius: "0.25rem 0.25rem 0rem 0rem",
+      //   background: "#F7F8FA",
+      //   padding: "1.5rem",
+      //   borderRadius: "9px",
+      //   marginTop: "1.25rem",
+      //   // width: "95%",
+      // }}
       >
         <S.SearchTag
           style={{
@@ -1307,82 +1307,75 @@ export default function BookPage() {
               marginRight: "1.87rem",
             }}
           >
-            <div style={{ marginBottom: "5px" }}>AR 점수</div>
-            <div>
-              <span style={{ fontWeight: 400 }}>최소</span>
-              <S.InputInput
-                style={{ marginLeft: "10px", marginTop: "10px" }}
-                type="number"
-                onChange={(e) => {
-                  setMinBl(Number(e.target.value));
-                }}
-                onKeyPress={async (e) => {
-                  if (e.key === "Enter") {
-                    onClickSearch();
-                  }
-                }}
-                defaultValue={minBl === 0 ? "" : minBl}
-              ></S.InputInput>
+            <div style={{ marginBottom: "0.62rem" }}>AR 점수</div>
+            <div style={{ display: "flex", marginLeft: "1.25rem" }}>
+              <div>
+                <span style={{ fontWeight: 500 }}>최소</span>
+                <S.BookTagSmallInput
+                  type="number"
+                  onChange={(e) => {
+                    setMinBl(Number(e.target.value));
+                  }}
+                  onKeyPress={async (e) => {
+                    if (e.key === "Enter") {
+                      onClickSearch();
+                    }
+                  }}
+                  defaultValue={minBl === 0 ? "" : minBl}
+                ></S.BookTagSmallInput>
+              </div>
+              <div>
+                <span style={{ fontWeight: 500 }}>최대</span>
+                <S.BookTagSmallInput
+                  type="number"
+                  onChange={(e) => {
+                    setMaxBl(Number(e.target.value));
+                  }}
+                  onKeyPress={async (e) => {
+                    if (e.key === "Enter") {
+                      onClickSearch();
+                    }
+                  }}
+                  defaultValue={maxBl}
+                ></S.BookTagSmallInput>
+              </div>
             </div>
-            <div>
-              <span style={{ fontWeight: 400 }}>최대</span>
-              <S.InputInput
-                style={{ marginLeft: "10px", marginTop: "10px" }}
-                type="number"
-                onChange={(e) => {
-                  setMaxBl(Number(e.target.value));
-                }}
-                onKeyPress={async (e) => {
-                  if (e.key === "Enter") {
-                    onClickSearch();
-                  }
-                }}
-                defaultValue={maxBl}
-              ></S.InputInput>
+            <div style={{ marginBottom: "0.62rem", marginTop: "1.87rem" }}>
+              WC
             </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              color: "#000",
-              fontSize: "15px",
-              fontWeight: "bold",
-              flexDirection: "column",
-              marginRight: "1.87rem",
-            }}
-          >
-            <div style={{ marginBottom: "5px" }}>WC</div>
-            <div style={{ fontWeight: 400 }}>
-              최소
-              <S.InputInput
-                type="number"
-                style={{ marginLeft: "10px", marginTop: "10px" }}
-                onChange={(e) => {
-                  setMinWc(Number(e.target.value));
-                }}
-                onKeyPress={async (e) => {
-                  if (e.key === "Enter") {
-                    onClickSearch();
-                  }
-                }}
-                defaultValue={minWc}
-              ></S.InputInput>
-            </div>
-            <div style={{ fontWeight: 400 }}>
-              최대
-              <S.InputInput
-                type="number"
-                style={{ marginLeft: "10px", marginTop: "10px" }}
-                onChange={(e) => {
-                  setMaxWc(Number(e.target.value));
-                }}
-                onKeyPress={async (e) => {
-                  if (e.key === "Enter") {
-                    onClickSearch();
-                  }
-                }}
-                defaultValue={maxWc}
-              ></S.InputInput>
+            <div style={{ display: "flex", marginLeft: "1.25rem" }}>
+              <div style={{ fontWeight: 500 }}>
+                최소
+                <S.BookTagSmallInput
+                  type="number"
+                  // style={{ marginLeft: "10px", marginTop: "10px" }}
+                  onChange={(e) => {
+                    setMinWc(Number(e.target.value));
+                  }}
+                  onKeyPress={async (e) => {
+                    if (e.key === "Enter") {
+                      onClickSearch();
+                    }
+                  }}
+                  defaultValue={minWc}
+                ></S.BookTagSmallInput>
+              </div>
+              <div style={{ fontWeight: 400 }}>
+                최대
+                <S.BookTagSmallInput
+                  type="number"
+                  // style={{ marginLeft: "10px", marginTop: "10px" }}
+                  onChange={(e) => {
+                    setMaxWc(Number(e.target.value));
+                  }}
+                  onKeyPress={async (e) => {
+                    if (e.key === "Enter") {
+                      onClickSearch();
+                    }
+                  }}
+                  defaultValue={maxWc}
+                ></S.BookTagSmallInput>
+              </div>
             </div>
           </div>
           <div
@@ -1396,10 +1389,10 @@ export default function BookPage() {
             }}
           >
             <div>Lexile 점수</div>
-            <div>
-              <div style={{ fontWeight: 400 }}>
+            <div style={{ display: "flex", marginLeft: "1.25rem" }}>
+              <div style={{ fontWeight: 500 }}>
                 최소
-                <S.InputInput
+                <S.BookTagSmallInput
                   type="number"
                   style={{ marginLeft: "10px", marginTop: "10px" }}
                   onChange={(e) => {
@@ -1411,11 +1404,11 @@ export default function BookPage() {
                     }
                   }}
                   defaultValue={minLex}
-                ></S.InputInput>
+                ></S.BookTagSmallInput>
               </div>
-              <div style={{ fontWeight: 400 }}>
+              <div style={{ fontWeight: 500 }}>
                 최대
-                <S.InputInput
+                <S.BookTagSmallInput
                   type="number"
                   style={{ marginLeft: "10px", marginTop: "10px" }}
                   onChange={(e) => {
@@ -1427,7 +1420,28 @@ export default function BookPage() {
                     }
                   }}
                   defaultValue={maxLex}
-                ></S.InputInput>
+                ></S.BookTagSmallInput>
+              </div>
+            </div>
+            <div>
+              <div style={{ marginTop: "1.87rem" }}>AR Quiz No</div>
+              <div>
+                <div style={{ fontWeight: 500, marginLeft: "1.25rem" }}>
+                  No.
+                  <S.BookTagBigInput
+                    type="number"
+                    style={{ marginLeft: "10px", marginTop: "10px" }}
+                    onChange={(e) => {
+                      setArQuizNo(e.target.value);
+                    }}
+                    onKeyPress={async (e) => {
+                      if (e.key === "Enter") {
+                        onClickSearch();
+                      }
+                    }}
+                    defaultValue={arQuizNo}
+                  ></S.BookTagBigInput>
+                </div>
               </div>
             </div>
           </div>
@@ -1446,7 +1460,7 @@ export default function BookPage() {
             <div>
               <div style={{ fontWeight: 400 }}>
                 No.
-                <S.InputInput
+                <S.BookTagBigInput
                   type="number"
                   style={{ marginLeft: "10px", marginTop: "10px" }}
                   onChange={(e) => {
@@ -1458,7 +1472,7 @@ export default function BookPage() {
                     }
                   }}
                   defaultValue={arQuizNo}
-                ></S.InputInput>
+                ></S.BookTagBigInput>
               </div>
             </div>
           </div>

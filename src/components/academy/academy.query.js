@@ -208,3 +208,25 @@ export const GET_ME = gql`
     }
   }
 `;
+
+export const GET_STUDENTS_REPORT_LIST = gql`
+  query studentsInAcademyWithConsulting($academyId: Int!) {
+    studentsInAcademyWithConsulting(academyId: $academyId) {
+      student {
+        id
+        origin
+        korName
+        engName
+        registerDate
+        birthDate
+        gender
+        pmobileno
+        user {
+          isActive
+        }
+      }
+      consultingCount
+      lastConsultingDate
+    }
+  }
+`;

@@ -3,7 +3,7 @@ import * as S from "./academyDetail.style";
 import "react-calendar/dist/Calendar.css";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { Modal, TimePicker } from "antd";
+import { Modal, Switch, TimePicker } from "antd";
 import { v4 as uuidv4 } from "uuid";
 import { useMutation, useQuery } from "@apollo/client";
 import {
@@ -32,6 +32,7 @@ import {
 } from "./academyDetail.query";
 import {
   calculateLectureDate,
+  dateInputToDays,
   dateInputToNumber,
   dateToClock,
   dateToClockOneHour,
@@ -56,7 +57,31 @@ export default function AcademyDetailPage() {
   });
   const { refetch: refetchStudents } = useQuery(GET_STUDENTS_BY_DATE);
   const { data: userData, refetch: refetchUsers } = useQuery(GET_USERS);
-  const { data: myData } = useQuery(GET_ME);
+  // const { data: myData } = useQuery(GET_ME); 수정 필수
+  const { data: myData } = {
+    data: {
+      me: {
+        id: "281",
+        username: "purple_ara2",
+        userCategory: "\uc120\uc0dd\ub2d8",
+        profile: {
+          id: 281,
+          korName: "\uc544\ub77c\ub3c4\uc11c\uad00 2",
+          engName: "a2",
+          registerDate: "2023-10-13",
+          birthDate: "2023-10-13",
+          academy: {
+            id: "3",
+            name: "\ud37c\ud50c\uc544\uce74\ub370\ubbf8",
+            location: "\uc81c\uc8fc \uc544\ub77c\ucea0\ud37c\uc2a4",
+            __typename: "AcademyType",
+          },
+          __typename: "TeacherType",
+        },
+        __typename: "UserType",
+      },
+    },
+  };
   const { data: consultingData, refetch: refetchConsulting } = useQuery(
     GET_CONSULTING,
     {
@@ -112,6 +137,43 @@ export default function AcademyDetailPage() {
   const [memoText, setMemoText] = useState("");
   const [lecturePageNum, setLecturePageNum] = useState(0);
   const [lectureMaxNum, setLectureMaxNum] = useState(0);
+
+  // 페이지 벗어날 때 경고문
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  useEffect(() => {
+    // 예시: 사용자가 어떤 입력 필드를 수정한 경우
+    const checkUnsavedChanges = () => {
+      // 변경 사항이 있다면
+      setHasUnsavedChanges(true);
+    };
+
+    // 여기에서 페이지 이동 전에 변경 사항을 확인하는 이벤트 리스너를 등록합니다.
+    window.addEventListener("beforeunload", checkUnsavedChanges);
+
+    // 컴포넌트가 언마운트될 때 이벤트 리스너를 해제합니다.
+    return () => {
+      window.removeEventListener("beforeunload", checkUnsavedChanges);
+    };
+  }, []);
+
+  useEffect(() => {
+    // 페이지 이동 이벤트를 감지하여 사용자에게 경고 메시지를 표시합니다.
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        const confirmationMessage =
+          "변경 내용이 저장되지 않을 수 있습니다. 저장하지 않고 이동하시겠습니까?";
+        (e || window.event).returnValue = confirmationMessage;
+        return confirmationMessage;
+      }
+    };
+
+    window.onbeforeunload = handleBeforeUnload;
+
+    return () => {
+      window.onbeforeunload = null;
+    };
+  }, [hasUnsavedChanges]);
 
   // 수업 수정 부분
   const [editLectureInfo] = useMutation(EDIT_LECTURE_INFO);
@@ -340,7 +402,14 @@ export default function AcademyDetailPage() {
   });
 
   const onClickRouter = (address) => () => {
-    router.push("/" + router.query.branch + "/" + address);
+    if (
+      hasUnsavedChanges &&
+      !window.confirm("변경 사항이 있습니다. 정말로 이동하시겠습니까?")
+    ) {
+      // 사용자가 확인을 누르지 않으면 페이지 이동을 취소합니다.
+      return;
+    }
+    router.push("/" + address);
   };
   const onClickClassToggle = (id) => () => {
     setMakeUpLectureId(id);
@@ -430,16 +499,22 @@ export default function AcademyDetailPage() {
     );
   }, [data]);
 
-  const onClickCheck = (id, active) => async () => {
+  const onClickCheck = (active) => async () => {
     // setIsCheck(true);
     try {
       await stopAcademy({ variables: { userId: Number(router.query.id) } });
+      if (active) {
+        alert("휴원 처리가 완료됐습니다.");
+      } else {
+        alert("재원 처리가 완료됐습니다.");
+      }
     } catch (err) {
       console.log(err);
     }
   };
 
   const onClickAddBranchList = (id) => () => {
+    setHasUnsavedChanges(true);
     const newBranches = [...branches];
     if (branches.includes(id)) {
       setBranches(
@@ -451,15 +526,6 @@ export default function AcademyDetailPage() {
       newBranches.push(id);
       setBranches(newBranches);
     }
-  };
-
-  const onClickImageURL = (event) => {
-    setImageFile(event.target.files[0]);
-    let reader = new FileReader();
-    reader.onload = function (event) {
-      setImageURL(event.target.result);
-    };
-    reader.readAsDataURL(event.target.files[0]);
   };
 
   const onClickDates = (index) => () => {
@@ -579,6 +645,7 @@ export default function AcademyDetailPage() {
       } else {
         alert("등원 지점은 1개 이상 체크하셔야 합니다.");
       }
+      setHasUnsavedChanges(false);
     } catch (err) {
       alert(err);
     }
@@ -783,7 +850,9 @@ export default function AcademyDetailPage() {
             
           `}</style>
       <S.AcademyDetailTitle>
-        <S.BackButton onClick={onClickRouter("academy")}></S.BackButton>
+        <S.BackButton
+          onClick={onClickRouter("/" + router.query.branch + "/academy")}
+        ></S.BackButton>
         원생 정보 상세보기
       </S.AcademyDetailTitle>
       <S.EditBox>
@@ -809,6 +878,7 @@ export default function AcademyDetailPage() {
               <S.InputInput
                 defaultValue={data?.userDetails?.profile.engName}
                 onChange={(e) => {
+                  setHasUnsavedChanges(true);
                   setEditEngName(e.target.value);
                 }}
               ></S.InputInput>
@@ -827,6 +897,7 @@ export default function AcademyDetailPage() {
               >
                 <S.InputPhoneInput
                   onChange={(e) => {
+                    setHasUnsavedChanges(true);
                     setEditPMobileNumber1(e.target.value);
                   }}
                   value={editPMobileNumber1}
@@ -834,6 +905,7 @@ export default function AcademyDetailPage() {
                 {"-"}
                 <S.InputPhoneInput
                   onChange={(e) => {
+                    setHasUnsavedChanges(true);
                     setEditPMobileNumber2(e.target.value);
                   }}
                   value={editPMobileNumber2}
@@ -841,6 +913,7 @@ export default function AcademyDetailPage() {
                 {"-"}
                 <S.InputPhoneInput
                   onChange={(e) => {
+                    setHasUnsavedChanges(true);
                     setEditPMobileNumber3(e.target.value);
                   }}
                   value={editPMobileNumber3}
@@ -848,7 +921,7 @@ export default function AcademyDetailPage() {
               </div>
             </S.InputTag>
             <S.InputTag>
-              <S.InputName>연락처</S.InputName>
+              <S.InputName>원생 전화번호</S.InputName>
               <div
                 style={{
                   width: "100%",
@@ -859,6 +932,7 @@ export default function AcademyDetailPage() {
               >
                 <S.InputPhoneInput
                   onChange={(e) => {
+                    setHasUnsavedChanges(true);
                     setEditMobileNumber1(e.target.value);
                   }}
                   value={editMobileNumber1}
@@ -866,6 +940,7 @@ export default function AcademyDetailPage() {
                 {"-"}
                 <S.InputPhoneInput
                   onChange={(e) => {
+                    setHasUnsavedChanges(true);
                     setEditMobileNumber2(e.target.value);
                   }}
                   value={editMobileNumber2}
@@ -873,6 +948,7 @@ export default function AcademyDetailPage() {
                 {"-"}
                 <S.InputPhoneInput
                   onChange={(e) => {
+                    setHasUnsavedChanges(true);
                     setEditMobileNumber3(e.target.value);
                   }}
                   value={editMobileNumber3}
@@ -899,6 +975,7 @@ export default function AcademyDetailPage() {
               >
                 <S.InputPhoneInput
                   onChange={(e) => {
+                    setHasUnsavedChanges(true);
                     setEditEmail1(e.target.value);
                   }}
                   value={editEmail1}
@@ -906,6 +983,7 @@ export default function AcademyDetailPage() {
                 <div>{" @ "}</div>
                 <S.InputPhoneInput
                   onChange={(e) => {
+                    setHasUnsavedChanges(true);
                     setEditEmail2(e.target.value);
                   }}
                   disabled={!isTyped}
@@ -921,6 +999,7 @@ export default function AcademyDetailPage() {
                     color: "#333",
                   }}
                   onChange={(e) => {
+                    setHasUnsavedChanges(true);
                     if (e.target.value === "") {
                       setEditEmail2("");
                       setIsTyped(true);
@@ -946,11 +1025,12 @@ export default function AcademyDetailPage() {
           </S.TagLine>
           <S.TagLine>
             <S.InputTag>
-              <S.InputName>등록일</S.InputName>
+              <S.InputName>센터 등록일</S.InputName>
               <S.InputInput
                 type="date"
                 value={editRegisterDate}
                 onChange={(e) => {
+                  setHasUnsavedChanges(true);
                   setEditRegisterDate(e.target.value);
                 }}
                 // disabled={true}
@@ -962,6 +1042,7 @@ export default function AcademyDetailPage() {
                 type="date"
                 defaultValue={data?.userDetails?.profile.birthDate}
                 onChange={(e) => {
+                  setHasUnsavedChanges(true);
                   setEditBirthDay(e.target.value);
                 }}
               ></S.InputInput>
@@ -978,6 +1059,7 @@ export default function AcademyDetailPage() {
                   value={"M"}
                   checked={editGender === "M"}
                   onClick={(e) => {
+                    setHasUnsavedChanges(true);
                     setEditGender(e.target.value);
                   }}
                 ></input>{" "}
@@ -988,6 +1070,7 @@ export default function AcademyDetailPage() {
                   value={"W"}
                   checked={editGender === "W"}
                   onClick={(e) => {
+                    setHasUnsavedChanges(true);
                     setEditGender(e.target.value);
                   }}
                 ></input>
@@ -1041,6 +1124,7 @@ export default function AcademyDetailPage() {
                 fontFamily: "Spoqa Han Sans Neo",
               }}
               onChange={(e) => {
+                setHasUnsavedChanges(true);
                 setEditMemo(e.target.value);
               }}
               defaultValue={
@@ -1053,16 +1137,48 @@ export default function AcademyDetailPage() {
           </S.InputTag>
         </S.InputBox>
       </S.EditBox>
-      <S.ButtonBox>
-        <S.RouteButton
+      <S.ButtonBox style={{ alignItems: "center" }}>
+        {/* <S.RouteButton
           onClick={onClickCheck(
             data?.userDetails?.id,
             data?.userDetails?.isActive
           )}
         >
           {data?.userDetails?.isActive ? "휴원 처리" : "휴원 취소"}
+        </S.RouteButton> */}
+        <div
+          style={{
+            display: "flex",
+            height: "100%",
+            justifyContent: "space-between",
+            paddingTop: "1.25rem",
+            width: "8rem",
+          }}
+        >
+          <div>휴원</div>
+          <Switch
+            checked={data?.userDetails?.isActive}
+            onClick={(checked) => {
+              // setIsStop(!checked);
+              onClickCheck(data?.userDetails?.isActive)();
+            }}
+          ></Switch>
+          <div>재원</div>
+        </div>
+        <S.RouteButton
+          onClick={onClickRouter(
+            `/${router.query.branch}/report/${router.query.id}`
+          )}
+        >
+          리딩 이력
         </S.RouteButton>
-
+        <S.RouteButton
+          onClick={onClickRouter(
+            `/${router.query.branch}/report/reportDetail/${router.query.id}`
+          )}
+        >
+          학습 리포트
+        </S.RouteButton>
         <S.RouteButton onClick={onClickEdit}>수정 완료</S.RouteButton>
       </S.ButtonBox>
 
@@ -1097,18 +1213,29 @@ export default function AcademyDetailPage() {
           ?.sort((a, b) => {
             const dateA = new Date(a.date);
             const dateB = new Date(b.date);
-            return dateA - dateB;
-          })
-          ?.sort((a, b) => {
-            if (
-              a.attendanceStatus?.statusDisplay === "결석" &&
-              b.attendanceStatus?.statusDisplay !== "결석"
-            ) {
-              return -1;
+            const timeA =
+              Number(a.startTime.slice(0, 2)) * 100 +
+              Number(a.startTime.slice(3, 5));
+            const timeB =
+              Number(b.startTime.slice(0, 2)) * 100 +
+              Number(b.startTime.slice(3, 5));
+            if (dateA - dateB === 0) {
+              console.log(timeA - timeB < 0, "same");
+              return timeA - timeB;
             } else {
-              return 1;
+              return dateA - dateB;
             }
           })
+          // ?.sort((a, b) => {
+          //   if (
+          //     a.attendanceStatus?.statusDisplay === "결석" &&
+          //     b.attendanceStatus?.statusDisplay !== "결석"
+          //   ) {
+          //     return -1;
+          //   } else {
+          //     return 1;
+          //   }
+          // })
           ?.filter((_, index) => {
             return (
               index >= lecturePage * lecturePageNum &&
@@ -1119,13 +1246,16 @@ export default function AcademyDetailPage() {
             return (
               <S.TableRound key={uuidv4()}>
                 <S.TableHeadLeft style={{ width: "70%" }}>
-                  {el.date}
+                  {el.date +
+                    " (" +
+                    week[(dateInputToDays(el.date) + 6) % 7] +
+                    ")"}
                 </S.TableHeadLeft>
                 <S.TableHead style={{ width: "70%" }}>
-                  {el.startTime.slice(0, 5) + "~" + el.endTime.slice(0, 5)}
+                  {el.startTime.slice(0, 5) + " ~ " + el.endTime.slice(0, 5)}
                 </S.TableHead>
                 <S.TableHead style={{ width: "40%" }}>
-                  {el.teacher.engName}
+                  {el.teacher.korName}
                 </S.TableHead>
                 <S.TableHead style={{ width: "30%" }}>
                   {el.attendanceStatus?.statusDisplay}
@@ -1173,7 +1303,9 @@ export default function AcademyDetailPage() {
             );
           })}
       </S.Table>
-      <div style={{ display: "flex" }}>
+      <div
+        style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}
+      >
         {Array(lectureMaxNum)
           .fill(0)
           .map((_, index) => (
@@ -2394,7 +2526,7 @@ export default function AcademyDetailPage() {
               <span>날짜</span>
               <input
                 type="date"
-                value={dateToInput(date)}
+                value={consultingDate}
                 onChange={(e) => {
                   setConsultingDate(e.target.value);
                 }}

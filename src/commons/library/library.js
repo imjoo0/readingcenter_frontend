@@ -24,6 +24,14 @@ export const longTitle = (word) => {
   }
 };
 
+export const longConsulting = (word) => {
+  if (word.length > 27) {
+    return word.slice(0, 27) + "...";
+  } else {
+    return word;
+  }
+};
+
 export const longAuthor = (word) => {
   if (word.length > 15) {
     return word.slice(0, 15) + "...";
@@ -75,6 +83,9 @@ export const dateToString = (date) => {
 };
 
 export const dateChange = (date) => {
+  if (!date) {
+    return date;
+  }
   return date.slice(0, 4) + "-" + date.slice(5, 7) + "-" + date.slice(8, 10);
 };
 
@@ -387,4 +398,14 @@ export const calculateLectureDate = (dateInput) => {
     oneWeekAgoMonday.toISOString().slice(0, 10),
     fourWeeksLaterSunday.toISOString().slice(0, 10),
   ];
+};
+
+export const dateInputToDot = (dateInput) => {
+  const result = dateInput?.split("-");
+  return result?.[0] + "." + result?.[1] + "." + result?.[2] + ".";
+};
+
+export const dateInputToDays = (dateInput) => {
+  const newDate = new Date(dateInput);
+  return newDate.getDay();
 };

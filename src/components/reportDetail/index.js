@@ -2729,6 +2729,7 @@ export default function ReportDetailPage() {
       <table>
         <thead>
           <tr>
+            <th rowSpan={2}>번호</th>
             <th rowSpan={2}>
               제목{" "}
               {sortType === "title" ? (
@@ -2808,9 +2809,10 @@ export default function ReportDetailPage() {
           </tr>
         </thead>
         <tbody>
-          {sortedRecord?.map((el) => {
+          {sortedRecord?.map((el, index) => {
             return (
               <tr>
+                <td style={{ textAlign: "center" }}>{index + 1}</td>
                 {el?.book?.titleAr.length > 40 ? (
                   <td
                     onMouseEnter={() => {
