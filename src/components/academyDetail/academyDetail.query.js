@@ -273,6 +273,8 @@ export const GET_MEMO = gql`
         teacher {
           korName
         }
+        startTime
+        endTime
         date
         id
         lectureInfo {
@@ -674,6 +676,80 @@ export const EDIT_LECTURE_INFO = gql`
     ) {
       success
       message
+    }
+  }
+`;
+
+export const GET_ALL_STUDENTS = gql`
+  query studentsInAcademy($academyId: Int!) {
+    studentsInAcademy(academyId: $academyId) {
+      id
+      korName
+      engName
+      gender
+      mobileno
+      registerDate
+      birthDate
+      origin
+      user {
+        isActive
+      }
+      pmobileno
+      academies {
+        id
+        branchName
+        name
+      }
+    }
+  }
+`;
+
+export const CREATE_CLASS = gql`
+  mutation CreateLecture(
+    $academyId: Int!
+    $date: Date!
+    $startTime: Time!
+    $endTime: Time!
+    $lectureMemo: String!
+    $about: String!
+    $teacherId: Int!
+    $repeatDays: String!
+    $repeatWeeks: Int!
+    $autoAdd: Boolean!
+    $studentIds: [Int]!
+    $repeatTimes: Int
+  ) {
+    createLecture(
+      repeatTimes: $repeatTimes
+      academyId: $academyId
+      date: $date
+      startTime: $startTime
+      endTime: $endTime
+      about: $about
+      teacherId: $teacherId
+      repeatDays: $repeatDays
+      repeatWeeks: $repeatWeeks
+      autoAdd: $autoAdd
+      lectureMemo: $lectureMemo
+      studentIds: $studentIds
+    ) {
+      lectureIds
+    }
+  }
+`;
+
+export const DELETE_LECTURE = gql`
+  mutation deleteLecture($id: ID!) {
+    deleteLecture(id: $id) {
+      success
+    }
+  }
+`;
+
+export const DELETE_LECTURE_INFO = gql`
+  mutation deleteLectureInfo($id: ID!, $date: Date!) {
+    deleteLectureInfo(id: $id, date: $date) {
+      success
     }
   }
 `;

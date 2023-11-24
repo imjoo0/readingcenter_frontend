@@ -11,7 +11,7 @@ export const HeaderWrapper = styled.div`
   background-color: #fff;
   position: fixed;
   top: 0;
-  z-index: 1;
+  z-index: 999;
 `;
 
 export const MenuDiv = styled.div`

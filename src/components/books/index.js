@@ -28,6 +28,8 @@ import {
   UPDATE_BOOK_INVENTORY,
 } from "./books.query";
 import { useRouter } from "next/router";
+import { css } from "@emotion/react";
+import CheckToolTip from "@/src/commons/library/tooltipcheck";
 
 export default function BookPage() {
   const router = useRouter();
@@ -65,6 +67,7 @@ export default function BookPage() {
   const [deleteId, setDeleteId] = useState("");
   const [arQuizNo, setArQuizNo] = useState("");
   const [isInfo, setIsInfo] = useState(false);
+  const [infoPosition, setInfoPosition] = useState([0, 1]);
   const [info, setInfo] = useState("");
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [fNF, setFNF] = useState("");
@@ -378,9 +381,9 @@ export default function BookPage() {
               return 0;
             }
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -400,9 +403,9 @@ export default function BookPage() {
               return 0;
             }
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -422,9 +425,9 @@ export default function BookPage() {
               return 0;
             }
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -444,9 +447,9 @@ export default function BookPage() {
               return 0;
             }
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -458,9 +461,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return a?.kplbn - b?.kplbn;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -472,9 +475,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return b?.kplbn - a?.kplbn;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -511,9 +514,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return a?.bl - b?.bl;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -550,9 +553,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return b?.bl - a?.bl;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -589,9 +592,9 @@ export default function BookPage() {
             }
             return 0;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -628,9 +631,9 @@ export default function BookPage() {
             }
             return 0;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -667,9 +670,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return a?.wcAr - b?.wcAr;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -706,9 +709,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return b?.wcAr - a?.wcAr;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -798,9 +801,9 @@ export default function BookPage() {
               return 0;
             }
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -820,9 +823,9 @@ export default function BookPage() {
               return 0;
             }
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -842,9 +845,9 @@ export default function BookPage() {
               return 0;
             }
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -864,9 +867,9 @@ export default function BookPage() {
               return 0;
             }
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -878,9 +881,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return a?.kplbn - b?.kplbn;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -892,9 +895,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return b?.kplbn - a?.kplbn;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -931,9 +934,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return a?.bl - b?.bl;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -970,9 +973,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return b?.bl - a?.bl;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -1009,9 +1012,9 @@ export default function BookPage() {
             }
             return 0;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -1048,9 +1051,9 @@ export default function BookPage() {
             }
             return 0;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -1087,9 +1090,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return a?.wcAr - b?.wcAr;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -1126,9 +1129,9 @@ export default function BookPage() {
           ?.sort((a, b) => {
             return b?.wcAr - a?.wcAr;
           })
-          ?.filter((el, index) => {
-            return index < bookPage * 20 && index >= (bookPage - 1) * 20;
-          })
+          // ?.filter((el, index) => {
+          //   return index < bookPage * 20 && index >= (bookPage - 1) * 20;
+          // })
           ?.map((el) => {
             return el;
           })
@@ -1256,6 +1259,7 @@ export default function BookPage() {
   };
 
   const onClickSortType = (type) => () => {
+    setBookArray([]);
     setSortType(type);
   };
 
@@ -1279,7 +1283,9 @@ export default function BookPage() {
 
   return (
     <S.BooksWrapper>
-      <S.BooksTitle>도서 관리</S.BooksTitle>
+      <div style={{ width: "90rem" }}>
+        <S.BooksTitle>도서 관리</S.BooksTitle>
+      </div>
       <S.SearchBox
       // style={{
       //   borderRadius: "0.25rem 0.25rem 0rem 0rem",
@@ -1292,9 +1298,10 @@ export default function BookPage() {
       >
         <S.SearchTag
           style={{
+            width: "90rem",
             flexDirection: "row",
-            justifyContent: "flex-start",
-            alignItems: "flex-end",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
           <div
@@ -1304,80 +1311,119 @@ export default function BookPage() {
               fontSize: "15px",
               fontWeight: "bold",
               flexDirection: "column",
-              marginRight: "1.87rem",
             }}
           >
-            <div style={{ marginBottom: "0.62rem" }}>AR 점수</div>
-            <div style={{ display: "flex", marginLeft: "1.25rem" }}>
-              <div>
-                <span style={{ fontWeight: 500 }}>최소</span>
-                <S.BookTagSmallInput
-                  type="number"
-                  onChange={(e) => {
-                    setMinBl(Number(e.target.value));
-                  }}
-                  onKeyPress={async (e) => {
-                    if (e.key === "Enter") {
-                      onClickSearch();
-                    }
-                  }}
-                  defaultValue={minBl === 0 ? "" : minBl}
-                ></S.BookTagSmallInput>
-              </div>
-              <div>
-                <span style={{ fontWeight: 500 }}>최대</span>
-                <S.BookTagSmallInput
-                  type="number"
-                  onChange={(e) => {
-                    setMaxBl(Number(e.target.value));
-                  }}
-                  onKeyPress={async (e) => {
-                    if (e.key === "Enter") {
-                      onClickSearch();
-                    }
-                  }}
-                  defaultValue={maxBl}
-                ></S.BookTagSmallInput>
-              </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <div>AR</div>
+              <S.BookTagSmallInput
+                type="number"
+                step={0.1}
+                min={0}
+                onChange={(e) => {
+                  if (e.target.value === "") {
+                    setMinBl("");
+                    return;
+                  }
+                  if (Math.floor(Number(e.target.value) * 10) / 10 > maxBl) {
+                    setMaxBl(Math.floor(Number(e.target.value) * 10) / 10);
+                  }
+                  setMinBl(Math.floor(Number(e.target.value) * 10) / 10);
+                }}
+                value={minBl}
+                onKeyPress={async (e) => {
+                  if (e.key === "Enter") {
+                    onClickSearch();
+                  }
+                }}
+                // defaultValue={minBl === 0 ? "" : minBl}
+              ></S.BookTagSmallInput>
+              <span style={{ fontWeight: 500 }}>~</span>
+              <S.BookTagSmallInput
+                type="number"
+                step={0.1}
+                min={0}
+                onChange={(e) => {
+                  if (e.target.value === "") {
+                    setMaxBl("");
+                    return;
+                  }
+                  if (Math.floor(Number(e.target.value) * 10) / 10 < minBl) {
+                    setMinBl(Math.floor(Number(e.target.value) * 10) / 10);
+                  }
+                  setMaxBl(Math.floor(Number(e.target.value) * 10) / 10);
+                }}
+                value={maxBl}
+                onKeyPress={async (e) => {
+                  if (e.key === "Enter") {
+                    onClickSearch();
+                  }
+                }}
+                defaultValue={maxBl}
+              ></S.BookTagSmallInput>
             </div>
-            <div style={{ marginBottom: "0.62rem", marginTop: "1.87rem" }}>
-              WC
-            </div>
-            <div style={{ display: "flex", marginLeft: "1.25rem" }}>
-              <div style={{ fontWeight: 500 }}>
-                최소
-                <S.BookTagSmallInput
-                  type="number"
-                  // style={{ marginLeft: "10px", marginTop: "10px" }}
-                  onChange={(e) => {
-                    setMinWc(Number(e.target.value));
-                  }}
-                  onKeyPress={async (e) => {
-                    if (e.key === "Enter") {
-                      onClickSearch();
-                    }
-                  }}
-                  defaultValue={minWc}
-                ></S.BookTagSmallInput>
-              </div>
-              <div style={{ fontWeight: 400 }}>
-                최대
-                <S.BookTagSmallInput
-                  type="number"
-                  // style={{ marginLeft: "10px", marginTop: "10px" }}
-                  onChange={(e) => {
-                    setMaxWc(Number(e.target.value));
-                  }}
-                  onKeyPress={async (e) => {
-                    if (e.key === "Enter") {
-                      onClickSearch();
-                    }
-                  }}
-                  defaultValue={maxWc}
-                ></S.BookTagSmallInput>
-              </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                // marginLeft: "1.25rem",
+                marginTop: "1.25rem",
+              }}
+            >
+              <div>WC</div>
+              <S.BookTagSmallInput
+                min={0}
+                type="number"
+                // style={{ marginLeft: "10px", marginTop: "10px" }}
+                onChange={(e) => {
+                  if (e.target.value === "") {
+                    setMinWc(e.target.value);
+                    return;
+                  }
+                  if (Math.floor(Number(e.target.value)) > maxWc) {
+                    setMaxWc(Math.floor(Number(e.target.value)));
+                  }
+                  setMinWc(Math.floor(Number(e.target.value)));
+                }}
+                onKeyPress={async (e) => {
+                  if (e.key === "Enter") {
+                    onClickSearch();
+                  }
+                }}
+                value={minWc}
+              ></S.BookTagSmallInput>
+              <span style={{ fontWeight: 500 }}>~</span>
+              <S.BookTagSmallInput
+                min={0}
+                type="number"
+                // style={{ marginLeft: "10px", marginTop: "10px" }}
+                onChange={(e) => {
+                  if (e.target.value === "") {
+                    setMaxWc(e.target.value);
+                    return;
+                  }
+                  if (Math.floor(Number(e.target.value)) < minWc) {
+                    setMinWc(Math.floor(Number(e.target.value)));
+                  }
+                  setMaxWc(Math.floor(Number(e.target.value)));
+                }}
+                onKeyPress={async (e) => {
+                  if (e.key === "Enter") {
+                    onClickSearch();
+                  }
+                }}
+                value={maxWc}
+              ></S.BookTagSmallInput>
             </div>
           </div>
+
           <div
             style={{
               display: "flex",
@@ -1385,84 +1431,75 @@ export default function BookPage() {
               fontSize: "15px",
               fontWeight: "bold",
               flexDirection: "column",
-              marginRight: "1.87rem",
             }}
           >
-            <div>Lexile 점수</div>
-            <div style={{ display: "flex", marginLeft: "1.25rem" }}>
-              <div style={{ fontWeight: 500 }}>
-                최소
-                <S.BookTagSmallInput
-                  type="number"
-                  style={{ marginLeft: "10px", marginTop: "10px" }}
-                  onChange={(e) => {
-                    setMinLex(Number(e.target.value));
-                  }}
-                  onKeyPress={async (e) => {
-                    if (e.key === "Enter") {
-                      onClickSearch();
-                    }
-                  }}
-                  defaultValue={minLex}
-                ></S.BookTagSmallInput>
-              </div>
-              <div style={{ fontWeight: 500 }}>
-                최대
-                <S.BookTagSmallInput
-                  type="number"
-                  style={{ marginLeft: "10px", marginTop: "10px" }}
-                  onChange={(e) => {
+            <div
+              style={{
+                display: "flex",
+                // marginLeft: "1.25rem",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ marginRight: "1.5rem" }}>Lexile</div>
+              <S.BookTagSmallInput
+                type="number"
+                style={{ marginLeft: "10px" }}
+                value={minLex}
+                onChange={(e) => {
+                  if (e.target.value === "") {
+                    setMinLex(e.target.value);
+                    return;
+                  }
+                  if (maxLex < Number(e.target.value)) {
                     setMaxLex(Number(e.target.value));
-                  }}
-                  onKeyPress={async (e) => {
-                    if (e.key === "Enter") {
-                      onClickSearch();
-                    }
-                  }}
-                  defaultValue={maxLex}
-                ></S.BookTagSmallInput>
-              </div>
+                  }
+                  setMinLex(Number(e.target.value));
+                }}
+                onKeyPress={async (e) => {
+                  if (e.key === "Enter") {
+                    onClickSearch();
+                  }
+                }}
+              ></S.BookTagSmallInput>
+              ~
+              <S.BookTagSmallInput
+                type="number"
+                style={{ marginLeft: "10px" }}
+                onChange={(e) => {
+                  if (e.target.value === "") {
+                    setMaxLex(e.target.value);
+                    return;
+                  }
+                  if (minLex > Number(e.target.value)) {
+                    setMinLex(Number(e.target.value));
+                  }
+                  setMaxLex(Number(e.target.value));
+                }}
+                onKeyPress={async (e) => {
+                  if (e.key === "Enter") {
+                    onClickSearch();
+                  }
+                }}
+                value={maxLex}
+                // onInput={maxLex.replace("-", "br")}
+              ></S.BookTagSmallInput>
             </div>
-            <div>
-              <div style={{ marginTop: "1.87rem" }}>AR Quiz No</div>
-              <div>
-                <div style={{ fontWeight: 500, marginLeft: "1.25rem" }}>
-                  No.
-                  <S.BookTagBigInput
-                    type="number"
-                    style={{ marginLeft: "10px", marginTop: "10px" }}
-                    onChange={(e) => {
-                      setArQuizNo(e.target.value);
-                    }}
-                    onKeyPress={async (e) => {
-                      if (e.key === "Enter") {
-                        onClickSearch();
-                      }
-                    }}
-                    defaultValue={arQuizNo}
-                  ></S.BookTagBigInput>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              color: "#000",
-              fontSize: "15px",
-              fontWeight: "bold",
-              flexDirection: "column",
-              marginRight: "1.87rem",
-              marginBottom: "39px",
-            }}
-          >
-            <div>AR Quiz No</div>
-            <div>
-              <div style={{ fontWeight: 400 }}>
-                No.
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: "1.25rem",
+              }}
+            >
+              <div>AR Quiz No</div>
+              <div style={{ fontWeight: 500, marginLeft: "1.25rem" }}>
+                <span style={{ marginRight: "0.5rem" }}>#</span>
                 <S.BookTagBigInput
+                  min={1}
                   type="number"
-                  style={{ marginLeft: "10px", marginTop: "10px" }}
+                  style={{ marginLeft: "0" }}
                   onChange={(e) => {
                     setArQuizNo(e.target.value);
                   }}
@@ -1476,6 +1513,7 @@ export default function BookPage() {
               </div>
             </div>
           </div>
+
           <div
             style={{
               display: "flex",
@@ -1483,101 +1521,86 @@ export default function BookPage() {
               fontSize: "15px",
               fontWeight: "bold",
               flexDirection: "column",
-              marginRight: "1.87rem",
-              marginBottom: "39px",
             }}
           >
-            <div>F/NF</div>
-            <S.InputSelect
-              onChange={(e) => {
-                setFNF(e.target.value);
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
               }}
-              style={{ marginLeft: "0px", marginTop: "10px" }}
             >
-              <option value={""} selected={fNF === ""}>
-                전체
-              </option>
-              <option value={"F"} selected={fNF === "F"}>
-                Fiction
-              </option>
-              <option value={"NF"} selected={fNF === "NF"}>
-                NonFiction
-              </option>
-            </S.InputSelect>
-            {/* <div style={{ display: "flex", marginTop: "0.6rem" }}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <span>F</span>
-                <input
-                  type="checkbox"
-                  style={{ width: "1.5rem", height: "1.5rem" }}
-                ></input>
-              </div>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <span>NF</span>
-                <input
-                  type="checkbox"
-                  style={{ width: "1.5rem", height: "1.5rem" }}
-                ></input>
-              </div>
-            </div> */}
+              <div>F/NF</div>
+              <S.InputSelect
+                onChange={(e) => {
+                  setFNF(e.target.value);
+                  setBookArray([]);
+                }}
+                style={{
+                  marginLeft: "1.25rem",
+                  // marginTop: "10px",
+                  // marginBottom: "1.87rem",
+                }}
+              >
+                <option value={""} selected={fNF === ""}>
+                  전체
+                </option>
+                <option value={"F"} selected={fNF === "F"}>
+                  Fiction
+                </option>
+                <option value={"NF"} selected={fNF === "NF"}>
+                  NonFiction
+                </option>
+              </S.InputSelect>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: "0.5rem",
+              }}
+            >
+              <div>IL</div>
+              <S.InputSelect
+                onChange={(e) => {
+                  setIL(e.target.value);
+                  setBookArray([]);
+                }}
+                style={{ marginLeft: "1.25rem", marginTop: "10px" }}
+              >
+                <option value={""} selected={iL === ""}>
+                  전체
+                </option>
+                <option value={"LG"} selected={iL === "LG"}>
+                  LG
+                </option>
+                <option value={"MG"} selected={iL === "MG"}>
+                  MG
+                </option>
+                <option value={"MG+"} selected={iL === "MG+"}>
+                  MG+
+                </option>
+                <option value={"UG"} selected={iL === "UG"}>
+                  UG
+                </option>
+              </S.InputSelect>
+            </div>
           </div>
-          <div
-            onChange={(e) => {
-              setIL(e.target.value);
-            }}
-            style={{
-              display: "flex",
-              color: "#000",
-              fontSize: "15px",
-              fontWeight: "bold",
-              flexDirection: "column",
-              marginRight: "1.87rem",
-              marginBottom: "39px",
-            }}
-          >
-            <div>IL</div>
-            <S.InputSelect style={{ marginLeft: "0px", marginTop: "10px" }}>
-              <option value={""} selected={iL === ""}>
-                전체
-              </option>
-              <option value={"LG"} selected={iL === "LG"}>
-                LG
-              </option>
-              <option value={"MG"} selected={iL === "MG"}>
-                MG
-              </option>
-              <option value={"MG+"} selected={iL === "MG+"}>
-                MG+
-              </option>
-              <option value={"UG"} selected={iL === "UG"}>
-                UG
-              </option>
-            </S.InputSelect>
-            {/* <div style={{ display: "flex", marginTop: "0.6rem" }}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <span>LG</span>
-                <input
-                  type="checkbox"
-                  style={{ width: "1.5rem", height: "1.5rem" }}
-                ></input>
-              </div>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <span>MG</span>
-                <input
-                  type="checkbox"
-                  style={{ width: "1.5rem", height: "1.5rem" }}
-                ></input>
-              </div>
-            </div> */}
-          </div>
-          <S.ModalAddButton
-            onClick={onClickSearch}
-            style={{
-              borderRadius: "0.5rem",
-              background: "#333",
-              height: "2.75rem",
-            }}
-          >
+          <S.ModalAddButton onClick={onClickSearch}>
+            <svg
+              width="12"
+              height="13"
+              viewBox="0 0 12 13"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ marginRight: "0.62rem" }}
+            >
+              <path
+                d="M2.21875 6.96875C2.80208 7.55208 3.51042 7.84375 4.34375 7.84375C5.17708 7.84375 5.88542 7.55208 6.46875 6.96875C7.05208 6.38542 7.34375 5.67708 7.34375 4.84375C7.34375 4.01042 7.05208 3.30208 6.46875 2.71875C5.88542 2.13542 5.17708 1.84375 4.34375 1.84375C3.51042 1.84375 2.80208 2.13542 2.21875 2.71875C1.63542 3.30208 1.34375 4.01042 1.34375 4.84375C1.34375 5.67708 1.63542 6.38542 2.21875 6.96875ZM8.34375 7.84375L11.6562 11.1562L10.6562 12.1562L7.34375 8.84375V8.3125L7.15625 8.125C6.36458 8.8125 5.42708 9.15625 4.34375 9.15625C3.13542 9.15625 2.10417 8.73958 1.25 7.90625C0.416667 7.07292 0 6.05208 0 4.84375C0 3.63542 0.416667 2.61458 1.25 1.78125C2.10417 0.927083 3.13542 0.5 4.34375 0.5C5.55208 0.5 6.57292 0.927083 7.40625 1.78125C8.23958 2.61458 8.65625 3.63542 8.65625 4.84375C8.65625 5.28125 8.55208 5.78125 8.34375 6.34375C8.13542 6.88542 7.89583 7.32292 7.625 7.65625L7.8125 7.84375H8.34375Z"
+                fill="white"
+              />
+            </svg>
             검색
           </S.ModalAddButton>
         </S.SearchTag>
@@ -1589,7 +1612,7 @@ export default function BookPage() {
         <>
           <div
             style={{
-              width: "100%",
+              width: "90rem",
               display: "flex",
               justifyContent: "space-between",
               marginBottom: "20px",
@@ -1599,8 +1622,6 @@ export default function BookPage() {
             <S.CountNumber
               style={{
                 display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
               }}
             >
               {(data?.getBooksByBl !== undefined &&
@@ -1621,7 +1642,8 @@ export default function BookPage() {
                   );
                 }).length !== 0) ||
               undefined
-                ? data?.getBooksByBl
+                ? "검색결과 " +
+                  data?.getBooksByBl
                     ?.filter((el) => {
                       return (
                         el?.titleAr
@@ -1649,7 +1671,8 @@ export default function BookPage() {
                         return true;
                       }
                       return el.ilStatus.slice(3) === iL;
-                    }).length + "권"
+                    }).length +
+                  "권"
                 : ""}
             </S.CountNumber>
             <S.SearchTag>
@@ -1659,6 +1682,7 @@ export default function BookPage() {
                   placeholder="     도서 제목, 바코드, 저자 등으로 검색해주세요."
                   onChange={(e) => {
                     setBookSearchWord(e.target.value);
+                    setBookArray([]);
                   }}
                 />
               </div>
@@ -1691,130 +1715,381 @@ export default function BookPage() {
             }
             `}</style>
 
-          <table>
-            {bookArray.length === 0 ? (
-              <></>
-            ) : (
-              <thead>
-                <tr>
-                  <th>
-                    KPLBN{" "}
-                    {sortType === "plbn" ? (
-                      <UpOutlined onClick={onClickSortType("plbnReverse")} />
-                    ) : (
-                      <DownOutlined onClick={onClickSortType("plbn")} />
-                    )}
-                  </th>
-                  <th>
-                    도서 제목{" "}
-                    {sortType === "title" ? (
-                      <UpOutlined onClick={onClickSortType("titleReverse")} />
-                    ) : (
-                      <DownOutlined onClick={onClickSortType("title")} />
-                    )}
-                  </th>
-                  <th>
-                    저자{" "}
-                    {sortType === "author" ? (
-                      <UpOutlined onClick={onClickSortType("authorReverse")} />
-                    ) : (
-                      <DownOutlined onClick={onClickSortType("author")} />
-                    )}
-                  </th>
-                  <th>F/NF</th>
-                  <th>AR QUIZ No.</th>
-                  <th>
-                    AR{" "}
-                    {sortType === "ar" ? (
-                      <UpOutlined onClick={onClickSortType("arReverse")} />
-                    ) : (
-                      <DownOutlined onClick={onClickSortType("ar")} />
-                    )}
-                  </th>
-                  <th>
-                    Lexile{" "}
-                    {sortType === "lexile" ? (
-                      <UpOutlined onClick={onClickSortType("lexileReverse")} />
-                    ) : (
-                      <DownOutlined onClick={onClickSortType("lexile")} />
-                    )}
-                  </th>
-                  <th>
-                    WC{" "}
-                    {sortType === "wordCount" ? (
-                      <UpOutlined
-                        onClick={onClickSortType("wordCountReverse")}
-                      />
-                    ) : (
-                      <DownOutlined onClick={onClickSortType("wordCount")} />
-                    )}
-                  </th>
-                  <th>IL</th>
-                  <th>Litpro</th>
-                  <th>도서 권수</th>
-                  <th>상세 보기</th>
-                </tr>
-              </thead>
-            )}
-            <tbody>
-              {bookArray?.map((el) => {
-                return (
+          <div
+            style={{
+              width: "90rem",
+              height: "45.81rem",
+              overflow: "auto",
+              marginBottom: "3rem",
+            }}
+          >
+            <table style={{ borderCollapse: "collapse" }}>
+              {bookArray.length === 0 ? (
+                <></>
+              ) : (
+                <thead style={{ position: "sticky", top: -1, zIndex: 1 }}>
                   <tr>
-                    <td>{kplbnFrame(el.kplbn)}</td>
-                    {el.titleAr.length <= 40 ? (
-                      <td>{longTitle(el.titleAr)}</td>
-                    ) : (
-                      <td
-                        onMouseEnter={() => {
-                          setIsInfo(true);
-                          setInfo(el.titleAr);
-                        }}
-                        onMouseLeave={() => {
-                          setIsInfo(false);
-                        }}
-                      >
-                        {longTitle(el.titleAr)}
-                      </td>
-                    )}
-                    {el.authorAr.length > 15 ? (
-                      <td
-                        onMouseEnter={() => {
-                          setIsInfo(true);
-                          setInfo(el.authorAr);
-                        }}
-                        onMouseLeave={() => {
-                          setIsInfo(false);
-                        }}
-                      >
-                        {longAuthor(el.authorAr)}
-                      </td>
-                    ) : (
-                      <td>{longAuthor(el.authorAr)}</td>
-                    )}
-                    <td>{el.fnfStatus}</td>
-                    <td>{"#" + el.arQuiz}</td>
-                    <td>{arFrame(el.bl)}</td>
-                    <td>
-                      {lexileFrame(el.lexileLex) ?? lexileFrame(el.lexileAr)}
-                    </td>
-                    <td>{addComma(el.wcAr)}</td>
-                    <td>{el.ilStatus.slice(3, 5)}</td>
-                    <td>{el.litproStatus.slice(7, 8)}</td>
-                    <td>{el.books.length + "권"}</td>
-                    <td>
-                      <BookOutlined onClick={onClickSelectBook(el)} />
-                    </td>
+                    <S.BookTableTh
+                      style={{ width: "3.125rem" }}
+                    ></S.BookTableTh>
+                    <S.BookTableTh style={{ width: "6.4375rem" }}>
+                      KPLBN{" "}
+                      {sortType === "plbn" ? (
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("plbnReverse")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                      ) : (
+                        // <UpOutlined  />
+                        // <DownOutlined onClick={onClickSortType("plbn")} />
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("plbn")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                      )}
+                    </S.BookTableTh>
+                    <S.BookTableTh style={{ width: "25rem" }}>
+                      도서 제목{" "}
+                      {sortType === "title" ? (
+                        // <UpOutlined onClick={onClickSortType("titleReverse")} />
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("titleReverse")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("title")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                        // <DownOutlined onClick={onClickSortType("title")} />
+                      )}
+                    </S.BookTableTh>
+                    <S.BookTableTh style={{ width: "13.40rem" }}>
+                      저자{" "}
+                      {sortType === "author" ? (
+                        // <UpOutlined
+                        //   onClick={onClickSortType("authorReverse")}
+                        // />
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("authorReverse")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                      ) : (
+                        // <DownOutlined onClick={onClickSortType("author")} />
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("author")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                      )}
+                    </S.BookTableTh>
+                    <S.BookTableTh style={{ width: "3.4rem" }}>
+                      F/NF
+                    </S.BookTableTh>
+                    <S.BookTableTh style={{ width: "6.81rem" }}>
+                      AR QUIZ No.
+                    </S.BookTableTh>
+                    <S.BookTableTh style={{ width: "3.75rem" }}>
+                      AR{" "}
+                      {sortType === "ar" ? (
+                        // <UpOutlined onClick={onClickSortType("arReverse")} />
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("arReverse")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                      ) : (
+                        // <DownOutlined onClick={onClickSortType("ar")} />
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("ar")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                      )}
+                    </S.BookTableTh>
+                    <S.BookTableTh style={{ width: "5.06rem" }}>
+                      Lexile{" "}
+                      {sortType === "lexile" ? (
+                        // <UpOutlined
+                        //   onClick={onClickSortType("lexileReverse")}
+                        // />
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("lexileReverse")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                      ) : (
+                        // <DownOutlined onClick={onClickSortType("lexile")} />
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("lexile")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                      )}
+                    </S.BookTableTh>
+                    <S.BookTableTh style={{ width: "4.94rem" }}>
+                      WC{" "}
+                      {sortType === "wordCount" ? (
+                        // <UpOutlined
+                        //   onClick={onClickSortType("wordCountReverse")}
+                        // />
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("wordCountReverse")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                      ) : (
+                        // <DownOutlined onClick={onClickSortType("wordCount")} />
+                        <svg
+                          width="9"
+                          height="13"
+                          viewBox="0 0 9 13"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          onClick={onClickSortType("wordCount")}
+                          style={{ marginLeft: "0.62rem", cursor: "pointer" }}
+                        >
+                          <path
+                            d="M2.56711 0.5L5.13423 3.15625H3.20134V7.84375H1.93289V3.15625H0L2.56711 0.5ZM7.06711 9.84375H9L6.43289 12.5L3.86577 9.84375H5.79866V5.15625H7.06711V9.84375Z"
+                            fill="white"
+                          />
+                        </svg>
+                      )}
+                    </S.BookTableTh>
+                    <S.BookTableTh style={{ width: "3.31rem" }}>
+                      IL
+                    </S.BookTableTh>
+                    <S.BookTableTh style={{ width: "4.06rem" }}>
+                      Litpro
+                    </S.BookTableTh>
+                    <S.BookTableTh style={{ width: "5.19rem" }}>
+                      도서 권수
+                    </S.BookTableTh>
+                    <S.BookTableTh style={{ width: "4.94rem" }}>
+                      상세 보기
+                    </S.BookTableTh>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+              )}
+              <tbody>
+                {bookArray?.map((el, index) => {
+                  return (
+                    <tr>
+                      <S.BookTableTd style={{ textAlign: "center" }}>
+                        {index + 1}
+                      </S.BookTableTd>
+                      <S.BookTableTd>{kplbnFrame(el.kplbn)}</S.BookTableTd>
+                      <S.BookTableTd
+                        style={{
+                          textAlign: "start",
+                          width: "384px",
+                          // display: "flex",
+                          alignItems: "center",
+                          height: "100%",
+                          // border: "none",
+                        }}
+                      >
+                        <CheckToolTip
+                          text={el?.titleAr}
+                          number={372}
+                        ></CheckToolTip>
+                      </S.BookTableTd>
+                      {/* {el.titleAr.length <= 43 ? (
+                        <S.BookTableTd>{longTitle(el.titleAr)}</S.BookTableTd>
+                      ) : (
+                        <S.BookTableTd
+                          onMouseEnter={() => {
+                            setIsInfo(true);
+                            setInfoPosition([index, 1]);
+                            setInfo(el.titleAr);
+                          }}
+                          onMouseLeave={() => {
+                            setIsInfo(false);
+                          }}
+                          onTouchStart={() => {
+                            setIsInfo(true);
+                            setInfo(el.titleAr);
+                          }}
+                        >
+                          {longTitle(el.titleAr)}
+                        </S.BookTableTd>
+                      )} */}
+                      {/* {el.authorAr.length > 20 ? (
+                        <S.BookTableTd
+                          onMouseEnter={() => {
+                            setIsInfo(true);
+                            setInfo(el.authorAr);
+                          }}
+                          onMouseLeave={() => {
+                            setIsInfo(false);
+                          }}
+                        >
+                          {longAuthor(el.authorAr)}
+                        </S.BookTableTd>
+                      ) : (
+                        <S.BookTableTd>{longAuthor(el.authorAr)}</S.BookTableTd>
+                      )} */}
+                      <S.BookTableTd style={{ textAlign: "start" }}>
+                        <CheckToolTip
+                          text={el?.authorAr}
+                          number={200}
+                        ></CheckToolTip>
+                      </S.BookTableTd>
+                      <S.BookTableTd>{el.fnfStatus}</S.BookTableTd>
+                      <S.BookTableTd>{"#" + el.arQuiz}</S.BookTableTd>
+                      <S.BookTableTd>{arFrame(el.bl)}</S.BookTableTd>
+                      <S.BookTableTd>
+                        {lexileFrame(el.lexileLex) ?? lexileFrame(el.lexileAr)}
+                      </S.BookTableTd>
+                      <S.BookTableTd>{addComma(el.wcAr)}</S.BookTableTd>
+                      <S.BookTableTd>{el.ilStatus.slice(3, 5)}</S.BookTableTd>
+                      <S.BookTableTd>
+                        {el.litproStatus.slice(7, 8)}
+                      </S.BookTableTd>
+                      <S.BookTableTd>{el.books.length + "권"}</S.BookTableTd>
+                      <S.BookTableTd>
+                        <button
+                          style={{
+                            backgroundColor: "#fff",
+                            border: "1px solid #C8C8C8",
+                            borderRadius: "0.25rem",
+                            width: "1.875rem",
+                            height: "1.875rem",
+                            marginLeft: "0.9rem",
+                          }}
+                        >
+                          <svg
+                            width="12"
+                            height="13"
+                            viewBox="0 0 12 13"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            style={{ cursor: "pointer", marginTop: "0.1rem" }}
+                            onClick={onClickSelectBook(el)}
+                          >
+                            <path
+                              d="M2.21875 6.96875C2.80208 7.55208 3.51042 7.84375 4.34375 7.84375C5.17708 7.84375 5.88542 7.55208 6.46875 6.96875C7.05208 6.38542 7.34375 5.67708 7.34375 4.84375C7.34375 4.01042 7.05208 3.30208 6.46875 2.71875C5.88542 2.13542 5.17708 1.84375 4.34375 1.84375C3.51042 1.84375 2.80208 2.13542 2.21875 2.71875C1.63542 3.30208 1.34375 4.01042 1.34375 4.84375C1.34375 5.67708 1.63542 6.38542 2.21875 6.96875ZM8.34375 7.84375L11.6562 11.1562L10.6562 12.1562L7.34375 8.84375V8.3125L7.15625 8.125C6.36458 8.8125 5.42708 9.15625 4.34375 9.15625C3.13542 9.15625 2.10417 8.73958 1.25 7.90625C0.416667 7.07292 0 6.05208 0 4.84375C0 3.63542 0.416667 2.61458 1.25 1.78125C2.10417 0.927083 3.13542 0.5 4.34375 0.5C5.55208 0.5 6.57292 0.927083 7.40625 1.78125C8.23958 2.61458 8.65625 3.63542 8.65625 4.84375C8.65625 5.28125 8.55208 5.78125 8.34375 6.34375C8.13542 6.88542 7.89583 7.32292 7.625 7.65625L7.8125 7.84375H8.34375Z"
+                              fill="#858585"
+                            />
+                          </svg>
+                        </button>
+                      </S.BookTableTd>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
           {isInfo ? (
             <span
               style={{
                 position: "fixed",
-                left: mousePosition.x,
-                top: mousePosition.y,
+                left: mousePosition?.x,
+                top: mousePosition?.y,
                 backgroundColor: "#dedede",
                 border: "2px solid #333333",
                 borderRadius: "3px",
@@ -1825,7 +2100,7 @@ export default function BookPage() {
           ) : (
             <></>
           )}
-          <div
+          {/* <div
             style={{
               display: "flex",
               justifyContent: "center",
@@ -1963,7 +2238,7 @@ export default function BookPage() {
                 </div>
               </>
             )}
-          </div>
+          </div> */}
         </>
       )}
 

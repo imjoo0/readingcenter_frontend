@@ -224,9 +224,71 @@ export const GET_STUDENTS_REPORT_LIST = gql`
         user {
           isActive
         }
+        lectures {
+          lectureInfo {
+            id
+          }
+        }
       }
       consultingCount
       lastConsultingDate
+    }
+  }
+`;
+
+export const GET_TEACHER = gql`
+  query staffInAcademy($academyId: Int!) {
+    staffInAcademy(academyId: $academyId) {
+      ... on ManagerType {
+        id
+        user {
+          isActive
+          userCategory
+        }
+        korName
+        engName
+      }
+      ... on TeacherType {
+        id
+        user {
+          isActive
+          userCategory
+        }
+        korName
+        engName
+      }
+    }
+  }
+`;
+
+export const CREATE_CONSULTING = gql`
+  mutation createConsulting(
+    $title: String!
+    $contents: String!
+    $writerId: ID!
+    $studentId: ID!
+    $createdAt: Date!
+  ) {
+    createConsulting(
+      title: $title
+      contents: $contents
+      writerId: $writerId
+      studentId: $studentId
+      createdAt: $createdAt
+    ) {
+      consulting {
+        id
+        contents
+        createdAt
+      }
+    }
+  }
+`;
+
+export const DELETE_LECTURE_INFO = gql`
+  mutation deleteLectureInfo($id: ID!, $date: Date!) {
+    deleteLectureInfo(id: $id, date: $date) {
+      success
     }
   }
 `;

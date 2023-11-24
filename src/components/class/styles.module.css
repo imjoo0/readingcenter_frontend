@@ -5,3 +5,7 @@
   .sunday{
     color:tomato;
   }
+
+  .custom-modal .ant-modal-content {
+    padding: 0; /* 패딩을 0으로 설정 */
+  }

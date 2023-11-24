@@ -1,5 +1,6 @@
 import { addDays, getDay, startOfWeek, endOfWeek } from "date-fns";
 import styles from "../../components/class/styles.module.css";
+
 export const longWord = (word) => {
   if (word.length > 25) {
     return word.slice(0, 24) + "...";
@@ -17,8 +18,8 @@ export const shortWord = (word) => {
 };
 
 export const longTitle = (word) => {
-  if (word.length > 40) {
-    return word.slice(0, 40) + "...";
+  if (word.length > 43) {
+    return word.slice(0, 43) + "...";
   } else {
     return word;
   }
@@ -33,8 +34,8 @@ export const longConsulting = (word) => {
 };
 
 export const longAuthor = (word) => {
-  if (word.length > 15) {
-    return word.slice(0, 15) + "...";
+  if (word.length > 20) {
+    return word.slice(0, 20) + "...";
   } else {
     return word;
   }
@@ -199,7 +200,7 @@ export const dateToClockOneHour = (date) => {
 
 export const timeToHour = (string) => {
   if (string !== undefined) {
-    return string.slice(0, 2) + "시 " + string.slice(3, 5) + "분";
+    return string.slice(0, 2) + ":" + string.slice(3, 5);
   }
 };
 
@@ -330,6 +331,10 @@ export const lastDate = (dateInput, weeks, weekDays) => {
 
 export const lastCount = (dateInput, count, weekDays) => {
   const result = [];
+  console.log(dateInput, count, weekDays, "aaaa");
+  if (!dateInput || !count || !weekDays) {
+    return;
+  }
   let currentDate = new Date(dateInput);
   let jsWeekDays = weekDays
     .map((el) => (el + 1) % 7)
@@ -401,11 +406,101 @@ export const calculateLectureDate = (dateInput) => {
 };
 
 export const dateInputToDot = (dateInput) => {
+  if (!dateInput) {
+    return dateInput;
+  }
   const result = dateInput?.split("-");
-  return result?.[0] + "." + result?.[1] + "." + result?.[2] + ".";
+  return result?.[0]?.slice(2) + "." + result?.[1] + "." + result?.[2];
+};
+
+export const dateInputToDay = (dateInput) => {
+  const week = ["일", "월", "화", "수", "목", "금", "토"];
+  if (!dateInput) {
+    return dateInput;
+  }
+  const newDate = new Date(dateInput);
+  return week[newDate.getDay()];
 };
 
 export const dateInputToDays = (dateInput) => {
   const newDate = new Date(dateInput);
   return newDate.getDay();
 };
+
+export const dateCalculateOnce = (startDate, startTime, endTime) => {
+  const newStartDate = new Date(startDate);
+  // console.log({
+  //   date: newStartDate,
+  //   startTime: startTime,
+  //   endTime: endTime,
+  // });
+  return [{ date: newStartDate, startTime: startTime, endTime: endTime }];
+};
+
+export const dateCalculateWeek = (
+  startDate,
+  startTime,
+  endTime,
+  weeks,
+  repeatWeeks
+) => {
+  const jsWeeks = weeks
+    .map((el) => (el + 1) % 7)
+    .sort((a, b) => {
+      return a - b;
+    });
+  const date = new Date(startDate);
+  // console.log(jsWeeks, "weeks");
+  const datesArray = [];
+  for (let i = 0; i < repeatWeeks * 7; i++) {
+    const current = new Date(date);
+    current.setDate(date.getDate() + i);
+    // console.log(current, "current", i);
+    if (jsWeeks.includes(Number(current.getDay()))) {
+      datesArray.push({
+        date: current,
+        startTime: startTime,
+        endTime: endTime,
+      });
+    }
+  }
+  // console.log(datesArray);
+  return datesArray;
+};
+
+export const dateCalculateCount = (
+  startDate,
+  startTime,
+  endTime,
+  weeks,
+  repeatCount
+) => {
+  const jsWeeks = weeks
+    .map((el) => (el + 1) % 7)
+    .sort((a, b) => {
+      return a - b;
+    });
+  const date = new Date(startDate);
+  // console.log(jsWeeks, "weeks");
+  const datesArray = [];
+  let count = 0;
+  let i = 0;
+  while (count < repeatCount) {
+    const current = new Date(date);
+    current.setDate(date.getDate() + i);
+    if (jsWeeks.includes(Number(current.getDay()))) {
+      datesArray.push({
+        date: current,
+        startTime: startTime,
+        endTime: endTime,
+      });
+      count = datesArray.length;
+    }
+    i++;
+  }
+
+  console.log(datesArray);
+  return datesArray;
+};
+
+export const dateCalculateAuto = () => {};

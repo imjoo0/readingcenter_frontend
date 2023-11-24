@@ -31,7 +31,7 @@ export const DateTitle = styled.div`
   font-style: normal;
   font-weight: 700;
   margin-right: 2.5rem;
-  width: 4.5rem;
+  /* width: 4.5rem; */
 `;
 
 export const AddButton = styled.button`
@@ -53,7 +53,7 @@ export const AddButton = styled.button`
 `;
 
 export const SearchInput = styled.input`
-  width: 15.625rem;
+  width: 17.625rem;
   height: 2.6875rem;
   border-radius: 0.5rem;
   border: 1px solid #dfe1e5;
@@ -77,6 +77,7 @@ export const ConsultingTable = styled.table`
   border-radius: 0.125rem;
   border: 0.2px solid #dbdde1;
   width: 90rem;
+  border-collapse: collapse;
 `;
 
 export const ConsultingTh = styled.th`
@@ -106,14 +107,12 @@ export const ConsultingTd = styled.td`
 `;
 
 export const EditButton = styled.button`
-  border: none;
   background-color: #ffffff;
-  color: #333;
+  width: 1.875rem;
+  height: 1.875rem;
 
-  font-family: Noto Sans KR;
-  font-size: 1rem;
-  font-style: normal;
-  font-weight: 500;
+  border-radius: 0.25rem;
+  border: 1px solid #c8c8c8;
   cursor: pointer;
 `;
 
@@ -133,4 +132,230 @@ export const AddModalTitle = styled.div`
   font-size: 1.25rem;
   font-style: normal;
   font-weight: 500;
+`;
+
+export const ConsultingTextArea = styled.textarea`
+  resize: none;
+  width: 29rem;
+  height: 20rem;
+  border: none;
+  :focus {
+    outline: none;
+    border: none;
+  }
+`;
+
+export const ConsultingModalTitle = styled.div`
+  color: #222;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1.25rem;
+  font-style: normal;
+  font-weight: 500;
+`;
+
+export const ConsultingModalTag = styled.div`
+  color: #333;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  margin-bottom: 0.63rem;
+`;
+export const ConsultingModalBox = styled.div``;
+
+export const ConsultingModalInput = styled.input`
+  width: 15.725rem;
+  height: 2.6875rem;
+  border: 1px solid #dfe1e5;
+  border-radius: 0.5rem;
+  margin-left: 0.63rem;
+  padding: 0;
+  padding-left: 0.87rem;
+  color: #333;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+`;
+
+export const ConsultingModalBigInput = styled.input`
+  width: 35.5rem;
+  height: 2.6875rem;
+  border-radius: 0.5rem;
+  border: 1px solid #dfe1e5;
+  margin-left: 0.63rem;
+  padding: 0;
+  padding-left: 0.87rem;
+  color: #333;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+`;
+
+export const ConsultingModalTextArea = styled.textarea`
+  margin-left: 0.62rem;
+  width: 35.5rem;
+  height: 11.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #dfe1e5;
+  overflow-y: auto;
+  color: #333;
+  resize: none;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+  padding-left: 0.87rem;
+`;
+
+export const ConsultingLength = styled.div`
+  color: #999;
+  text-align: right;
+  font-family: Noto Sans KR;
+  font-size: 0.875rem;
+  font-style: normal;
+  font-weight: 400;
+  margin-top: 0.62rem;
+`;
+
+export const ConsultingModalOKButton = styled.button`
+  border-radius: 0.25rem;
+  justify-content: center;
+  align-items: center;
+  background: #791285;
+  border: 1px solid #791285;
+  width: 4.375rem;
+  height: 2.6875rem;
+  color: #fff;
+
+  font-family: Noto Sans KR;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  margin-right: 0.88rem;
+`;
+export const ConsultingModalCancelButton = styled.button`
+  justify-content: center;
+  align-items: center;
+  border-radius: 0.25rem;
+  border: 1px solid #c8c8c8;
+  background: #fff;
+  width: 4.375rem;
+  height: 2.6875rem;
+  color: #333;
+
+  font-family: Noto Sans KR;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+`;
+
+export const ModalLabel = styled.div`
+  width: 4.255rem;
+  height: 2.8785rem;
+  padding-left: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #dbdde1;
+  margin-left: 0.62rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+export const ModalBorderLess = styled.input`
+  border: none;
+  outline: none;
+  width: 3rem;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+`;
+
+export const DateContainer = styled.div`
+  width: 16.0625rem;
+  height: 2.6875rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d9d9d9;
+  padding: 0 0.5rem;
+  background: #fff;
+`;
+
+export const ModalInput = styled.input`
+  width: 15.625rem;
+  height: 2.6875rem;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  border: 1px solid #dfe1e5;
+  background: #fff;
+  font-family: Noto Sans KR;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+  margin-bottom: 0.7rem;
+  ::placeholder {
+    background-image: url("/image/search2.svg");
+    /* height: 1rem; */
+    /* font-size: 15px; */
+    background-size: 7%;
+    background-position: 0px 0.29rem;
+    background-repeat: no-repeat;
+  }
+`;
+
+export const ModalClassAddWrapper = styled.div`
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #dfe1e5;
+`;
+
+export const AddModalTh = styled.th`
+  color: #fff;
+  padding: 0;
+  text-align: center;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  width: 2rem;
+  border: 1px solid #dfe1df;
+  height: 2rem;
+`;
+
+export const AddModalTd = styled.td`
+  color: #333;
+  text-align: center;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+  padding: 0;
+  border: 1px solid #dfe1df;
+  height: 2rem;
+`;
+
+//상담 삭제 추가 사항
+
+export const DateLabel = styled.div`
+  width: 15.725rem;
+  height: 2.6875rem;
+  display: flex;
+  align-items: center;
+  border: 1px solid #dfe1e5;
+  border-radius: 0.5rem;
+  margin-left: 0.63rem;
+  padding: 0;
+  padding-left: 0.87rem;
+  color: #333;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
 `;

@@ -65,7 +65,7 @@ export default function Header() {
     ["상담 관리", "consulting"],
   ];
   const router = useRouter();
-  // const { data: myData } = useQuery(GET_ME); myData 수정 필수
+  // const { data: myData } = useQuery(GET_ME);
 
   const { data: myData } = {
     data: {
@@ -96,7 +96,10 @@ export default function Header() {
   const onClickMenu = (address) => () => {
     // router.push("/" + router.query.branch + "/" + address);
     window.location.href =
-      "http://192.168.6.144:3000/" + router.query.branch + "/" + address;
+      "https://readingcenter.purpleacademy.co.kr/" +
+      router.query.branch +
+      "/" +
+      address;
   };
 
   useEffect(() => {

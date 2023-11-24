@@ -9,10 +9,14 @@ export const ReportTitle = styled.div`
 `;
 
 export const ReportSearchBox = styled.div`
-  width: 100%;
+  width: 90rem;
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.69rem;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
 `;
 
 export const ReportInput = styled.input`
@@ -28,4 +32,29 @@ export const ReportInput = styled.input`
     background-position: 0px center;
     background-repeat: no-repeat;
   }
+`;
+
+export const ReportTh = styled.th`
+  color: #fff;
+  border: 0.2px solid #dfe1e5;
+  text-align: center;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+`;
+
+export const ReportTd = styled.td`
+  color: #333;
+
+  text-align: center;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+  border: 0.2px solid #dfe1e5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 22.81rem;
 `;

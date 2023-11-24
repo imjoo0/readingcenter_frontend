@@ -189,6 +189,9 @@ export const GET_ALL_STUDENTS = gql`
       registerDate
       birthDate
       origin
+      user {
+        isActive
+      }
       pmobileno
       academies {
         id
