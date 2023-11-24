@@ -3,6 +3,7 @@ import * as S from "./studentReport.style";
 import ReactDOM from "react-dom";
 import {
   CREATE_OPINION,
+  GET_ALL_STUDENTS,
   GET_ME,
   GET_MEMO,
   GET_MEMOS,
@@ -32,7 +33,7 @@ import {
 } from "recharts";
 import React, { PureComponent } from "react";
 import { BgColorsOutlined, PlusOutlined } from "@ant-design/icons";
-import { Modal } from "antd";
+import { Modal, Select } from "antd";
 import {
   addComma,
   dateToInput,
@@ -49,7 +50,7 @@ export default function StudentReportPage() {
   const [maxSR, setMaxSr] = useState(0);
   const [maxWCPerBooks, setMaxWCPerBooks] = useState(0);
   const [maxCorrects, setMaxCorrects] = useState(0);
-  const [window, setWindow] = useState(false);
+  const [widows, setWidows] = useState(false);
   const [moreView, setMoreView] = useState(false);
   const [isAr, setIsAr] = useState(false);
   const [isWc, setIsWc] = useState(false);
@@ -151,8 +152,13 @@ export default function StudentReportPage() {
   const [memoData, setMemoData] = useState([]);
   const [opinion, setOpinion] = useState("");
   const [opinionIndex, setOpinionIndex] = useState(1);
+  const [options, setOptions] = useState([]);
 
   const printRef = useRef(null);
+
+  const { data: studentData } = useQuery(GET_ALL_STUDENTS, {
+    variables: { academyId: Number(router.query.branch) },
+  });
 
   const { data: userData } = useQuery(GET_STUDENT, {
     variables: {
@@ -174,7 +180,33 @@ export default function StudentReportPage() {
     },
   });
 
-  const { data: myData } = useQuery(GET_ME);
+  const { data: myData } = useQuery(GET_ME); // 수정 필수
+  // const { data: myData } = {
+  //   data: {
+  //     me: {
+  //       id: "9",
+  //       username: "gyeonggi_teacher",
+  //       userCategory: "\uc120\uc0dd\ub2d8",
+  //       profile: {
+  //         id: 9,
+  //         korName: "\uacbd\uae30\ud37c\ud50c",
+  //         engName: "gyeonggiPurple",
+  //         registerDate: "2023-08-01",
+  //         birthDate: "1980-01-01",
+  //         academy: {
+  //           id: "2",
+  //           name: "\ud37c\ud50c\uc544\uce74\ub370\ubbf8",
+  //           location:
+  //             "\uacbd\uae30 \uc6a9\uc778\uc2dc \uc218\uc9c0\uad6c \ud3ec\uc740\ub300\ub85c 536 \uc2e0\uc138\uacc4\ubc31\ud654\uc810\uacbd\uae30\uc810 8F",
+  //           __typename: "AcademyType",
+  //         },
+  //         __typename: "TeacherType",
+  //       },
+  //       __typename: "UserType",
+  //     },
+  //   },
+  // };
+
   const { data: memosData, refetch: refetchMemos } = useQuery(GET_MEMOS, {
     variables: {
       studentId: Number(router.query.id),
@@ -215,6 +247,7 @@ export default function StudentReportPage() {
 
     try {
       await createOpinion({ variables: variables });
+      setHasUnsavedChanges(false);
       alert("종합의견이 저장됐습니다.");
       refetchOpinion();
     } catch (err) {}
@@ -396,6 +429,44 @@ export default function StudentReportPage() {
   //   refetchMemos();
   // }, [myData]);
 
+  // 페이지 벗어날 때
+
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  useEffect(() => {
+    // 예시: 사용자가 어떤 입력 필드를 수정한 경우
+    const checkUnsavedChanges = () => {
+      // 변경 사항이 있다면
+      setHasUnsavedChanges(true);
+    };
+
+    // 여기에서 페이지 이동 전에 변경 사항을 확인하는 이벤트 리스너를 등록합니다.
+    window.addEventListener("beforeunload", checkUnsavedChanges);
+
+    // 컴포넌트가 언마운트될 때 이벤트 리스너를 해제합니다.
+    return () => {
+      window.removeEventListener("beforeunload", checkUnsavedChanges);
+    };
+  }, []);
+
+  useEffect(() => {
+    // 페이지 이동 이벤트를 감지하여 사용자에게 경고 메시지를 표시합니다.
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        const confirmationMessage =
+          "변경 내용이 저장되지 않을 수 있습니다. 저장하지 않고 이동하시겠습니까?";
+        (e || window.event).returnValue = confirmationMessage;
+        return confirmationMessage;
+      }
+    };
+
+    window.onbeforeunload = handleBeforeUnload;
+
+    return () => {
+      window.onbeforeunload = null;
+    };
+  }, [hasUnsavedChanges]);
+
   // 최근 반년 정보 데이터 추출
   useEffect(() => {
     if (Array.isArray(monthData?.getMonthReports)) {
@@ -506,9 +577,26 @@ export default function StudentReportPage() {
         },
       ];
       setLatestData(newLatestData);
-      setWindow(true);
+      setWidows(true);
     }
   }, [monthData, summaryData]);
+
+  useEffect(() => {
+    if (studentData) {
+      setOptions(
+        studentData?.studentsInAcademy
+          ?.filter((el) => {
+            return el.user.isActive;
+          })
+          ?.sort((a, b) => {
+            return a?.korName?.localeCompare(b?.korName, "kr-KR");
+          })
+          ?.map((el) => {
+            return { value: el.id, label: el.korName + "(" + el.engName + ")" };
+          })
+      );
+    }
+  }, [studentData]);
 
   useEffect(() => {
     if (memosData?.getLectureMemoByStudent?.length > 3) {
@@ -612,6 +700,19 @@ export default function StudentReportPage() {
     }
   }, [opinionData]);
 
+  const filterOption = (input, option) => {
+    // const target = option?.label?.replace(/[^\w]/g, "");
+    console.log(
+      (option?.label ?? "")
+        .toLowerCase()
+        .includes(input.replace(/[^\w]/g, "").toLowerCase()),
+      "aaaa"
+    );
+    return (option?.label ?? "")
+      .toLowerCase()
+      .includes(input.replace(/[^\w]/g, "").toLowerCase());
+  };
+
   return (
     <S.PageWrapper>
       <style>{`
@@ -650,6 +751,88 @@ export default function StudentReportPage() {
         >
           <S.ReportTitle>학습 리포트</S.ReportTitle>
         </div>
+      </div>
+      <div
+        style={{
+          marginLeft: "86.75rem",
+          display: "flex",
+          alignItems: "center",
+          marginBottom: "1.87rem",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "Spoqa Han Sans Neo",
+            fontSize: "1.125rem",
+            fontWeight: "700",
+            marginRight: "3.06rem",
+          }}
+        >
+          원생 선택
+        </div>
+        {userData && (
+          <Select
+            showSearch
+            onSearch={(value) => {}}
+            filterOption={filterOption}
+            style={{
+              width: "10.875rem",
+              height: "2.075rem",
+              borderBottom: "1px solid #858585",
+              fontSize: 18,
+              fontWeight: "bold",
+            }}
+            // defaultValue={{
+            //   value: router.query.id,
+            //   label: options?.filter(
+            //     (el) => Number(el?.value) === Number(router.query.id)
+            //   )[0],
+            // }}
+            defaultValue={
+              userData !== undefined
+                ? {
+                    value: Number(router.query.id),
+                    label:
+                      userData?.userDetails?.profile?.korName +
+                      "(" +
+                      userData?.userDetails?.profile?.engName +
+                      ")",
+                  }
+                : {}
+            }
+            bordered={false}
+            onChange={(value) => {
+              window.location.href =
+                "https://readingcenter.purpleacademy.co.kr/" +
+                router.query.branch +
+                "/report/reportDetail/" +
+                value;
+            }}
+            options={options}
+          />
+        )}
+        {/* <select
+          style={{
+            width: "10.875rem",
+            height: "2.6875rem",
+            border: "none",
+            borderBottom: "1px solid #858585",
+            fontSize: "1rem",
+            fontWeight: "700",
+            marginRight: "3.06rem",
+          }}
+        >
+          {studentData?.studentsInAcademy?.map((el) => {
+            return (
+              <option
+                value={el?.id}
+                selected={Number(el?.id) === Number(router.query.id)}
+              >
+                {el?.korName}
+              </option>
+            );
+          })}
+        </select> */}
       </div>
       {/* <div>
         <span>기준 월</span>
@@ -733,45 +916,113 @@ export default function StudentReportPage() {
             marginTop: "2.5rem",
             display: "flex",
             justifyContent: "flex-end",
+            marginBottom: "1.2rem",
           }}
         >
+          <S.MoveButton
+            onClick={() => {
+              window.location.href =
+                "https://readingcenter.purpleacademy.co.kr/" +
+                router.query.branch +
+                "/report";
+            }}
+            style={{ marginRight: "0.62rem", width: "5.75rem", padding: "0" }}
+          >
+            <svg
+              width="12"
+              height="11"
+              viewBox="0 0 12 11"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ marginRight: "0.62rem" }}
+            >
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M2.00893 0H0V1.92156H2.00893V0ZM12 0H3.13393V1.92156H12V0ZM2.00893 4.55172H0V6.44828H2.00893V4.55172ZM12 4.55172H3.13393V6.44828H12V4.55172ZM2.00893 9.07844H0V11H2.00893V9.07844ZM12 9.07844H3.13393V11H12V9.07844Z"
+                fill="#333333"
+              />
+            </svg>
+
+            {"목록"}
+          </S.MoveButton>
           <ReactToPrint
             trigger={() => (
               <button
                 style={{
-                  backgroundColor: "#791285",
-                  border: "none",
-                  color: "#fff",
-                  width: "8rem",
-                  height: "2.6rem",
+                  backgroundColor: "#FFF",
+                  border: "1px solid #C8C8C8",
+                  borderRadius: "0.25rem",
+                  color: "#333",
+                  width: "6rem",
+                  height: "2.6875rem",
                   cursor: "pointer",
-                  fontFamily: "Noto Sans KR",
+                  fontFamily: "Spoqa Han Sans Neo",
                   fontSize: "1rem",
                   fontStyle: "normal",
-                  fontWeight: 700,
-                  marginBottom: "1.2rem",
-                  display: "flex",
+                  fontWeight: 500,
+                  display: "inline-flex",
                   justifyContent: "center",
                   alignItems: "center",
                 }}
               >
                 <svg
-                  width="19"
-                  height="17"
-                  viewBox="0 0 19 17"
+                  width="14"
+                  height="13"
+                  viewBox="0 0 14 13"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
+                  style={{ marginRight: "0.62rem" }}
                 >
                   <path
-                    d="M14.75 0.625V4.11133H4.25V0.625H14.75ZM14.9961 8.25391C15.1602 8.41797 15.3652 8.5 15.6113 8.5C15.8574 8.5 16.0625 8.41797 16.2266 8.25391C16.418 8.08984 16.5137 7.88477 16.5137 7.63867C16.5137 7.39258 16.418 7.1875 16.2266 7.02344C16.0625 6.83203 15.8574 6.73633 15.6113 6.73633C15.3652 6.73633 15.1602 6.83203 14.9961 7.02344C14.832 7.1875 14.75 7.39258 14.75 7.63867C14.75 7.88477 14.832 8.08984 14.9961 8.25391ZM12.9863 14.6113V10.2637H6.01367V14.6113H12.9863ZM15.6113 5.01367C16.3223 5.01367 16.9375 5.27344 17.457 5.79297C17.9766 6.3125 18.2363 6.92773 18.2363 7.63867V12.8887H14.75V16.375H4.25V12.8887H0.763672V7.63867C0.763672 6.92773 1.02344 6.3125 1.54297 5.79297C2.0625 5.27344 2.67773 5.01367 3.38867 5.01367H15.6113Z"
-                    fill="white"
+                    d="M11 0.5V3.15625H3V0.5H11ZM11.1875 6.3125C11.3125 6.4375 11.4688 6.5 11.6562 6.5C11.8438 6.5 12 6.4375 12.125 6.3125C12.2708 6.1875 12.3438 6.03125 12.3438 5.84375C12.3438 5.65625 12.2708 5.5 12.125 5.375C12 5.22917 11.8438 5.15625 11.6562 5.15625C11.4688 5.15625 11.3125 5.22917 11.1875 5.375C11.0625 5.5 11 5.65625 11 5.84375C11 6.03125 11.0625 6.1875 11.1875 6.3125ZM9.65625 11.1562V7.84375H4.34375V11.1562H9.65625ZM11.6562 3.84375C12.1979 3.84375 12.6667 4.04167 13.0625 4.4375C13.4583 4.83333 13.6562 5.30208 13.6562 5.84375V9.84375H11V12.5H3V9.84375H0.34375V5.84375C0.34375 5.30208 0.541667 4.83333 0.9375 4.4375C1.33333 4.04167 1.80208 3.84375 2.34375 3.84375H11.6562Z"
+                    fill="#333333"
                   />
                 </svg>
-                {"  인쇄하기"}
+
+                {"인쇄"}
               </button>
             )}
             content={() => printRef.current}
           ></ReactToPrint>
+          <S.MoveButton
+            onClick={() => {
+              window.location.href =
+                "https://readingcenter.purpleacademy.co.kr/" +
+                router.query.branch +
+                "/report/" +
+                router.query.id;
+            }}
+            style={{ marginLeft: "0.62rem" }}
+          >
+            <svg
+              width="16"
+              height="17"
+              viewBox="0 0 16 17"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ marginRight: "0.62rem" }}
+            >
+              <path
+                d="M5.80382 4.28426C5.54104 4.28426 5.32801 4.50139 5.32801 4.76924C5.32801 5.03708 5.54104 5.25421 5.80382 5.25421H10.196C10.4588 5.25421 10.6718 5.03708 10.6718 4.76924C10.6718 4.50139 10.4588 4.28426 10.196 4.28426H5.80382Z"
+                fill="white"
+              />
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M2.3999 14.0957V3.27701C2.3999 2.75263 2.60427 2.24972 2.96808 1.87892C3.33187 1.50812 3.8253 1.2998 4.33977 1.2998H12.6849C12.9276 1.2998 13.1602 1.39809 13.3318 1.57287C13.5034 1.74778 13.5999 1.98513 13.5999 2.23245V15.6998H3.9748C3.49616 15.6998 3.08624 15.532 2.8002 15.2154C2.52008 14.9054 2.3999 14.4994 2.3999 14.0957ZM3.64099 2.56477C3.82632 2.37587 4.07768 2.26975 4.33977 2.26975H12.6483V10.2532H3.97376C3.74916 10.2532 3.53993 10.2901 3.35154 10.362V3.27701C3.35154 3.00987 3.45566 2.75366 3.64099 2.56477ZM3.97376 14.7299H12.6483V13.4615H3.97376C3.72037 13.4615 3.58024 13.5444 3.50026 13.6329C3.41436 13.728 3.35154 13.8816 3.35154 14.0957C3.35154 14.3097 3.41436 14.4633 3.50026 14.5584C3.58024 14.6469 3.72037 14.7299 3.97376 14.7299ZM3.97376 12.4915H12.6483V11.2231H3.97376C3.72037 11.2231 3.58024 11.306 3.50026 11.3946C3.41436 11.4896 3.35154 11.6433 3.35154 11.8573C3.35154 12.0713 3.41436 12.225 3.50026 12.3201C3.58024 12.4086 3.72037 12.4915 3.97376 12.4915Z"
+                fill="#333333"
+              />
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M4.33977 2.26975C4.07768 2.26975 3.82632 2.37587 3.64099 2.56477C3.45566 2.75366 3.35154 3.00987 3.35154 3.27701V10.362C3.53993 10.2901 3.74916 10.2532 3.97376 10.2532H12.6483V2.26975H4.33977ZM5.80382 4.28426C5.54104 4.28426 5.32801 4.50139 5.32801 4.76924C5.32801 5.03708 5.54104 5.25421 5.80382 5.25421H10.196C10.4588 5.25421 10.6718 5.03708 10.6718 4.76924C10.6718 4.50139 10.4588 4.28426 10.196 4.28426H5.80382Z"
+                fill="#333333"
+              />
+            </svg>
+
+            {"리딩 이력"}
+          </S.MoveButton>
         </div>
         <S.ReportWrapper ref={printRef}>
           <S.UserInfoTitle>
@@ -840,7 +1091,7 @@ export default function StudentReportPage() {
             </S.ReportInfoBox>
             <S.ReportInfoBox>
               <S.ChartTitle>읽은 권 수</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -875,7 +1126,7 @@ export default function StudentReportPage() {
             <S.ReportInfoBox>
               {" "}
               <S.ChartTitle>월별 WC</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={250}
                   height={250}
@@ -910,7 +1161,7 @@ export default function StudentReportPage() {
             </S.ReportInfoBox>
             <S.ReportInfoBox>
               <S.ChartTitle>학습일</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -947,7 +1198,7 @@ export default function StudentReportPage() {
           <S.ReportInfoContainer>
             <S.ReportInfoBox>
               <S.ChartTitle>SR</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -982,7 +1233,7 @@ export default function StudentReportPage() {
             </S.ReportInfoBox>
             <S.ReportInfoBox>
               <S.ChartTitle>AR</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -1016,7 +1267,7 @@ export default function StudentReportPage() {
             </S.ReportInfoBox>
             <S.ReportInfoBox>
               <S.ChartTitle>WC/권</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -1050,7 +1301,7 @@ export default function StudentReportPage() {
             </S.ReportInfoBox>
             <S.ReportInfoBox>
               <S.ChartTitle>정답률</S.ChartTitle>
-              {window ? (
+              {widows ? (
                 <BarChart
                   width={300}
                   height={250}
@@ -1302,8 +1553,7 @@ export default function StudentReportPage() {
           </S.ReportInfoContainer>
           <S.ReportInfoContainer>
             <S.ReportInfoDoubleBox style={{ alignItems: "flex-end" }}>
-              <S.ReportSubTitle>월별 지수변화</S.ReportSubTitle>
-
+              <S.ReportSubTitle>월별 리딩지수</S.ReportSubTitle>
               <ResponsiveContainer width={"87%"} height={300}>
                 <ComposedChart data={halfYearData}>
                   {/* <XAxis
@@ -1413,6 +1663,7 @@ export default function StudentReportPage() {
                 value={opinion}
                 onChange={(e) => {
                   setOpinion(e.target.value);
+                  setHasUnsavedChanges(true);
                 }}
               ></S.ReportTextArea>
               <div
@@ -1426,18 +1677,20 @@ export default function StudentReportPage() {
               >
                 <S.ReportPrintNot onClick={onClickCreateOpinion}>
                   <svg
-                    width="17"
-                    height="17"
-                    viewBox="0 0 17 17"
+                    width="12"
+                    height="13"
+                    viewBox="0 0 12 13"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
+                    style={{ marginRight: "0.62rem" }}
                   >
                     <path
-                      d="M11.125 5.875V2.38867H2.38867V5.875H11.125ZM6.6543 13.832C7.17383 14.3516 7.78906 14.6113 8.5 14.6113C9.21094 14.6113 9.82617 14.3516 10.3457 13.832C10.8652 13.3125 11.125 12.6973 11.125 11.9863C11.125 11.2754 10.8652 10.6602 10.3457 10.1406C9.82617 9.62109 9.21094 9.36133 8.5 9.36133C7.78906 9.36133 7.17383 9.62109 6.6543 10.1406C6.13477 10.6602 5.875 11.2754 5.875 11.9863C5.875 12.6973 6.13477 13.3125 6.6543 13.832ZM12.8887 0.625L16.375 4.11133V14.6113C16.375 15.0762 16.1973 15.4863 15.8418 15.8418C15.4863 16.1973 15.0762 16.375 14.6113 16.375H2.38867C1.89648 16.375 1.47266 16.2109 1.11719 15.8828C0.789062 15.5273 0.625 15.1035 0.625 14.6113V2.38867C0.625 1.89648 0.789062 1.48633 1.11719 1.1582C1.47266 0.802734 1.89648 0.625 2.38867 0.625H12.8887Z"
+                      d="M8 4.5V1.84375H1.34375V4.5H8ZM4.59375 10.5625C4.98958 10.9583 5.45833 11.1562 6 11.1562C6.54167 11.1562 7.01042 10.9583 7.40625 10.5625C7.80208 10.1667 8 9.69792 8 9.15625C8 8.61458 7.80208 8.14583 7.40625 7.75C7.01042 7.35417 6.54167 7.15625 6 7.15625C5.45833 7.15625 4.98958 7.35417 4.59375 7.75C4.19792 8.14583 4 8.61458 4 9.15625C4 9.69792 4.19792 10.1667 4.59375 10.5625ZM9.34375 0.5L12 3.15625V11.1562C12 11.5104 11.8646 11.8229 11.5938 12.0938C11.3229 12.3646 11.0104 12.5 10.6562 12.5H1.34375C0.96875 12.5 0.645833 12.375 0.375 12.125C0.125 11.8542 0 11.5312 0 11.1562V1.84375C0 1.46875 0.125 1.15625 0.375 0.90625C0.645833 0.635417 0.96875 0.5 1.34375 0.5H9.34375Z"
                       fill="white"
                     />
                   </svg>
-                  {"  저장하기"}
+
+                  {"저장"}
                 </S.ReportPrintNot>
               </div>
             </S.ReportInfoDoubleBox>
@@ -1499,7 +1752,7 @@ export default function StudentReportPage() {
                 >
                   평균 리딩 지수
                 </S.ReportSubContainerTitle>
-                {window ? (
+                {widows ? (
                   <BarChart
                     width={300}
                     height={250}
@@ -1600,7 +1853,7 @@ export default function StudentReportPage() {
                 >
                   월별 WC
                 </S.ReportSubContainerTitle>
-                {window ? (
+                {widows ? (
                   <BarChart
                     width={300}
                     height={250}
@@ -1696,7 +1949,7 @@ export default function StudentReportPage() {
                 >
                   평균 정답률
                 </S.ReportSubContainerTitle>
-                {window ? (
+                {widows ? (
                   <BarChart
                     width={300}
                     height={250}
@@ -1792,7 +2045,7 @@ export default function StudentReportPage() {
                 >
                   읽은 권 수
                 </S.ReportSubContainerTitle>
-                {window ? (
+                {widows ? (
                   <BarChart
                     width={300}
                     height={250}
@@ -1887,7 +2140,7 @@ export default function StudentReportPage() {
                 >
                   학습일
                 </S.ReportSubContainerTitle>
-                {window ? (
+                {widows ? (
                   <BarChart
                     width={300}
                     height={250}

@@ -11,6 +11,9 @@ export const GET_ALL_STUDENTS = gql`
       registerDate
       birthDate
       origin
+      user {
+        isActive
+      }
       pmobileno
       academies {
         id
@@ -31,6 +34,9 @@ export const GET_STUDENTS_REPORT_LIST = gql`
         engName
         registerDate
         birthDate
+        user {
+          isActive
+        }
       }
       consultingCount
       lastConsultingDate

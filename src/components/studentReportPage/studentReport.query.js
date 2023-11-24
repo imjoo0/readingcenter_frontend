@@ -222,3 +222,27 @@ export const CREATE_OPINION = gql`
     }
   }
 `;
+
+export const GET_ALL_STUDENTS = gql`
+  query studentsInAcademy($academyId: Int!) {
+    studentsInAcademy(academyId: $academyId) {
+      id
+      korName
+      engName
+      gender
+      mobileno
+      registerDate
+      birthDate
+      origin
+      pmobileno
+      user {
+        isActive
+      }
+      academies {
+        id
+        branchName
+        name
+      }
+    }
+  }
+`;

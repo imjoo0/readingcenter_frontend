@@ -4,18 +4,18 @@ export const BooksWrapper = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   margin-top: 10rem;
-  padding: 0 8.4% 0 8.4%;
+  /* padding: 0 8.4% 0 8.4%; */
 `;
 
 export const BooksTitle = styled.div`
-  font-size: 2.5rem;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 3.5rem;
+  color: #111;
   margin-bottom: 2.5rem;
-  width: 11rem;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 3rem;
+  font-style: normal;
+  font-weight: 700;
 `;
 export const BooksModalTitle = styled.div`
   font-size: 34px;
@@ -35,11 +35,14 @@ export const BooksTitleLine = styled.div`
 `;
 
 export const SearchBox = styled.div`
-  width: 88%;
+  /* width: 88.874rem; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #eeeeee;
-  padding: 1%;
-  background-color: #f8f9fa;
-  margin-bottom: 4vh;
+  padding: 2.5rem 15rem;
+  background-color: #f4f4f8;
+  margin-bottom: 5rem;
 `;
 
 export const SearchTitle = styled.div`
@@ -152,8 +155,12 @@ export const TableHeadRight = styled.div`
 `;
 
 export const CountNumber = styled.div`
-  font-size: 20px;
-  font-weight: 500;
+  color: #333;
+
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1.125rem;
+  font-style: normal;
+  font-weight: 700;
 `;
 
 export const ModalTextArea = styled.textarea`
@@ -208,11 +215,17 @@ export const InputInput = styled.input`
 `;
 
 export const InputSelect = styled.select`
-  width: 5vw;
-  font-size: 16px;
-  padding: 4px;
-  border: 1px solid #dddddd;
-  border-radius: 5px;
+  width: 16.875rem;
+  height: 2.8875rem;
+  color: #333;
+  border-radius: 0.5rem;
+  border: 1px solid #dfe1e5;
+  padding-left: 0.6rem;
+  background: #fff;
+  font-family: Noto Sans KR;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
 `;
 
 export const TimeBox = styled.div`
@@ -243,16 +256,20 @@ export const ModalInputBox = styled.div`
   border-bottom: 1px solid #dbdde1;
 `;
 export const ModalAddButton = styled.button`
-  width: 100px;
-  height: 30px;
-
-  background-color: green;
+  width: 6rem;
+  height: 2.6875rem;
+  color: #fff;
+  padding: 0;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  background: #333;
   border: none;
-  color: #eeeeee;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 5px;
-  margin-left: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   :hover {
     cursor: pointer;
     filter: brightness(120%);
@@ -278,4 +295,70 @@ export const EditTagFont = styled.div`
   display: flex;
   align-items: center;
   padding-left: 20px;
+`;
+
+export const BookTagSmallInput = styled.input`
+  width: 5.85rem;
+  height: 2.6875rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d9d9d9;
+  padding: 0;
+  padding-left: 0.6rem;
+  margin-left: 1.25rem;
+  margin-right: 1.25rem;
+`;
+
+export const BookTagBigInput = styled.input`
+  width: 16.275rem;
+  height: 2.6875rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d9d9d9;
+  margin-left: 1.25rem;
+  margin-right: 1.25rem;
+  color: #333;
+  padding-left: 0.6rem;
+  font-family: Noto Sans KR;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+`;
+
+export const BookTableTdMax = styled.div`
+  /* display: flex; */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  background-color: #ffffff; /* 배경색 추가 */
+  position: relative;
+  :hover {
+    /* white-space: pre; /* 기본으로 돌아가게 함 */
+    overflow: hidden;
+    /* text-overflow: clip; */
+    z-index: 2;
+  }
+`;
+
+export const BookTableTh = styled.th`
+  background: #791285;
+  border: 1px solid #dfe1e5;
+  color: #fff;
+  padding: 0.31rem 0;
+  text-align: center;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+`;
+
+export const BookTableTd = styled.td`
+  background: #fff;
+  border: 1px solid #dfe1e5;
+  padding: 0.13rem 10px;
+  text-align: center;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 400;
+  height: 2rem;
+  position: relative;
 `;

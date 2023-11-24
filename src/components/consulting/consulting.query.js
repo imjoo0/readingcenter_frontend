@@ -153,6 +153,9 @@ export const GET_ALL_STUDENTS = gql`
       birthDate
       origin
       pmobileno
+      user {
+        isActive
+      }
       academies {
         id
         branchName
@@ -166,6 +169,31 @@ export const DELETE_CONSULTING = gql`
   mutation deleteConsulting($consultingId: ID!) {
     deleteConsulting(consultingId: $consultingId) {
       success
+    }
+  }
+`;
+
+export const GET_TEACHER = gql`
+  query staffInAcademy($academyId: Int!) {
+    staffInAcademy(academyId: $academyId) {
+      ... on ManagerType {
+        id
+        user {
+          isActive
+          userCategory
+        }
+        korName
+        engName
+      }
+      ... on TeacherType {
+        id
+        user {
+          isActive
+          userCategory
+        }
+        korName
+        engName
+      }
     }
   }
 `;

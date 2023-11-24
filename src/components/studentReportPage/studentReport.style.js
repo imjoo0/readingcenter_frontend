@@ -278,19 +278,16 @@ export const ReportInfoDoubleBox = styled.div`
 `;
 
 export const ReportPrintNot = styled.button`
-  background-color: #791285;
-  border: none;
   color: #fff;
-  width: 8rem;
-  height: 2.6rem;
-  font-family: Noto Sans KR;
+  width: 6rem;
+  height: 2.6875rem;
+  font-family: Spoqa Han Sans Neo;
   font-size: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid #333;
+  background: #333;
   font-style: normal;
-  font-weight: 700;
-  margin-bottom: 1.2rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  font-weight: 500;
   cursor: pointer;
   @media print {
     display: none;
@@ -362,4 +359,22 @@ export const DateMonthButton = styled.button`
   font-size: 1rem;
   font-style: normal;
   font-weight: 400;
+`;
+
+export const MoveButton = styled.button`
+  border-radius: 0.25rem;
+  border: 1px solid #c8c8c8;
+  display: inline-flex;
+  padding: 0.6875rem 1.25rem;
+  justify-content: center;
+  align-items: center;
+  background: #fff;
+  color: #333;
+  font-family: Spoqa Han Sans Neo;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  width: 8.7rem;
+  height: 2.6875rem;
+  cursor: pointer;
 `;

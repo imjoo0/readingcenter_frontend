@@ -65,14 +65,41 @@ export default function Header() {
     ["상담 관리", "consulting"],
   ];
   const router = useRouter();
-  const { data: myData } = useQuery(GET_ME);
+  // const { data: myData } = useQuery(GET_ME);
+
+  const { data: myData } = {
+    data: {
+      me: {
+        id: "9",
+        username: "gyeonggi_teacher",
+        userCategory: "\uc120\uc0dd\ub2d8",
+        profile: {
+          id: 9,
+          korName: "\uacbd\uae30\ud37c\ud50c",
+          engName: "gyeonggiPurple",
+          registerDate: "2023-08-01",
+          birthDate: "1980-01-01",
+          academy: {
+            id: "2",
+            name: "\ud37c\ud50c\uc544\uce74\ub370\ubbf8",
+            location:
+              "\uacbd\uae30 \uc6a9\uc778\uc2dc \uc218\uc9c0\uad6c \ud3ec\uc740\ub300\ub85c 536 \uc2e0\uc138\uacc4\ubc31\ud654\uc810\uacbd\uae30\uc810 8F",
+            __typename: "AcademyType",
+          },
+          __typename: "TeacherType",
+        },
+        __typename: "UserType",
+      },
+    },
+  };
 
   const onClickMenu = (address) => () => {
-    if (address === "userPage") {
-      router.push("/userPage");
-    } else {
-      router.push("/" + router.query.branch + "/" + address);
-    }
+    // router.push("/" + router.query.branch + "/" + address);
+    window.location.href =
+      "https://readingcenter.purpleacademy.co.kr/" +
+      router.query.branch +
+      "/" +
+      address;
   };
 
   useEffect(() => {

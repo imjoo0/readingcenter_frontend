@@ -143,7 +143,7 @@ export default function LoginPageComponent() {
         </S.LoginBoxLeft>
 
         <S.LoginBoxRight>
-          <S.LoginTitle>Sign in</S.LoginTitle>
+          <S.LoginTitle>로그인</S.LoginTitle>
           <S.InputTag>
             <S.LoginInput
               type="text"
